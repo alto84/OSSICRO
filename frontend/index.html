@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OSSICRO — Open Source Sponsor-Investigator CRO</title>
+<style>
+  :root{
+    --bg:#f7f9fb; --surface:#ffffff; --ink:#0f2233; --muted:#5a6b7b; --line:#e2e8ee;
+    --brand:#0b5cad; --brand-deep:#083a6e; --accent:#12a594; --accent-deep:#0c7d70;
+    --green:#1f9d57; --amber:#c98a12; --red:#c0392b;
+    --shadow:0 1px 2px rgba(8,32,58,.06),0 8px 24px rgba(8,32,58,.06);
+    --maxw:1140px;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0b141d; --surface:#111d29; --ink:#e8eef4; --muted:#9fb1c1; --line:#20303f;
+    --brand:#4d9fe6; --brand-deep:#8fc2f2; --accent:#3fd0bd; --accent-deep:#7ee3d6;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0b141d; --surface:#111d29; --ink:#e8eef4; --muted:#9fb1c1; --line:#20303f;
+    --brand:#4d9fe6; --brand-deep:#8fc2f2; --accent:#3fd0bd; --accent-deep:#7ee3d6;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#f7f9fb; --surface:#ffffff; --ink:#0f2233; --muted:#5a6b7b; --line:#e2e8ee;
+    --brand:#0b5cad; --brand-deep:#083a6e; --accent:#12a594;
+    --shadow:0 1px 2px rgba(8,32,58,.06),0 8px 24px rgba(8,32,58,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  a{color:var(--brand);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  h1,h2,h3{line-height:1.2;letter-spacing:-.01em;margin:0 0 .4em}
+  h2{font-size:clamp(1.5rem,3vw,2.1rem);margin-top:0}
+  .eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:.72rem;font-weight:700;color:var(--accent-deep,var(--accent))}
+  .muted{color:var(--muted)}
+  section{padding:72px 0;border-top:1px solid var(--line)}
+  /* header */
+  header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--surface) 88%,transparent);
+    backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;gap:22px;height:62px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+  .brand .mark{width:26px;height:26px;border-radius:7px;
+    background:linear-gradient(135deg,var(--brand),var(--accent));display:inline-block}
+  .nav a.link{color:var(--muted);font-size:.92rem;font-weight:600}
+  .nav a.link:hover{color:var(--ink);text-decoration:none}
+  .nav .spacer{flex:1}
+  .btn{display:inline-block;padding:9px 16px;border-radius:9px;font-weight:700;font-size:.9rem;
+    background:var(--brand);color:#fff;border:1px solid transparent}
+  .btn:hover{background:var(--brand-deep);text-decoration:none;color:#fff}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+  .btn.ghost:hover{background:var(--bg)}
+  .theme{cursor:pointer;background:transparent;border:1px solid var(--line);border-radius:8px;
+    color:var(--muted);padding:6px 9px;font-size:.85rem}
+  /* hero */
+  .hero{padding:84px 0 64px}
+  .hero h1{font-size:clamp(2.1rem,5vw,3.5rem);max-width:16ch}
+  .hero p.lede{font-size:1.2rem;max-width:60ch;color:var(--muted);margin:.6em 0 1.4em}
+  .hero .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .pillrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+  .pill{font-size:.8rem;font-weight:600;color:var(--muted);border:1px solid var(--line);
+    border-radius:999px;padding:5px 12px;background:var(--surface)}
+  /* generic cards */
+  .grid{display:grid;gap:18px}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:900px){.g4{grid-template-columns:repeat(2,1fr)}.g3,.g2{grid-template-columns:1fr}}
+  @media(max-width:560px){.g4{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
+  .card h3{font-size:1.05rem}
+  .card .who{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep,var(--accent))}
+  .card ul{margin:.6em 0 0;padding-left:1.1em;color:var(--muted);font-size:.92rem}
+  .card li{margin:.2em 0}
+  /* flow */
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){.flow{grid-template-columns:1fr}}
+  .step{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .step .n{font-weight:800;color:var(--brand);font-size:.8rem}
+  .step h4{margin:.3em 0 .3em;font-size:1rem}
+  .step p{margin:0;font-size:.9rem;color:var(--muted)}
+  /* ledger demo */
+  .ledger{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .ledger .top{display:flex;gap:16px;padding:14px 18px;border-bottom:1px solid var(--line);font-size:.85rem;flex-wrap:wrap}
+  .tot{font-weight:700}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .g{background:var(--green)} .a{background:var(--amber)} .r{background:var(--red)}
+  .row{display:flex;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);align-items:flex-start}
+  .row:last-child{border-bottom:0}
+  .row .tag{font-size:.68rem;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:6px;white-space:nowrap;margin-top:2px}
+  .tag.G{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green)}
+  .tag.A{background:color-mix(in srgb,var(--amber) 18%,transparent);color:var(--amber)}
+  .tag.R{background:color-mix(in srgb,var(--red) 15%,transparent);color:var(--red)}
+  .row .doc b{display:block;font-size:.92rem}
+  .row .doc span{font-size:.82rem;color:var(--muted)}
+  /* hardline */
+  .hardline{background:linear-gradient(180deg,color-mix(in srgb,var(--brand) 8%,var(--surface)),var(--surface));
+    border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:26px}
+  .hardline h2{margin-top:0}
+  footer{padding:44px 0;color:var(--muted);font-size:.9rem}
+  .foot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  code{background:color-mix(in srgb,var(--ink) 8%,transparent);padding:1px 6px;border-radius:5px;font-size:.85em}
+  .note{font-size:.8rem;color:var(--muted);margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top"><span class="mark"></span> OSSICRO</a>
+    <a class="link" href="#entry">Who it's for</a>
+    <a class="link" href="#how">How it works</a>
+    <a class="link" href="#scenario">The n-of-1 case</a>
+    <a class="link" href="#principle">The hard line</a>
+    <span class="spacer"></span>
+    <button class="theme" id="themeBtn" aria-label="Toggle theme">◐ Theme</button>
+    <a class="btn ghost" href="https://github.com/alto84/OSSICRO">GitHub</a>
+    <a class="btn" href="#entry">Get started</a>
+  </div>
+</header>
+
+<a id="top"></a>
+<div class="wrap hero">
+  <div class="eyebrow">Open Source Sponsor-Investigator CRO</div>
+  <h1>Get patients into trials. Not stuck in paperwork.</h1>
+  <p class="lede">The next wave of early-phase medicines will bottleneck on enrollment, not molecules. OSSICRO lets a clinician assemble, check, validate, and coordinate the <b>complete</b> regulatory document set to match a patient to a trial, activate as a site, and reach enrollment — with AI drafting behind human sign-off, never replacing it.</p>
+  <div class="cta">
+    <a class="btn" href="#how">See how it works</a>
+    <a class="btn ghost" href="https://github.com/alto84/OSSICRO">Read the wiki &amp; code</a>
+  </div>
+  <div class="pillrow">
+    <span class="pill">Sponsor-investigator IND · 21 CFR 312.3(b)</span>
+    <span class="pill">ICH E6(R3) GCP</span>
+    <span class="pill">SMART on FHIR</span>
+    <span class="pill">Part 11 audit trail</span>
+    <span class="pill">MIT-licensed</span>
+  </div>
+</div>
+
+<section id="entry">
+  <div class="wrap">
+    <div class="eyebrow">Four entry points, one coordinated trial</div>
+    <h2>Built around who actually shows up</h2>
+    <p class="muted" style="max-width:62ch">Patient, physician, the accountable Micro-CRO, and pharma each enter with a different need, document set, and regulatory obligation — resolving onto one coordination spine.</p>
+    <div class="grid g4" style="margin-top:26px">
+      <div class="card"><div class="who">Patient</div><h3>“Is there a trial for me?”</h3><ul><li>Transparent trial &amp; therapy matching</li><li>Consent rights (21 CFR 50) &amp; privacy (HIPAA)</li><li>Plain-language, reviewable documents</li></ul></div>
+      <div class="card"><div class="who">HCP / Physician</div><h3>“Make me a site — without a research office.”</h3><ul><li>Site activation &amp; sponsor-investigator paths</li><li>Drafted 1571 / 1572 / ICF / binder</li><li>Keeps the duties only a human can hold</li></ul></div>
+      <div class="card"><div class="who">Micro-CRO</div><h3>The accountable layer</h3><ul><li>Holds only what 312.52 needs an entity for</li><li>Real SOPs &amp; quality system</li><li>Escalation when the physician can’t</li></ul></div>
+      <div class="card"><div class="who">Pharma</div><h3>Trust a small / new site</h3><ul><li>Verifiable site-qualification dossier</li><li>IIS &amp; expanded-access intake</li><li>Supply + safety-data exchange</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="eyebrow">Generate · Check · Validate · Coordinate</div>
+    <h2>Complete documentation, engineered for one-pass human review</h2>
+    <div class="flow" style="margin:26px 0 34px">
+      <div class="step"><div class="n">01 · MATCH</div><h4>Find the trial</h4><p>Trial / condition / medication matching over ClinicalTrials.gov, PubMed &amp; openFDA — three-valued eligibility (met / not-met / needs-data), recall-first, with a cited rationale. Eligibility is the investigator’s call.</p></div>
+      <div class="step"><div class="n">02 · GENERATE</div><h4>Draft the package</h4><p>Fill the essential-document set from structured (and chart / SMART-on-FHIR) data. Every field carries provenance: source datum → governing citation.</p></div>
+      <div class="step"><div class="n">03 · CHECK</div><h4>Prove it’s complete</h4><p>A completeness ledger — green / amber / red — plus cross-document consistency. No hidden blanks; every gap ships with the exact question to resolve.</p></div>
+      <div class="step"><div class="n">04 · COORDINATE</div><h4>Route to the right humans</h4><p>IRB, DSMB, medical monitor, sponsor, FDA. Non-delegable gates route to the accountable person; the audit trail records who signed what, against which authority.</p></div>
+    </div>
+
+    <div class="eyebrow">Live example — a single-patient epilepsy study</div>
+    <h3 style="margin:.3em 0 14px">The completeness ledger (actual engine output)</h3>
+    <div class="ledger">
+      <div class="top">
+        <span class="tot"><span class="dot g"></span>1 green</span>
+        <span class="tot"><span class="dot a"></span>2 amber</span>
+        <span class="tot"><span class="dot r"></span>4 red</span>
+        <span class="muted">Every item below is a draft for qualified human review.</span>
+      </div>
+      <div class="row"><span class="tag G">GREEN</span><div class="doc"><b>Delegation of Authority Log</b><span>Present, all fields filled, validated (ICH E6(R3) 2.7).</span></div></div>
+      <div class="row"><span class="tag A">AMBER</span><div class="doc"><b>Form FDA 1572 — Statement of Investigator</b><span>Complete — awaiting the non-delegable investigator signature (gate: 1572-signature). The engine will not sign it.</span></div></div>
+      <div class="row"><span class="tag A">AMBER</span><div class="doc"><b>Informed Consent Form (21 CFR Part 50)</b><span>All 8 basic elements present — awaiting the consent event, a human act (gate: informed-consent).</span></div></div>
+      <div class="row"><span class="tag R">RED</span><div class="doc"><b>Form FDA 1571 — IND cover</b><span>Provide ‘contact_phone’ (monitor, item 14) before filing.</span></div></div>
+      <div class="row"><span class="tag R">RED</span><div class="doc"><b>Clinical Protocol (ICH M11)</b><span>‘protocol_version’ differs: study says 2.0, protocol says 1.0. Which is current? Correct the stale artifact.</span></div></div>
+      <div class="row"><span class="tag R">RED</span><div class="doc"><b>Investigator’s Brochure</b><span>Missing — collect from the sponsor (21 CFR 312.23(a)(5)).</span></div></div>
+      <div class="row"><span class="tag R">RED</span><div class="doc"><b>Data &amp; Safety Monitoring Plan</b><span>Missing — required (ICH E6(R3) 3.10).</span></div></div>
+    </div>
+    <p class="note">Reproduce it: <code>cd engine &amp;&amp; python -m ossicro.cli demo</code> — pure stdlib, 9 passing tests.</p>
+  </div>
+</section>
+
+<section id="scenario">
+  <div class="wrap">
+    <div class="grid g2" style="align-items:center">
+      <div>
+        <div class="eyebrow">The scenario that drives the design</div>
+        <h2>One physician. One patient. One investigational drug.</h2>
+        <p class="muted">A neurologist has a patient with refractory epilepsy and a candidate early-phase therapy. Today, becoming a site is a 9-month, five-figure paperwork wall. OSSICRO routes the request to the right path — a one-patient site on an existing protocol, single-patient expanded access (Form 3926), or a sponsor-investigator IND — and drafts every document the pathway requires, with the pharma-side acceptance package on the other end.</p>
+        <a class="btn ghost" href="https://github.com/alto84/OSSICRO/blob/main/wiki/02-lifecycle/single-patient-site-enrollment.md">Read the n-of-1 pathway →</a>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Why this is lawful</h3>
+        <p class="muted" style="font-size:.95rem">Software can never be a CRO: 21 CFR 312.52 transfers sponsor obligations only to a legally accountable entity. So OSSICRO doesn’t replace the CRO — it lets a physician lawfully hold both roles as a <b>sponsor-investigator</b> (21 CFR 312.3(b)) and absorbs the coordination labor, with a thin accountable Micro-CRO for the irreducible functions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="principle">
+  <div class="wrap">
+    <div class="hardline">
+      <div class="eyebrow">The hard line</div>
+      <h2>OSSICRO drafts complete documentation. It does not replace judgment.</h2>
+      <p class="muted" style="max-width:70ch">It never performs a non-delegable act — informed consent, IRB / ethics-board review, DSMB oversight, SAE causality, statistical sign-off, or the 1571 / 1572 signatures. Those are legally reserved to qualified humans and oversight bodies. The gates are enforced <b>in code</b>: a gated document cannot be finalized without a recorded human sign-off. Every artifact is a draft for review. Not medical, legal, or regulatory advice.</p>
+    </div>
+    <div class="grid g3" style="margin-top:22px">
+      <div class="card"><h3>Verifiable &amp; cited</h3><p class="muted" style="font-size:.92rem">Every requirement maps to its governing authority; every draft span to its source. A hash-chained, Part-11 audit trail a sponsor can verify without trusting us.</p></div>
+      <div class="card"><h3>Open source</h3><p class="muted" style="font-size:.92rem">MIT-licensed wiki, templates, and engine. A maintained, citation-linked knowledge base with a regulatory-change watch — so it doesn’t rot as E6(R3), M11, and the DCT guidance move.</p></div>
+      <div class="card"><h3>Built for low-resource sites</h3><p class="muted" style="font-size:.92rem">Local-first, no PHI egress, single-container deployable — so the physicians who most need to enroll patients can, wherever they are.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <div><span class="brand"><span class="mark"></span> OSSICRO</span><div class="note">Open Source Sponsor-Investigator CRO · a reviewable prototype. Not medical, legal, or regulatory advice.</div></div>
+    <div>
+      <a href="https://github.com/alto84/OSSICRO">GitHub</a> ·
+      <a href="https://github.com/alto84/OSSICRO/tree/main/wiki">Wiki</a> ·
+      <a href="https://github.com/alto84/OSSICRO/tree/main/engine">Engine</a> ·
+      <a href="https://github.com/alto84/OSSICRO/blob/main/docs/detailed-plan.md">Plan</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var root=document.documentElement, btn=document.getElementById('themeBtn');
+    function set(t){root.setAttribute('data-theme',t);try{localStorage.setItem('ossicro-theme',t)}catch(e){}}
+    try{var s=localStorage.getItem('ossicro-theme');if(s)set(s);}catch(e){}
+    btn.addEventListener('click',function(){
+      var cur=root.getAttribute('data-theme')||'light';
+      set(cur==='light'?'dark':'light');
+    });
+  })();
+</script>
+</body>
+</html>

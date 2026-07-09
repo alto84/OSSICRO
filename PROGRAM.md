@@ -38,13 +38,14 @@ All OSSICRO materials and code live in a **standalone repository** at `C:\Users\
 | Phase | Status | Artifact |
 |-------|--------|----------|
 | 0 Frame | done | this file |
-| 1 Explore (research + academic/institutional sweep) | in progress | `references/`, research corpus |
-| 2 Plan (IA + detailed plan) | pending | `docs/detailed-plan.md`, `wiki/INDEX.md` |
-| 3 Build (wiki, templates, engine, frontend) | pending | `wiki/`, `templates/`, `engine/`, `frontend/` |
-| 4 Adversarial Review (3 personas + Fable) | pending | `qa/` |
-| 5 Revise | pending | patches |
-| 6 Re-Review | pending | `qa/` |
-| 7 Reviewable state → hand to Alton | pending | `README.md` summary |
+| 1 Explore (research + 24-agent source scrape) | done | `references/`, `sources/` (588 originals, 1015-doc manifest) |
+| 2 Plan (IA + detailed plan + strategy) | done | `docs/detailed-plan.md`, `docs/strategy-review-fable-2026-07-09.md`, `wiki/INDEX.md` |
+| 3a Wiki (129 Obsidian pages) | done | `wiki/` |
+| 3b Engine (generate/check/validate) | done | `engine/` (runnable, 9/9 tests pass) |
+| 3b Template markdown library (78 docs) | pending | `templates/` (registry + 4 engine templates done) |
+| 3c Frontend (pharma-corporate) | done | `frontend/index.html` |
+| 4-6 Adversarial QA (6 Fable personas) + revise + re-review | pending (deferred — rate limit) | `qa/` |
+| 7 Reviewable state → hand to Alton | in progress | `README.md` summary |
 
 ## Model-orchestration note
 Per principal directive: Fable subagents author + give second opinions; a Sonnet 5 agent runs the exhaustive academic/publication/institutional sweep. Every subagent reports its actual model; Fable→Opus fallbacks are logged in `docs/model-fallback-log.md`.
