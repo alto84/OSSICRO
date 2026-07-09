@@ -76,3 +76,24 @@ A thin, named, legally-accountable layer that holds only the functions §312.52(
 - **Template licensing.** TransCelerate CPT is consortium IP behind a gate; Advarra templates are proprietary. Mitigation: prefer public-domain government sources; verify reuse terms before verbatim adoption; document provenance in `references/external-templates-and-licenses.md`.
 - **Adoption/trust.** Pharma's trust gate is entity-shaped, not software-shaped. Mitigation: OSSICRO's deliverable is a complete, internally-consistent, credentialed dossier — the single most persuasive artifact to a skeptical sponsor.
 - **Privacy.** Mishandling PHI at matching. Mitigation: the 164.512(i) preparatory-review boundary is enforced in code; enrollment gated on authorization/waiver.
+---
+
+## Addendum 2026-07-09 — Four entry points, the n-of-1 site, and AI-in-the-loop
+
+### Four entry points (personas)
+OSSICRO is entered by four actors, each with a distinct perspective, need set, document set, and regulatory obligation set, all resolving onto one coordination spine:
+- **Patient** — wants access to an investigational therapy; owns nothing regulated but is the protected subject (informed consent, privacy). Entry: "is there a trial/therapy for me, and can my doctor get me in?"
+- **HCP / physician** — the enrolling clinician; becomes a site investigator (Mode A) or sponsor-investigator (Mode B). Entry: "my patient needs this; make me an accepted site without a research office."
+- **Micro-CRO** — the thin legally-accountable OSSICRO entity that can hold transferred sponsor obligations (21 CFR 312.52) when the physician cannot; runs a real quality system/SOPs. Entry: the escalation layer.
+- **Pharma** — sponsor/supplier of the investigational product; must be able to trust and accept a small/new/single-patient site. Entry: IIS portal, expanded-access intake, or protocol site-add.
+
+Each persona gets a portal perspective in the frontend and a documentation/obligation page under `06-personas/`.
+
+### The single-patient (n-of-1) site
+A first-class scenario: one physician + one patient + one pharma early-phase drug. Three compliant routes, each with its own backend and document package: (a) single-patient **expanded access** (individual-patient IND, 21 CFR 312.310, Form 3926 + manufacturer LOA + IRB concurrence); (b) adding a **one-patient site** to an existing sponsor protocol (expedited site qualification + minimal essential-document set); (c) a **sponsor-investigator single-patient study** (own IND). OSSICRO generates the document set and drives the pharma-acceptance backend for whichever route fits.
+
+### AI-in-the-loop (Claude Agent SDK)
+The generate/check/validate engine is implemented with the **Claude Agent SDK**: drafting agents produce document drafts from structured study data + templates; review/QC agents check completeness against the essential-records matrix and flag inconsistencies; coordination agents route artifacts between entities. Every AI action is a DRAFT behind a human sign-off gate; permission modes enforce that non-delegable functions are never auto-executed. AI authorship is recorded in the Part-11 audit trail (attribution, model/version, input hash, human reviewer, timestamp).
+
+### Data integrations
+ClinicalTrials.gov API v2 (discovery, eligibility, sites), PubMed/E-utilities (evidence + safety literature), openFDA (labels/FAERS), and IB/protocol ingestion feed matching, drafting, and safety surveillance.

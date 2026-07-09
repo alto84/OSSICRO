@@ -124,3 +124,27 @@ Master table of contents; links every section index; carries the confirmed-vs-in
 - `references/bibliography.md` — Consolidated deduped bibliography (regulatory + peer-reviewed with PMID/DOI).
 - `references/institutional-resources.md` — The academic/CRO/gov resource table with reuse-license status.
 - `references/external-templates-and-licenses.md` — Provenance and license status of every seed template (public-domain vs. gated/consortium).
+---
+
+## Addendum 2026-07-09 — Four entry points, single-patient site, AI-in-the-loop, data integrations
+
+### 00-overview/ (added)
+- `00-overview/four-entry-points.md` — The four actors who enter OSSICRO — Patient, HCP (physician/site), Micro-CRO, Pharma — each with a distinct perspective, needs, document set, and regulatory obligations; how their journeys interlock into one coordinated trial.
+
+### 06-personas/ — per-actor perspective, needs, documents, regulatory requirements
+- `06-personas/index.md` — The four-entry-point model and the cross-actor responsibility/needs matrix; how a patient-origin, HCP-origin, or pharma-origin request flows through the same coordination spine.
+- `06-personas/patient.md` — Patient/participant perspective: access to investigational therapy, informed-consent rights (21 CFR 50; Common Rule key-information), privacy (HIPAA 45 CFR 164), what the patient sees and signs, what documentation protects them; the non-delegable consent event ([[informed-consent-document-vs-event]]).
+- `06-personas/hcp-physician.md` — The enrolling HCP/physician (as site investigator or [[sponsor-investigator]]): needs, the intimidation points of site start-up, the document burden OSSICRO removes vs the non-delegable duties they keep.
+- `06-personas/micro-cro.md` — The OSSICRO Micro-CRO entity: the legally-accountable transferee layer ([[transfer-of-regulatory-obligations-toro]], 21 CFR 312.52), what obligations it can hold, its own SOPs / quality system / regulatory obligations, and its service tiers.
+- `06-personas/pharma.md` — The pharma sponsor/supplier perspective: what it needs to trust and accept a small / new / single-patient site; IIS and expanded-access intake; Medical Affairs vs Clinical Development firewall; contracting, drug supply, and safety-data exchange.
+- `06-personas/perspective-matrix.md` — Cross-actor matrix: for each of the four actors — goals, needs, key documents, regulatory obligations, and the hand-offs between them.
+
+### 02-lifecycle/ (added)
+- `02-lifecycle/single-patient-site-enrollment.md` — The n-of-1 pathway: one physician, one patient, one pharma early-phase therapy. The three routes — single-patient expanded access (individual-patient IND, 21 CFR 312.310, [[form-fda-3926-expanded-access]]), a one-patient site added to an existing sponsor protocol, and a [[sponsor-investigator]] single-patient study — with document set, timelines, and accountable parties for each.
+
+### 04-coordination/ (added)
+- `04-coordination/single-patient-site-and-pharma-acceptance.md` — The pharma-side backend to accept a single-physician/single-patient site: intake, lightweight feasibility, expedited site qualification, drug-supply authorization (manufacturer letter of authorization), safety-data exchange agreement, and the minimal-but-compliant document package that makes a one-patient site acceptable to a sponsor.
+
+### 05-ossicro-system/ (added)
+- `05-ossicro-system/claude-sdk-ai-in-the-loop.md` — AI-in-the-loop via the Claude Agent SDK: document drafting, document review/QC, completeness checking against the essential-records matrix, and coordination agents — always behind human sign-off gates ([[non-delegable-functions-and-gates]]); permission modes and human-in-the-loop patterns; how SDK agents map onto the [[generate-check-validate-engine]]; and the Part-11 / audit-trail treatment of AI-authored drafts (attribution, versioning, review evidence).
+- `05-ossicro-system/data-integrations-ctgov-pubmed.md` — External data sources: ClinicalTrials.gov API v2 (trial discovery, eligibility parsing, site/contact data), PubMed / NCBI E-utilities (supporting evidence and safety literature), openFDA (labels, FAERS), and IB/protocol ingestion; how each feeds [[patient-trial-matching]], document drafting, and safety surveillance.
