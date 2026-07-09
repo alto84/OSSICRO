@@ -97,3 +97,8 @@ The generate/check/validate engine is implemented with the **Claude Agent SDK**:
 
 ### Data integrations
 ClinicalTrials.gov API v2 (discovery, eligibility, sites), PubMed/E-utilities (evidence + safety literature), openFDA (labels/FAERS), and IB/protocol ingestion feed matching, drafting, and safety surveillance.
+
+### Matching engine + communication hub (2026-07-09b)
+- **Matching engine** — multi-directional matching across trial / condition / medication: patient profile → eligible trials; condition/diagnosis → trials + available therapies; medication/mechanism → trials, labels, and supporting evidence. Sources: ClinicalTrials.gov API v2, PubMed/E-utilities, openFDA. Computable-eligibility parsing turns free-text criteria into checkable predicates with a transparent, cited match rationale. This is the shared discovery front-door for all four entry points.
+- **Communication hub** — role-scoped, auditable messaging and document exchange connecting Patient, HCP, Micro-CRO, and Pharma, with routing to oversight entities (IRB/DSMB/FDA), status tracking, and notifications; privacy-preserving (HIPAA) and respecting the Medical-Affairs/Clinical-Development firewall.
+- **Reinforced principle** — OSSICRO drafts COMPLETE documentation to remove the paperwork barrier; it never replaces human, board/ethics, or medical judgment. Every artifact is a draft for qualified human review and the appropriate oversight bodies.
