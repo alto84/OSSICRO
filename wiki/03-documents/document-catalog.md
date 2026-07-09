@@ -16,7 +16,7 @@ updated: 2026-07-09
 # Essential-Records Catalog — E6(R3) Appendix C × 21 CFR
 
 > [!authority] Governing authority
-> **ICH E6(R3) Appendix C** — "Essential Records for the Conduct of a Clinical Trial" (Step 4 adopted 2026-01-06; FDA final guidance September 2025), with **ICH E6(R2) §8** cross-numbering retained as the interpretive bridge; **21 CFR Parts 312, 50, 56, 54, 11**; **42 CFR Part 493** (CLIA) and **42 CFR Part 11 / FDAAA 801** (registration). Status: **Mixed** — each record is tagged **Confirmed** (black-letter regulatory requirement) or **Conditional / Interpretive** (design- or risk-dependent, or guidance-driven) inline.
+> **ICH E6(R3) Appendix C** — "Essential Records for the Conduct of a Clinical Trial" (Step 4 adopted 2025-01-06; FDA final guidance September 2025), with **ICH E6(R2) §8** cross-numbering retained as the interpretive bridge; **21 CFR Parts 312, 50, 56, 54, 11**; **42 CFR Part 493** (CLIA) and **42 CFR Part 11 / FDAAA 801** (registration). Status: **Mixed** — each record is tagged **Confirmed** (black-letter regulatory requirement) or **Conditional / Interpretive** (design- or risk-dependent, or guidance-driven) inline.
 
 This is the master essential-records catalog for a US [[sponsor-investigator]] early-phase (e.g., Phase 2) IND trial. It enumerates every record across the trial lifecycle, maps each to its **governing authority** and its **E6(R3)** location, and names the **owner** (who produces/holds it) and the **receiver** (who it flows to). The three lifecycle checklists — [[startup-tmf-checklist]], [[conduct-tmf-checklist]], [[closeout-tmf-checklist]] — are working extractions from this catalog; this page is the authority-carrying source of truth they cite back to.
 

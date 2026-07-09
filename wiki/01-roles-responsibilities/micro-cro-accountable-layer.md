@@ -43,7 +43,7 @@ Concretely, the micro-CRO is:
 
 ## What it is not
 
-- **Not a full-service CRO.** It does not sell project management, data management, or medical-writing hours; those are software functions in OSSICRO ([[generate-check-validate-engine]]). Its unit economics are the inverse of the industry's: the [[cro|~40–50% margin coordination layer]] is deliberately given away as open source.
+- **Not a full-service CRO.** It does not sell project management, data management, or medical-writing hours; those are software functions in OSSICRO ([[generate-check-validate-engine]]). Its unit economics are the inverse of the industry's: the [[cro|coordination-margin layer]] is deliberately given away as open source.
 - **Not a metasite or a technology vendor.** Science 37 failed as coordination software plus telehealth network; TrialSpark exited the model entirely ([[failed-disintermediation-case-studies]]). The micro-CRO holds *accountability*, which is exactly what those plays lacked.
 - **Not the sponsor of record.** In Mode B the sponsor-investigator holds the IND and signs [[form-fda-1571-ind-cover|Form 1571]]; the micro-CRO is transferee of enumerated obligations, never the IND holder. See [[two-modes-site-vs-sponsor-investigator]].
 - **Not software.** The software drafts, checks, routes, times, and version-controls; the micro-CRO's humans review, judge, and sign.
@@ -96,7 +96,7 @@ The tier boundary that matters for *FDA* accountability is 2→3: below it the m
 > [!warning] Assumption-in-fact — the boundary is conduct, not paper
 > 21 CFR 312.52(b) attaches to a CRO "that assumes any obligation of a sponsor" — and FDA's BIMO program evaluates conduct, not labels. If a micro-CRO physician is in practice the **operative decision-maker** on a Subpart D obligation (e.g., making the 312.32 causality/expectedness call that the sponsor-investigator merely countersigns), the arrangement risks being treated as an assumption-in-fact: CRO enforcement exposure under 312.52(b) *without* the definitional protection of a 312.52(a) writing — simultaneously flunking the writing requirement and leaving the sponsor-investigator nominally holding an obligation someone else actually discharged. That is the worst posture available. The operating rule is therefore explicit:
 > - **At Tier 2**, the micro-CRO's physician advises; the sponsor-investigator makes the determination, documents it as their own, and signs. The advice is an input, never the decision.
-> - **Any engagement in which a micro-CRO human is to be the operative decision-maker on a sponsor obligation must be papered as Tier 3**: a TORO enumerating that obligation, and disclosure on [[form-fda-1571-ind-cover|Form FDA 1571]] (item 15 on the current 03/19 edition: CRO identification and "a listing of the obligations transferred").
+> - **Any engagement in which a micro-CRO human is to be the operative decision-maker on a sponsor obligation must be papered as Tier 3**: a TORO enumerating that obligation, and disclosure on [[form-fda-1571-ind-cover|Form FDA 1571]] (Field 16 on the current 03/23 edition: CRO identification and "a listing of the obligations transferred").
 
 ## Institutional precedents
 
@@ -134,7 +134,7 @@ None of these entities takes §312.52 transfer — they consult while the invest
 - [Cornell LII — 21 CFR 312.52](https://www.law.cornell.edu/cfr/text/21/312.52)
 - [eCFR — 21 CFR 312.3 Definitions and interpretations](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-D/part-312/subpart-A/section-312.3)
 - [Cornell LII — 21 CFR Part 312 Subpart D](https://www.law.cornell.edu/cfr/text/21/part-312/subpart-D)
-- [FDA — IND Forms and Instructions (Form FDA 1571; CRO/transfer-of-obligations disclosure at item 15, 03/19 edition)](https://www.fda.gov/drugs/investigational-new-drug-ind-application/ind-forms-and-instructions)
+- [FDA — IND Forms and Instructions (Form FDA 1571; CRO/transfer-of-obligations disclosure at Field 16, 03/23 edition)](https://www.fda.gov/drugs/investigational-new-drug-ind-application/ind-forms-and-instructions)
 - [FDA — Overview of Sponsor-Investigator Roles and Responsibilities](https://www.fda.gov/media/174660/download)
 - [FDA — Investigational New Drug Applications Prepared and Submitted by Sponsor-Investigators (draft guidance, 2015)](https://www.fda.gov/files/drugs/published/Investigational-New-Drug-Applications-Prepared-and-Submitted-by-Sponsor-Investigators.pdf)
 - Restatement (Second) of Torts §324A (Liability to Third Person for Negligent Performance of Undertaking) — common-law basis of conduct-bounded civil exposure; adoption varies by state
