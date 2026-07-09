@@ -4,6 +4,8 @@
 
 **Status:** reviewable prototype, built autonomously. Repository: **https://github.com/alto84/OSSICRO**. The `wiki/` folder is an **Obsidian vault** (`[[wikilinks]]`, frontmatter, tags — see `wiki/_conventions.md`); local originals of cited public/open documents are kept under `sources/`.
 
+**Governed by [`docs/OSSICRO-CONSTITUTION.md`](docs/OSSICRO-CONSTITUTION.md)** — the mission, the value ordering, the small enumerated set of hard constraints (HC1–HC5: no non-delegable act, no fabrication, computed statutory clocks, provenance/verbatim integrity, Part-11 attribution), and the concept-based principles that govern everything else. Where any other artifact conflicts on values or the rules-vs-judgment boundary, the Constitution wins. The build path is [`docs/EXECUTION-PLAN.md`](docs/EXECUTION-PLAN.md).
+
 ### Current state (2026-07-09)
 
 | Area | State |

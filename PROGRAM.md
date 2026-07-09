@@ -24,6 +24,10 @@
 
 **Constraints.** Open source (MIT). Regulatory accuracy is the first-order requirement — every substantive claim carries a citation; unverified content is flagged. Local-first architecture assumed (PHI never leaves the covered entity).
 
+## Governance
+
+The system is governed by [`docs/OSSICRO-CONSTITUTION.md`](docs/OSSICRO-CONSTITUTION.md) (v1.0) — mission, value ordering (patient-safety/compliance > correctness/honesty > usefulness/speed, weighted not lexicographic), five hard constraints each justified by the earned-rule test, and concept-based principles for everything quality-shaped. Operationalized by [`docs/VALIDATION-PHILOSOPHY.md`](docs/VALIDATION-PHILOSOPHY.md) and [`docs/WRITING-PRINCIPLES.md`](docs/WRITING-PRINCIPLES.md). The forward build path is [`docs/EXECUTION-PLAN.md`](docs/EXECUTION-PLAN.md) (P1 philosophical-basis-in → P2 Route-3926 → P3 real-app → P4 intake/matching → P5 CRO/pharma hooks).
+
 ## Location & repository plan
 
 All OSSICRO materials and code live in a **standalone repository** at `C:\Users\alto8\OSSICRO`, tracking **https://github.com/alto84/OSSICRO** (`origin/main`). This is the single source of truth; the project is no longer inside the Sartor repo. Each phase is committed and pushed to `origin`.
