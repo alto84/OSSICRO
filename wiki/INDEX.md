@@ -155,3 +155,19 @@ Master table of contents; links every section index; carries the confirmed-vs-in
 
 ### Design principle (reinforced)
 OSSICRO drafts **complete, compliant documentation** to eliminate the paperwork barrier that keeps physicians out of research. It does **not** replace thoughtful human-in-the-loop judgment, IRB / ethics-board review, DSMB oversight, or medical/safety decisions. Every generated artifact is a **draft for qualified human review** and the appropriate oversight bodies; non-delegable functions are surfaced and gated (see [[non-delegable-functions-and-gates]]). This principle is foregrounded on every system and persona page.
+
+### 05-ossicro-system/ (added 2026-07-09c — strategist improvements)
+- `05-ossicro-system/smart-on-fhir-integration.md` — Chart ingestion as a first-class subsystem: SMART App Launch (point-of-care) + Backend Services / Bulk `$export` (panel screening); US Core R4 + mCODE + FHIR Genomics; feeds both [[matching-eligibility-adjudication]] and document auto-population. Read-mostly.
+- `05-ossicro-system/privacy-state-machine.md` — Code-enforced HIPAA boundary: 45 CFR 164.512(i)(1)(ii) review-preparatory-to-research (local-first, minimum-necessary, no PHI egress, ephemeral audited reads) with a hard logged transition preparatory->enrollment (164.508 authorization or 164.512(i)(1)(i) waiver). Extends [[hipaa-and-privacy-gating]].
+- `05-ossicro-system/matching-eligibility-adjudication.md` — Retrieve->adjudicate matching: per-criterion three-valued verdict (met / not-met / indeterminate-needs-data) with chart + criterion citations; recall-first; eligibility determination stays the investigator's non-delegable call. Prior art: Criteria2Query, EliIE, OHDSI/OMOP, CQL.
+- `05-ossicro-system/matching-mechanism-graph.md` — Mechanism-aware candidate expansion: biomarker/variant -> pathway -> drug target -> trials, so mutation-matched basket/umbrella trials surface across stated conditions.
+- `05-ossicro-system/matching-evaluation-and-benchmarks.md` — "Near-perfect" as a measured claim: eval harness on CHIA, TREC Clinical Trials, n2c2; recall/precision by phase; recall-first objective.
+- `05-ossicro-system/single-pass-review-ux.md` — Attention-triaged review: three lanes (deterministic / boilerplate / inferred-interpretive) so reviewer attention goes only to judgment calls; the mechanism that makes one-pass HITL real.
+- `05-ossicro-system/draft-provenance-model.md` — Every span carries (source datum -> provenance -> citation) triples; provenance == the ALCOA++/Part-11 audit trail rendered as UX and as the generation output contract.
+- `05-ossicro-system/completeness-ledger.md` — Open-items contract per package: green (validated) / amber (needs human judgment = gate) / red (missing data + exact resolving question). The operating definition of COMPLETE documentation.
+- `05-ossicro-system/verifiable-site-qualification-dossier.md` — Cryptographically verifiable, citation-complete manifest (requirement -> artifact -> citation -> signer, hash-chained to the Part-11 audit trail); pharma trust wedge and tangible Micro-CRO moat.
+- `05-ossicro-system/safety-clock-engine.md` — Dedicated 7/15-day IND safety-report (21 CFR 312.32) deadline computation + escalation; computes and escalates but never files and never makes the causality call (medical monitor owns causality).
+- `05-ossicro-system/offline-local-deployment.md` — Single-container local deployment inside the covered-entity boundary (no PHI egress, no data-center dependency); privacy + low-resource-site adoption.
+
+### references/ (added 2026-07-09c)
+- `references/regulatory-change-log.md` — Living-compliance change-watch: diffs FDA/ICH/eCFR on a cadence and flags every affected page/template/validation rule via the citation-dependency graph; human curator confirms. Anti-rot moat.

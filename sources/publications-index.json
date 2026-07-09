@@ -1,0 +1,688 @@
+[
+ {
+  "citation": "Understanding FDA Regulatory Requirements for Investigational New Drug Applications for Sponsor-Investigators. PMC4435682.",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4435682/",
+  "open_access": true,
+  "takeaway": "Peer-reviewed walkthrough of the sponsor-investigator dual-role IND regulatory burden - good grounding reference for the OSSICRO wiki IND section"
+ },
+ {
+  "citation": "Bhagat S, Kapatkar V, Katare S, et al. Potential Risks and Mitigation Strategies During the Conduct of a Clinical Trial: An Industry Perspective. Rev Recent Clin Trials. 2018;13(1):52-60.",
+  "pmid_or_doi": "PMID 29165094 / DOI 10.2174/1574887112666171120100024",
+  "url": "https://doi.org/10.2174/1574887112666171120100024",
+  "open_access": false,
+  "takeaway": "Industry-sourced risk/mitigation taxonomy across the conduct phase (site master file/TMF prep, IP shipment, recruitment, SAE monitoring, monitoring visits, CRF/data query flow, close-out) \u2014 directly maps to a sponsor-investigator's essential-document and monitoring-plan structure."
+ },
+ {
+  "citation": "Grady CL, Meyers L, Le C, et al. A web-based clinical trial management system for a sham-controlled multicenter clinical trial in depression. Clin Trials. 2010;7(2):174-82.",
+  "pmid_or_doi": "PMID 20083496 / DOI 10.1177/1740774509358748",
+  "url": "https://doi.org/10.1177/1740774509358748",
+  "open_access": false,
+  "takeaway": "Case study of building a custom CTMS for a multicenter academic trial \u2014 architecture, timeline and lessons useful for a sponsor-investigator weighing off-the-shelf vs. custom document/data systems."
+ },
+ {
+  "citation": "A checklist for clinical trials in rare disease: obstacles and anticipatory actions \u2014 lessons learned from the FOR-DMD trial. Trials. 2018;19(1):291.",
+  "pmid_or_doi": "PMID 29793540 / DOI 10.1186/s13063-018-2645-0",
+  "url": "https://doi.org/10.1186/s13063-018-2645-0",
+  "open_access": true,
+  "takeaway": "Practical obstacle/anticipatory-action checklist from a multinational academic rare-disease trial, spanning IND, sIRB, site activation, and drug supply \u2014 a ready-made risk checklist template."
+ },
+ {
+  "citation": "Improving readiness for recruitment through simulated trial activation: the Adjuvant Steroids in Adults with Pandemic influenza (ASAP) trial. Trials. 2017;18(1):546.",
+  "pmid_or_doi": "PMID 29145878 / DOI 10.1186/s13063-017-2290-z",
+  "url": "https://doi.org/10.1186/s13063-017-2290-z",
+  "open_access": true,
+  "takeaway": "Introduces 'simulated trial activation' as a dry-run mechanism to compress site-activation timelines for emergency/pandemic-response trials \u2014 a reusable process for rapid-startup IIT protocols."
+ },
+ {
+  "citation": "Kim ES, Lee IK, Chun J, et al. Decentralized clinical trials for medications to reduce the risk of dementia: Consensus report and guidance. Alzheimers Dement. 2024;20(7):4625-4634.",
+  "pmid_or_doi": "PMID 38824659 / DOI 10.1002/alz.13891",
+  "url": "https://doi.org/10.1002/alz.13891",
+  "open_access": false,
+  "takeaway": "Multi-stakeholder consensus guidance on which DCT elements (remote consent, home visits, digital endpoints) are and are not feasible in a specific disease context \u2014 a template for domain-specific DCT feasibility assessment."
+ },
+ {
+  "citation": "Decentralized clinical trials (DCTs): A few ethical considerations. Front Public Health. 2022;10:1081150.",
+  "pmid_or_doi": "PMID 36590004 / DOI 10.3389/fpubh.2022.1081150",
+  "url": "https://doi.org/10.3389/fpubh.2022.1081150",
+  "open_access": true,
+  "takeaway": "Surveys consent, oversight, and equity concerns specific to decentralization (remote consent validity, local-site IRB reliance, participant burden) \u2014 relevant to OSSICRO's consent-module conditional logic for DCT designs."
+ },
+ {
+  "citation": "The value of decentralized clinical trials: Inclusion, accessibility, and innovation. Science. 2024;385(6711):eadq4994.",
+  "pmid_or_doi": "PMID 39172847 / DOI 10.1126/science.adq4994",
+  "url": "https://doi.org/10.1126/science.adq4994",
+  "open_access": false,
+  "takeaway": "High-level policy perspective arguing DCT elements materially improve enrollment diversity and access \u2014 useful framing for why a sponsor-investigator platform should support DCT-hybrid designs, not just brick-and-mortar site models."
+ },
+ {
+  "citation": "Stakeholder perspectives on adaptive clinical trials: a scoping review. Trials. 2020;21(1):539.",
+  "pmid_or_doi": "PMID 32552852 / DOI 10.1186/s13063-020-04466-0",
+  "url": "https://doi.org/10.1186/s13063-020-04466-0",
+  "open_access": true,
+  "takeaway": "Scoping review of barriers to adaptive-design uptake (statistical literacy, DSMB unblinding logistics, regulatory unfamiliarity) \u2014 informs adaptive-design guardrails a sponsor-investigator protocol template should flag."
+ },
+ {
+  "citation": "Rathi VK, Krumholz HM. A systematic review of methods used to conduct decentralised clinical trials. Br J Clin Pharmacol. 2022;88(6):2843-2862.",
+  "pmid_or_doi": "PMID 34961991 / DOI 10.1111/bcp.15205",
+  "url": "https://doi.org/10.1111/bcp.15205",
+  "open_access": false,
+  "takeaway": "Systematic catalogue of DCT operational methods (eConsent platforms, direct-to-participant drug shipment, telehealth visits, wearables) \u2014 a checklist for which vendor/process categories OSSICRO's document set needs to account for."
+ },
+ {
+  "citation": "Decentralized Clinical Trials as a New Paradigm of Trial Delivery to Improve Equity of Access. JAMA Oncol. 2024;10(4):526-530.",
+  "pmid_or_doi": "PMID 38358756 / DOI 10.1001/jamaoncol.2023.6565",
+  "url": "https://doi.org/10.1001/jamaoncol.2023.6565",
+  "open_access": false,
+  "takeaway": "Oncology-focused viewpoint on equity gains and implementation barriers of DCT elements, with FDA guidance context (2023 draft DCT guidance) \u2014 good source for regulatory citation trail on DCT guidance evolution."
+ },
+ {
+  "citation": "Assessment of digital therapeutics in decentralized clinical trials: A scoping review. PLOS Digit Health. 2025;4(6):e0000905.",
+  "pmid_or_doi": "PMID 40549731 / DOI 10.1371/journal.pdig.0000905",
+  "url": "https://doi.org/10.1371/journal.pdig.0000905",
+  "open_access": true,
+  "takeaway": "Maps how digital therapeutics trials specifically use DCT infrastructure \u2014 narrower but highly current (2025) evidence base for software-as-intervention IITs."
+ },
+ {
+  "citation": "Grimes DA, Bassler D, Alberto Rada Fern\u00e1ndez de J\u00e1uregui G, et al. Risk-Based Monitoring in Clinical Trials: Past, Present, and Future. Ther Innov Regul Sci. 2021;55(4):899-906.",
+  "pmid_or_doi": "PMID 33914298 / DOI 10.1007/s43441-021-00295-8",
+  "url": "https://doi.org/10.1007/s43441-021-00295-8",
+  "open_access": false,
+  "takeaway": "Traces RBM from the 2013 FDA guidance through ICH E6(R2) to present practice \u2014 the canonical historical/regulatory-basis reference for an RBM module."
+ },
+ {
+  "citation": "Risk-based Monitoring of Clinical Trials: An Integrative Approach. Clin Ther. 2018;40(7):1204-1212.",
+  "pmid_or_doi": "PMID 30100201 / DOI 10.1016/j.clinthera.2018.04.020",
+  "url": "https://doi.org/10.1016/j.clinthera.2018.04.020",
+  "open_access": false,
+  "takeaway": "Proposes an integrative RBM framework combining centralized statistical monitoring with targeted on-site visits \u2014 a template monitoring-plan structure by risk tier."
+ },
+ {
+  "citation": "Risk-based centralized data monitoring of clinical trials at the time of COVID-19 pandemic. Contemp Clin Trials. 2021;104:106368.",
+  "pmid_or_doi": "PMID 33775899 / DOI 10.1016/j.cct.2021.106368",
+  "url": "https://doi.org/10.1016/j.cct.2021.106368",
+  "open_access": false,
+  "takeaway": "Documents pandemic-era acceleration of centralized/remote monitoring adoption \u2014 relevant precedent for remote-monitoring SOPs a sponsor-investigator may need when on-site visits aren't feasible."
+ },
+ {
+  "citation": "Risk-Based Data Monitoring: Quality Control in Central Nervous System (CNS) Clinical Trials. Ther Innov Regul Sci. 2018;53(2):176-182.",
+  "pmid_or_doi": "PMID 29758992 / DOI 10.1177/2168479018774325",
+  "url": "https://doi.org/10.1177/2168479018774325",
+  "open_access": false,
+  "takeaway": "Disease-area-specific (CNS) RBM quality-control example illustrating how key-risk-indicator selection should be tailored to endpoint type \u2014 a worked example for OSSICRO's monitoring-plan generator."
+ },
+ {
+  "citation": "Statistical challenges for central monitoring in clinical trials: a review. Int J Clin Oncol. 2016;21(1):28-37.",
+  "pmid_or_doi": "PMID 26499195 / DOI 10.1007/s10147-015-0914-4",
+  "url": "https://doi.org/10.1007/s10147-015-0914-4",
+  "open_access": false,
+  "takeaway": "Statistical methods (outlier detection, digit-preference tests) underlying central statistical monitoring \u2014 technical basis for any automated central-monitoring feature."
+ },
+ {
+  "citation": "Effectiveness of remote risk-based monitoring and potential benefits for combination with direct data capture. Trials. 2024;25(1):384.",
+  "pmid_or_doi": "PMID 38877566 / DOI 10.1186/s13063-024-08242-2",
+  "url": "https://doi.org/10.1186/s13063-024-08242-2",
+  "open_access": true,
+  "takeaway": "Recent (2024) evidence that combining remote RBM with direct data capture (eSource) further reduces monitoring burden \u2014 supports an eSource-first monitoring-plan default."
+ },
+ {
+  "citation": "Perceived barriers and facilitators to Risk Based Monitoring in academic-led clinical trials: a mixed methods study. Trials. 2017;18(1):423.",
+  "pmid_or_doi": "PMID 28893317 / DOI 10.1186/s13063-017-2148-4",
+  "url": "https://doi.org/10.1186/s13063-017-2148-4",
+  "open_access": true,
+  "takeaway": "Directly studies academic (non-industry) sites' experience adopting RBM \u2014 the closest analog in the literature to a sponsor-investigator/small-site RBM adoption problem, including resourcing barriers."
+ },
+ {
+  "citation": "Risk-Based Monitoring Approach to Ensure the Quality of Clinical Study Data and Enable Effective Monitoring. Ther Innov Regul Sci. 2020;54(1):139-143.",
+  "pmid_or_doi": "PMID 32008243 / DOI 10.1007/s43441-019-00037-x",
+  "url": "https://doi.org/10.1007/s43441-019-00037-x",
+  "open_access": false,
+  "takeaway": "Concise practitioner-oriented RBM implementation approach; good as a plain-language basis for an RBM plan-generation wizard."
+ },
+ {
+  "citation": "Transitioning to the National Institutes of Health single institutional review board model: Piloting the use of the Streamlined, Multi-site, Accelerated Resources for Trials IRB Reliance. Clin Trials. 2019;16(3):290-296.",
+  "pmid_or_doi": "PMID 30866676 / DOI 10.1177/1740774519832911",
+  "url": "https://doi.org/10.1177/1740774519832911",
+  "open_access": false,
+  "takeaway": "First-hand pilot report on standing up SMART IRB reliance infrastructure ahead of the 2018 NIH sIRB mandate \u2014 operational precedent for reliance-agreement workflow design."
+ },
+ {
+  "citation": "Meeting the Challenge: The National Cancer Institute's Central Institutional Review Board for Multi-Site Research. J Clin Oncol. 2018;36(8):819-824.",
+  "pmid_or_doi": "PMID 29384720 / DOI 10.1200/JCO.2017.76.9836",
+  "url": "https://doi.org/10.1200/JCO.2017.76.9836",
+  "open_access": false,
+  "takeaway": "NCI CIRB as a long-running large-scale sIRB model predating the NIH policy \u2014 informative for reliance-agreement variants beyond SMART IRB (cooperative-group model)."
+ },
+ {
+  "citation": "The reality of informed consent: empirical studies on patient comprehension-systematic review. Trials. 2021;22(1):57.",
+  "pmid_or_doi": "PMID 33446265 / DOI 10.1186/s13063-020-04969-w",
+  "url": "https://doi.org/10.1186/s13063-020-04969-w",
+  "open_access": true,
+  "takeaway": "Systematic review confirming persistently low comprehension rates on core consent elements (randomization, placebo, voluntariness) \u2014 strongest evidence basis for building comprehension-check logic into an eConsent module."
+ },
+ {
+  "citation": "Quality of Informed Consent in Phase III Clinical Trials in Portugal: The Participants' Perspective. Acta Med Port. 2024;37(9):601-608.",
+  "pmid_or_doi": "PMID 39028264 / DOI 10.20344/amp.20570",
+  "url": "https://doi.org/10.20344/amp.20570",
+  "open_access": false,
+  "takeaway": "Recent (2024) participant-perspective study reaffirming comprehension gaps in a well-regulated EU setting \u2014 shows the problem persists under mature regulatory regimes, not just historically."
+ },
+ {
+  "citation": "Quality of informed consent in cancer clinical trials in India: A cross-sectional survey. Natl Med J India. 2018;31(6):334-338.",
+  "pmid_or_doi": "PMID 31397364 / DOI 10.4103/0970-258X.262900",
+  "url": "https://doi.org/10.4103/0970-258X.262900",
+  "open_access": false,
+  "takeaway": "Cross-national comparator on consent-quality survey methodology, useful if OSSICRO needs a validated consent-quality assessment instrument."
+ },
+ {
+  "citation": "Informed Consent in IBD Trials: Where We Are and Where We Need to Go. Inflamm Bowel Dis. 2019;25(7):1115-1119.",
+  "pmid_or_doi": "PMID 30989217 / DOI 10.1093/ibd/izz067",
+  "url": "https://doi.org/10.1093/ibd/izz067",
+  "open_access": false,
+  "takeaway": "Disease-specific consent-improvement recommendations (teach-back, layered consent) directly reusable as consent-template best practices."
+ },
+ {
+  "citation": "Joffe S, Cook EF, Cleary PD, Clark JW, Weeks JC. Quality of informed consent in cancer clinical trials: a cross-sectional survey. Lancet. 2001;358(9295):1772-7.",
+  "pmid_or_doi": "PMID 11734235 / DOI 10.1016/S0140-6736(01)06805-2",
+  "url": "https://doi.org/10.1016/S0140-6736(01)06805-2",
+  "open_access": false,
+  "takeaway": "The foundational, most-cited empirical study establishing that consent-form length correlates poorly (or inversely) with comprehension \u2014 the historical anchor citation for any consent-quality discussion."
+ },
+ {
+  "citation": "Improvement of informed consent and the quality of consent documents. Lancet Oncol. 2008;9(5):485-93.",
+  "pmid_or_doi": "PMID 18452859 / DOI 10.1016/S1470-2045(08)70128-1",
+  "url": "https://doi.org/10.1016/S1470-2045(08)70128-1",
+  "open_access": false,
+  "takeaway": "Review of interventions (readability editing, multimedia, teach-back) shown to actually improve consent-document quality \u2014 a direct source of design requirements for a consent-authoring template."
+ },
+ {
+  "citation": "Voluntary informed consent in research and clinical care: an update. Pain Pract. 2008;8(6):446-51.",
+  "pmid_or_doi": "PMID 19000172 / DOI 10.1111/j.1533-2500.2008.00241.x",
+  "url": "https://doi.org/10.1111/j.1533-2500.2008.00241.x",
+  "open_access": false,
+  "takeaway": "Reviews voluntariness/coercion concerns distinct from comprehension \u2014 relevant to consent-process (not just document) checklist items, e.g., time-to-decide, undue-influence screening."
+ },
+ {
+  "citation": "Vasan A, Bergs R, Brandel P, et al. Harvard Catalyst | The Clinical Translational Science Center IND/IDE Consult Service: providing an IND/IDE consult service in a decentralized network of academic healthcare centers. Clin Transl Sci. 2014;7(2):150-5.",
+  "pmid_or_doi": "PMID 24455986 / DOI 10.1111/cts.12146",
+  "url": "https://doi.org/10.1111/cts.12146",
+  "open_access": false,
+  "takeaway": "Operational description of an institutional IND/IDE regulatory-consult service model \u2014 a template for the kind of structured regulatory-support workflow OSSICRO is trying to substitute/automate for solo sponsor-investigators."
+ },
+ {
+  "citation": "Barnes M, Bierer BE, Kaiser Permanente, et al. Support for investigator-initiated clinical research involving investigational drugs or devices: the Clinical and Translational Science Award experience. Acad Med. 2011;86(2):217-23.",
+  "pmid_or_doi": "PMID 21169787 / DOI 10.1097/ACM.0b013e3182045059",
+  "url": "https://doi.org/10.1097/ACM.0b013e3182045059",
+  "open_access": false,
+  "takeaway": "CTSA-network survey of what institutional infrastructure (regulatory writing support, IND-navigation help, monitoring plans) investigator-initiated-trial PIs actually need \u2014 a needs-assessment source directly on-point for OSSICRO's feature scoping."
+ },
+ {
+  "citation": "Miller JP, Moxley RT 3rd, Aggarwal R, et al. Challenges in drug development for muscle disease: a stakeholders' meeting. Muscle Nerve. 2007;35(1):8-16.",
+  "pmid_or_doi": "PMID 17068768 / DOI 10.1002/mus.20686",
+  "url": "https://doi.org/10.1002/mus.20686",
+  "open_access": false,
+  "takeaway": "Multi-stakeholder (academic, FDA, industry) meeting report on rare-disease IND/regulatory obstacles \u2014 illustrates the negotiation dynamic a sponsor-investigator has with FDA on novel-endpoint programs."
+ },
+ {
+  "citation": "Challenges for academic investigator-initiated pediatric trials for rare diseases. Clin Ther. 2014;36(2):184-90.",
+  "pmid_or_doi": "PMID 24529291 / DOI 10.1016/j.clinthera.2014.01.013",
+  "url": "https://doi.org/10.1016/j.clinthera.2014.01.013",
+  "open_access": false,
+  "takeaway": "Names concrete academic-IIT pain points (funding gaps, regulatory-writing expertise deficits, small-N statistics) in a pediatric rare-disease context \u2014 a needs list to validate OSSICRO's feature set against."
+ },
+ {
+  "citation": "Investigator-initiated studies: Challenges and solutions. Perspect Clin Res. 2018;9(4):179-183.",
+  "pmid_or_doi": "PMID 30319949 / DOI 10.4103/picr.PICR_106_18",
+  "url": "https://doi.org/10.4103/picr.PICR_106_18",
+  "open_access": true,
+  "takeaway": "General-purpose IIT challenges/solutions review (funding, regulatory compliance burden, monitoring capacity, data management) \u2014 good overview citation for OSSICRO's problem-statement section."
+ },
+ {
+  "citation": "Management of pharmacovigilance during the COVID-19 pandemic crisis by the safety department of an academic sponsor: Lessons learnt and challenges from the EU DisCoVeRy clinical trial. Pharmacol Res Perspect. 2023;11(3):e01072.",
+  "pmid_or_doi": "PMID 37269068 / DOI 10.1002/prp2.1072",
+  "url": "https://doi.org/10.1002/prp2.1072",
+  "open_access": false,
+  "takeaway": "Rare first-hand account of an academic (non-industry) sponsor running its own pharmacovigilance department for a large multinational trial \u2014 directly relevant operational template for sponsor-investigator PV responsibilities."
+ },
+ {
+  "citation": "Pharmacovigilance in Clinical Trials: Current Practice and Challenges. Account Res. 2016;23(1):23-30.",
+  "pmid_or_doi": "PMID 26528639 / DOI 10.1080/08989621.2014.956868",
+  "url": "https://doi.org/10.1080/08989621.2014.956868",
+  "open_access": false,
+  "takeaway": "Surveys inconsistent SAE-reporting practice across sponsor types \u2014 supports building a standardized, protocol-agnostic safety-reporting decision tree in OSSICRO."
+ },
+ {
+  "citation": "[Recording and reporting adverse reactions in clinical trials. New legal provisions according to the 12th Law Amending the German Drug Law (AMG) and the Ordinance on GCP (GCP-V)]. Bundesgesundheitsblatt. 2005;48(2):173-80.",
+  "pmid_or_doi": "PMID 15726458 / DOI 10.1007/s00103-004-0986-1",
+  "url": "https://doi.org/10.1007/s00103-004-0986-1",
+  "open_access": false,
+  "takeaway": "Comparative regulatory-law perspective (EU/German AMG/GCP-V) on expedited safety reporting obligations \u2014 useful if OSSICRO ever needs a non-US regulatory-reporting variant, and as a model for how reporting-timeline rules get codified into law."
+ },
+ {
+  "citation": "Evolving Standards: Good Clinical Practice Insights from US FDA, MHRA UK, and Health Canada. Clin Pharmacol Ther. 2025;119(5):1172-1178.",
+  "pmid_or_doi": "PMID 41194530 / DOI 10.1002/cpt.70120",
+  "url": "https://doi.org/10.1002/cpt.70120",
+  "open_access": false,
+  "takeaway": "Very recent (2025) tri-regulator comparison of GCP inspection focus areas \u2014 current-state benchmark for what FDA/MHRA/Health Canada inspectors are actually emphasizing now, useful to keep OSSICRO's inspection-readiness checklist current."
+ },
+ {
+  "citation": "Shapley S, O'Shaughnessy J, Woodcock J. Center for Drug Evaluation and Research Perspective on Quality in Clinical Trials. Ther Innov Regul Sci. 2017;51(4):416-418.",
+  "pmid_or_doi": "PMID 30227045 / DOI 10.1177/2168479017701801",
+  "url": "https://doi.org/10.1177/2168479017701801",
+  "open_access": false,
+  "takeaway": "FDA CDER's own stated rationale for the quality-by-design / ICH E6(R2) addendum shift \u2014 primary-source framing for why OSSICRO should build quality-by-design (critical-to-quality factors) into protocol templates rather than bolt on compliance after the fact."
+ },
+ {
+  "citation": "Data and Safety Monitoring Board Best Practices in Clinical Trials. Cureus. 2026;18(4):e107661.",
+  "pmid_or_doi": "PMID 42038736 / DOI 10.7759/cureus.107661",
+  "url": "https://doi.org/10.7759/cureus.107661",
+  "open_access": true,
+  "takeaway": "Current, freely accessible DSMB operations primer (charter content, meeting cadence, interim-analysis unblinding procedures, communication pathways to sponsor) \u2014 directly usable as the basis for a DSMB-charter template."
+ },
+ {
+  "citation": "Key concepts of clinical trials: a narrative review. Postgrad Med. 2011;123(5):194-204.",
+  "pmid_or_doi": "PMID 21904102 / DOI 10.3810/pgm.2011.09.2475",
+  "url": "https://doi.org/10.3810/pgm.2011.09.2475",
+  "open_access": false,
+  "takeaway": "General narrative review of trial-design fundamentals (randomization, blinding, DSMB role, stopping rules) \u2014 a useful plain-language reference for an OSSICRO onboarding/glossary section aimed at physician-investigators new to the sponsor role."
+ },
+ {
+  "citation": "Science 37 Holdings, Inc., Form 8-K (SEC EDGAR filing 0001819113-24-007463), Jan 29 2024",
+  "url": "https://www.sec.gov/Archives/edgar/data/0001819113/000110465924007463/tm244329d1_ex99-1.htm",
+  "open_access": true,
+  "takeaway": "Definitive primary-source documentation that eMed's all-cash tender for Science 37 valued the company at ~$38M (vs. a $1.05-1.33B 2021 SPAC valuation) \u2014 the canonical failed pure-DCT-disintermediation data point for OSSICRO's business-case background."
+ },
+ {
+  "citation": "LifeSci Acquisition II Corp., Form 8-K (SEC EDGAR filing 0001819113-21-062780), May 7 2021",
+  "url": "https://www.sec.gov/Archives/edgar/data/0001819113/000110465921062780/tm2115351d1_ex99-1.htm",
+  "open_access": true,
+  "takeaway": "Original SPAC merger agreement establishing Science 37's peak $1.05B enterprise valuation \u2014 needed as the 'before' half of the collapse comparison."
+ },
+ {
+  "citation": "Clinical Research News Online, 'As CVS Slowly Exits Clinical Trial Business, Walgreens Continues Ramp-Up', May 23 2023",
+  "url": "https://www.clinicalresearchnewsonline.com/news/2023/05/23/as-cvs-slowly-exits-clinical-trial-business-walgreens-continues-ramp-up",
+  "open_access": true,
+  "takeaway": "CVS's retail-pharmacy clinical trials unit (launched 2021, grew 10x year-over-year, ran ~200 in-home trials) still wound down entirely by end-2024, while Walgreens' comparable unit persisted \u2014 evidence that retail-disintermediation failure is company-specific execution, not proof the decentralized-site model itself is unviable (FDA's DCT draft guidance explicitly names pharmacies as valid non-traditional sites)."
+ },
+ {
+  "citation": "Nahin RL, Ely S, et al. \"NIAID ClinRegs\u2014a Public Database of Country Clinical Research Regulatory and Ethics Requirements: Design and Utilization Analysis.\" Clin Infect Dis. 2021;73(7):1296.",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8492127/",
+  "pmid_or_doi": "34050748",
+  "takeaway": "Describes ClinRegs' 36-topic-area/23-country structure and design rationale \u2014 useful as a schema reference if OSSICRO models international-site regulatory-requirement lookups.",
+  "open_access": true
+ },
+ {
+  "citation": "\"The NIH StrokeNet: A User's Guide.\" PMC.",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4729626/",
+  "takeaway": "Documents the StrokeNet governance/protocol-approval chain (Protocol PI -> NCC/NDMC -> cIRB -> StrokeNet DSMB -> FDA IND/IDE amendment) \u2014 a concrete sequencing model for a coordinated multi-site network trial that OSSICRO's workflow engine could mirror for the Micro-CRO/sponsor-investigator handoffs.",
+  "open_access": true
+ },
+ {
+  "citation": "Cobb N, et al. The IRB Reliance Exchange (IREx): A national web-based platform for operationalizing single IRB review. Journal of Clinical and Translational Science / PMC9066316, 2022.",
+  "pmid_or_doi": "PMC9066316",
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9066316/",
+  "open_access": true,
+  "takeaway": "Describes the architecture and operational workflow of IREx, VUMC's free national platform for documenting and coordinating sIRB reliance \u2014 directly relevant to modeling OSSICRO's own reliance-tracking data model (reviewing IRB / relying site / study-team roles, document flow for continuing review and amendments)."
+ },
+ {
+  "citation": "Yuan C, Ryan PB, Ta C, et al. Criteria2Query: a natural language interface to clinical databases for cohort definition. J Am Med Inform Assoc. 2019;26(4):294-305.",
+  "pmid_or_doi": "PMC6402359 / 10.1093/jamia/ocy178",
+  "url": "https://ncbi.nlm.nih.gov/pmc/articles/PMC6402359",
+  "open_access": true,
+  "takeaway": "Foundational Criteria2Query paper \u2014 establishes the NLP pipeline that parses free-text ClinicalTrials.gov eligibility criteria into OMOP-CDM-encoded structured cohort definitions; directly usable as a design reference for OSSICRO's matching engine."
+ },
+ {
+  "citation": "Chan AW, Tetzlaff JM, Altman DG, et al. SPIRIT 2013 Statement: Defining Standard Protocol Items for Clinical Trials. Ann Intern Med. 2013;158(3):200-207.",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3541470/",
+  "open_access": true,
+  "takeaway": "34-item minimum-content checklist for a trial protocol; the backbone the NIH-FDA template and ICH M11 both operationalize. Validate any OSSICRO protocol-generator against this checklist before validating against ICH M11 fields."
+ },
+ {
+  "citation": "Chan AW, Tetzlaff JM, G\u00f8tzsche PC, et al. SPIRIT 2013 Explanation and Elaboration: Guidance for protocols of clinical trials. BMJ. 2013;346:e7586.",
+  "url": "https://www.researchgate.net/publication/234099538_SPIRIT_2013_Explanation_and_Elaboration_Guidance_for_protocols_of_clinical_trials",
+  "open_access": true,
+  "takeaway": "Item-by-item rationale plus a model example drawn from a real protocol for each of the 33 checklist items \u2014 directly reusable as inline help text in an OSSICRO protocol-authoring UI."
+ },
+ {
+  "citation": "SPIRIT 2025 statement: Updated guideline for protocols of randomised trials. Simultaneously published Lancet/Nature Medicine/JAMA/BMJ, 2025.",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12037212/",
+  "open_access": true,
+  "takeaway": "Supersedes 2013: adds 2 items, revises 5, deletes/merges 5, adds a dedicated open-science section and a patient/public-involvement item \u2014 the current target for any new protocol-template validator."
+ },
+ {
+  "citation": "CONSORT 2025 statement: Updated guideline for reporting randomised trials. Simultaneously published, 2025.",
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11995449/",
+  "open_access": true,
+  "takeaway": "30-item reporting checklist (up from 25 in 2010), 7 new items incl. an open-science section; pairs with SPIRIT 2025 for a full protocol-to-report lifecycle template set."
+ },
+ {
+  "citation": "Page MJ, McKenzie JE, Bossuyt PM, et al. The PRISMA 2020 statement: an updated guideline for reporting systematic reviews. BMJ. 2021;372:n71.",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8005924/",
+  "open_access": true,
+  "takeaway": "Relevant to OSSICRO's literature-review/background-section generation and to any meta-analysis module across accumulated n-of-1 or small-cohort trials."
+ },
+ {
+  "citation": "Hoffmann TC, Glasziou PP, Boutron I, et al. Better reporting of interventions: template for intervention description and replication (TIDieR) checklist and guide. BMJ. 2014;348:g1687.",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4396978/",
+  "open_access": true,
+  "takeaway": "12-item checklist for describing an intervention with enough granularity to replicate it \u2014 maps directly to the 'Intervention' section a sponsor-investigator protocol must specify, especially for behavioral/device/procedural interventions where FDA templates are thinner than for drugs."
+ },
+ {
+  "citation": "Council for International Organizations of Medical Sciences (CIOMS). Working Groups III and V. Guidelines for Preparing Core Clinical-Safety Information on Drugs, 2nd ed. Geneva: CIOMS.",
+  "takeaway": "Defines Company Core Safety Information (CCSI) / Company Core Data Sheet methodology that underlies labeling-based 'expectedness' determinations used throughout E2A/E2D SUSAR logic \u2014 essential for OSSICRO's expectedness-check engine.",
+  "open_access": false,
+  "url": "https://cioms.ch/wp-content/uploads/2018/03/Guidelines-for-Preparing-Core-Clinical-Safety-Info-Drugs-Report-of-CIOMS-Working-Group-III-and-V.pdf"
+ },
+ {
+  "citation": "CIOMS Working Group VI. Management of Safety Information from Clinical Trials. Geneva: CIOMS, 2005.",
+  "takeaway": "Pre-ICH-E2F reference for aggregate clinical trial safety reporting practice; still cited by DSUR authors as a good-practice supplement, useful for OSSICRO's DSUR template annotations.",
+  "open_access": false,
+  "url": "https://cioms.ch/wp-content/uploads/2017/01/Mgment_Safety_Info.pdf"
+ },
+ {
+  "citation": "WHO-Uppsala Monitoring Centre. The Use of the WHO-UMC System for Standardised Case Causality Assessment.",
+  "takeaway": "Canonical 6-category causality scale (certain/probable-likely/possible/unlikely/conditional-unclassified/unassessable-unclassifiable) that OSSICRO's causality-assessment module should implement directly rather than reinvent.",
+  "open_access": true,
+  "url": "https://www.who.int/docs/default-source/medicines/pharmacovigilance/whocausality-assessment.pdf"
+ },
+ {
+  "citation": "Rare Diseases Clinical Research Network's Organization and Approach to Observational Research and Health Outcomes Research. PMC4124127.",
+  "takeaway": "Describes the RDCRN federated-database/eCRF architecture that a Micro-CRO data layer for rare-disease natural-history studies could mirror.",
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4124127/",
+  "open_access": true,
+  "pmid_or_doi": "PMC4124127"
+ },
+ {
+  "citation": "Evaluating Personalized (N-of-1) Trials in Rare Diseases: How Much Experimentation Is Enough? Harvard Data Science Review, Special Issue 3 (Personalized N-of-1 Trials).",
+  "takeaway": "Identifies an open methodological gap (no consensus on adequate experimentation length) directly relevant to OSSICRO's n-of-1/single-patient protocol templates for rare disease.",
+  "url": "https://hdsr.mitpress.mit.edu/pub/g00qkur7/release/1",
+  "open_access": true,
+  "pmid_or_doi": ""
+ },
+ {
+  "citation": "A methodological review of randomised n-of-1 trials. PMC11020886.",
+  "takeaway": "Systematic review of n-of-1 design/analysis practice; useful as the evidence base behind an n-of-1 protocol template.",
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11020886/",
+  "open_access": true,
+  "pmid_or_doi": "PMC11020886"
+ },
+ {
+  "citation": "A Two-Stage Patient-Focused Study Design for Rare Disease Controlled Trials. arXiv:1607.00046.",
+  "takeaway": "Alternative small-N controlled-trial design usable when a full RCT is infeasible for an ultra-rare indication \u2014 candidate for the protocol-template library.",
+  "url": "https://arxiv.org/pdf/1607.00046",
+  "open_access": true,
+  "pmid_or_doi": "arXiv:1607.00046"
+ },
+ {
+  "citation": "Feehan AK, Garcia-Diaz J. Investigator Responsibilities in Clinical Research. Ochsner J. 2020. DOI: 10.31486/toj.19.0085 (PMID 32284682, PMC7122254)",
+  "takeaway": "Systematic walkthrough of what signing FDA Form 1572 legally obligates a PI to (21 CFR duties, delegation limits, FDA-inspection consequences up to criminal prosecution) \u2014 direct primary-source input for an OSSICRO 1572-obligations module.",
+  "pmid_or_doi": "32284682 / 10.31486/toj.19.0085",
+  "open_access": true,
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7122254/"
+ },
+ {
+  "citation": "So You Want to Be a Principal Investigator. J Oncol Pract. 2018. DOI: 10.1200/JOP.18.00011 (PMID 29750578)",
+  "takeaway": "Practical primer on the operational and regulatory burden a first-time PI/sponsor-investigator takes on \u2014 useful for OSSICRO onboarding-checklist content.",
+  "pmid_or_doi": "29750578 / 10.1200/JOP.18.00011",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Ebrahimi H, et al. Practical Guide to Clinical Trial Accessibility: Making Trial Participation a Standard of Care. Am Soc Clin Oncol Educ Book. 2025. DOI: 10.1200/EDBK-25-100052 (PMID 40388680)",
+  "takeaway": "Multi-stakeholder consensus piece naming overly restrictive eligibility criteria, protocol complexity, and investigator burden as the core structural barriers to trial accessibility \u2014 directly supports OSSICRO's eligibility-criteria review workflow design rationale.",
+  "pmid_or_doi": "40388680 / 10.1200/EDBK-25-100052",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Mitchell AK, et al. Analysis of eligibility criteria in Alzheimer's and related dementias clinical trials. Sci Rep. 2024;14:15036. DOI: 10.1038/s41598-024-65767-x (PMID 38951633, PMC11217383)",
+  "takeaway": "196-trial NIA-funded audit: median 15 eligibility criteria per trial, 82% contain poorly operationalized (ambiguous) criteria, 42% English-speakers-only \u2014 concrete quantification of the eligibility-criteria quality problem OSSICRO's template engine should guard against.",
+  "pmid_or_doi": "38951633 / 10.1038/s41598-024-65767-x",
+  "open_access": true,
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11217383/"
+ },
+ {
+  "citation": "Xu J, et al. Machine learning enabled subgroup analysis with real-world data to inform clinical trial eligibility criteria design. Sci Rep. 2023;13:613. DOI: 10.1038/s41598-023-27856-1 (PMID 36635438, PMC9837131)",
+  "takeaway": "Data-driven approach to deriving exclusion criteria from real EHR-based adverse-event subphenotypes rather than boilerplate \u2014 a model for an OSSICRO 'evidence-informed exclusion criteria' generator.",
+  "pmid_or_doi": "36635438 / 10.1038/s41598-023-27856-1",
+  "open_access": true,
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9837131/"
+ },
+ {
+  "citation": "Sun Y, et al. A Framework for Systematic Assessment of Clinical Trial Population Representativeness Using Electronic Health Records Data. Appl Clin Inform. 2021;12:816-825. DOI: 10.1055/s-0041-1733846 (PMID 34496418, PMC8426045)",
+  "takeaway": "85.7% of COVID-19 trials and 30.1% of T2DM trials studied had poor population representativeness under their own stated eligibility criteria \u2014 quantifies the over-restriction problem across a large trial sample.",
+  "pmid_or_doi": "34496418 / 10.1055/s-0041-1733846",
+  "open_access": true,
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8426045/"
+ },
+ {
+  "citation": "Titz M, et al. Generalisability of randomised trials evaluating perioperative beta-blocker therapy in noncardiac surgery. Br J Anaesth. 2020;125:926-934. DOI: 10.1016/j.bja.2020.08.006 (PMID 32888632, PMC9756304)",
+  "takeaway": "Only 6.5% average of a real surgical population matched the combined eligibility criteria of 36 published RCTs on the same question \u2014 one of the starkest empirical demonstrations of eligibility over-restriction driving recruitment failure.",
+  "pmid_or_doi": "32888632 / 10.1016/j.bja.2020.08.006",
+  "open_access": true,
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9756304/"
+ },
+ {
+  "citation": "He Z, Chen Z, Bian J. Analysis of Temporal Constraints in Qualitative Eligibility Criteria of Cancer Clinical Studies. Proc IEEE Int Conf Bioinformatics Biomed. 2016:717-722. DOI: 10.1109/BIBM.2016.7822607 (PMID 29263940, PMC5733789)",
+  "takeaway": "NLP analysis of >10,800 cancer trials found restrictive temporal qualifiers (e.g., 'within 4 weeks of...') are pervasively over-applied in qualitative eligibility text, independent of clinical necessity.",
+  "pmid_or_doi": "29263940 / 10.1109/BIBM.2016.7822607",
+  "open_access": true,
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5733789/"
+ },
+ {
+  "citation": "Kong AM, et al. Considerations for emulations of randomized controlled trials using real-world data: learnings from an emulation of MONALEESA-2. J Comp Eff Res. 2025;14(11):e250026. DOI: 10.57264/cer-2025-0026 (PMID 41147847, PMC12580918)",
+  "takeaway": "Failed RWD emulation of a positive breast-cancer RCT \u2014 trial population systematically younger/healthier/less metastatic-burden than real-world treated patients, illustrating downstream external-validity risk from restrictive entry criteria.",
+  "pmid_or_doi": "41147847 / 10.57264/cer-2025-0026",
+  "open_access": true,
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12580918/"
+ },
+ {
+  "citation": "Linke M, et al. Ten years of Central IRB review for an NIH-funded large clinical trial network by an academic IRB: The NIH StrokeNet experience. J Clin Transl Sci. 2026. DOI: 10.1017/cts.2025.10231 (PMID 41657754, PMC12873484)",
+  "takeaway": "Decade-long operational case study of a single-IRB model run by an academic center for a national multi-site network \u2014 direct process template for an OSSICRO sIRB-reliance module.",
+  "pmid_or_doi": "41657754 / 10.1017/cts.2025.10231",
+  "open_access": true,
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12873484/"
+ },
+ {
+  "citation": "Stakeholder Views on Novel Consent Forms for an Acute Stroke Trial. Ethics Hum Res. 2025. DOI: 10.1002/eahr.60015 (PMID 40084682)",
+  "takeaway": "Qualitative stakeholder study on redesigning consent-form format/content for time-pressured acute trials \u2014 informs OSSICRO's consent-template variants for emergent/urgent conditions.",
+  "pmid_or_doi": "40084682 / 10.1002/eahr.60015",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Christian MC, et al. Meeting the Challenge: The National Cancer Institute's Central Institutional Review Board for Multi-Site Research. J Clin Oncol. 2018;36(11):1073-1080. DOI: 10.1200/JCO.2017.76.9836 (PMID 29384720)",
+  "takeaway": "History and operating model of NCI CIRB, the longest-running U.S. single-IRB system for cooperative-group cancer trials \u2014 foundational reference for sIRB design and its documented efficiency gains.",
+  "pmid_or_doi": "29384720 / 10.1200/JCO.2017.76.9836",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Costs and benefits of the National Cancer Institute Central Institutional Review Board. J Clin Oncol. 2009. DOI: 10.1200/JCO.2009.23.2470 (PMID 19841324)",
+  "takeaway": "Earliest quantified cost-benefit analysis of the sIRB model in oncology \u2014 baseline economic evidence for the sIRB-vs-local-IRB efficiency argument OSSICRO's IRB-routing feature should cite.",
+  "pmid_or_doi": "19841324 / 10.1200/JCO.2009.23.2470",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Comparative study to evaluate quality of data documentation between investigator-initiated and pharmaceutical industry-sponsored studies. Perspect Clin Res. 2019. DOI: 10.4103/picr.PICR_122_18 (PMID 32154144)",
+  "takeaway": "Head-to-head empirical comparison finding measurable documentation-quality gaps for investigator-initiated trials relative to industry-sponsored ones \u2014 the single most directly on-point IIT-quality paper found and a strong justification for OSSICRO's document-completeness engine.",
+  "pmid_or_doi": "32154144 / 10.4103/picr.PICR_122_18",
+  "open_access": true,
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/?term=32154144"
+ },
+ {
+  "citation": "Bertagnolli MC, et al. VIR-SAAF: national decentralised RCT of home-based sleep apnoea screening in atrial fibrillation (Denmark). BMJ Open. 2026. DOI: 10.1136/bmjopen-2026-121645 (PMID 42409410)",
+  "takeaway": "Current (2026) fully decentralized national-scale RCT protocol \u2014 good current-state reference for a fully home-based DCT design pattern.",
+  "pmid_or_doi": "42409410 / 10.1136/bmjopen-2026-121645",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Lessons learned and recommendations from the Canadian adaptive platform trial of treatments for COVID in community settings (CanTreatCOVID). Contemp Clin Trials. 2026. DOI: 10.1016/j.cct.2026.108303 (PMID 41985658)",
+  "takeaway": "Post-hoc operational lessons-learned from a national decentralized/community adaptive-platform trial \u2014 direct source of DCT conduct pitfalls and fixes.",
+  "pmid_or_doi": "41985658 / 10.1016/j.cct.2026.108303",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Decentralized community-integrated research sites drive higher randomization rates: insights from a large-scale neurodegenerative disease trial. Front Med (Lausanne). 2025;12:1623776. DOI: 10.3389/fmed.2025.1623776 (PMID 40904356)",
+  "takeaway": "Empirical evidence that decentralized/community-embedded site models materially increase randomization rate versus traditional academic-site models \u2014 direct DCT-outcomes data point.",
+  "pmid_or_doi": "40904356 / 10.3389/fmed.2025.1623776",
+  "open_access": true,
+  "url": "https://www.frontiersin.org/articles/10.3389/fmed.2025.1623776/full"
+ },
+ {
+  "citation": "Integrating mHealth Innovations into Decentralized Oncology Trials. J Med Syst. 2025. DOI: 10.1007/s10916-025-02233-9 (PMID 40779078)",
+  "takeaway": "Applied review of mobile-health tooling integration into DCT oncology conduct \u2014 informs OSSICRO's remote-monitoring/eCOA integration scope.",
+  "pmid_or_doi": "40779078 / 10.1007/s10916-025-02233-9",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Assessing the Financial Value of Decentralized Clinical Trials. Ther Innov Regul Sci. 2022. DOI: 10.1007/s43441-022-00454-5 (PMID 36104654)",
+  "takeaway": "Quantitative economic modeling of DCT cost/value versus traditional site-based conduct \u2014 directly relevant to the cost/cycle-time bucket of the sweep.",
+  "pmid_or_doi": "36104654 / 10.1007/s43441-022-00454-5",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "The Impact of Protocol Amendments on Clinical Trial Performance and Cost. Ther Innov Regul Sci (formerly Drug Inf J). 2016. DOI: 10.1177/2168479016632271 (PMID 30227022)",
+  "takeaway": "Tufts CSDD-lineage analysis quantifying how each protocol amendment adds measurable cost and cycle-time \u2014 core citation for the cost/cycle-time bucket.",
+  "pmid_or_doi": "30227022 / 10.1177/2168479016632271",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Quantifying Site Burden to Optimize Protocol Performance. Ther Innov Regul Sci. 2024. DOI: 10.1007/s43441-023-00602-5 (PMID 38191957)",
+  "takeaway": "Direct site-activation/site-burden metrics study; the closest hit to 'site activation cost and cycle time' in the entire sweep \u2014 flags protocol-design levers that reduce site burden.",
+  "pmid_or_doi": "38191957 / 10.1007/s43441-023-00602-5",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Understanding the Added Value of Action Limits for QTL Monitoring. Ther Innov Regul Sci. 2026. DOI: 10.1007/s43441-026-01007-w (PMID 42390815)",
+  "takeaway": "Current risk-based quality management (RBQM) methodology paper on Quality Tolerance Limits \u2014 directly informs an OSSICRO risk-based monitoring/QTL module design.",
+  "pmid_or_doi": "42390815 / 10.1007/s43441-026-01007-w",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Quantifying Eligibility Pattern Shifts: a Data-Driven Paradigm for Early Risk Detection in Clinical Trials. Ther Innov Regul Sci. 2026. DOI: 10.1007/s43441-026-00918-y (PMID 41649747)",
+  "takeaway": "Early-warning analytics on drifting eligibility patterns as a trial-conduct risk signal \u2014 a monitoring-dashboard feature idea for OSSICRO.",
+  "pmid_or_doi": "41649747 / 10.1007/s43441-026-00918-y",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Real-Time, Risk-Based Clinical Trial Quality Management in China: Development of a Digital Monitoring Platform. JMIR Med Inform. 2025. DOI: 10.2196/64114 (PMID 40279500)",
+  "takeaway": "Description of a built RBQM software platform \u2014 closest existing analog/comparator system to an OSSICRO monitoring module, worth studying as prior art.",
+  "pmid_or_doi": "40279500 / 10.2196/64114",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Adoption Maturity Model for Risk-based Quality Management (RBQM) in Clinical Trials. Ther Innov Regul Sci. 2025. DOI: 10.1007/s43441-025-00746-6 (PMID 39953206)",
+  "takeaway": "Maturity-model framework for RBQM adoption across sponsors/sites \u2014 useful as an OSSICRO capability-maturity self-assessment rubric.",
+  "pmid_or_doi": "39953206 / 10.1007/s43441-025-00746-6",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Descriptive Analysis of Good Clinical Practice Inspection Findings from U.S. FDA and European Medicines Agency. Ther Innov Regul Sci. 2022. DOI: 10.1007/s43441-022-00417-w (PMID 35610469)",
+  "takeaway": "Comparative FDA-vs-EMA GCP inspection-finding taxonomy \u2014 a direct source for building an OSSICRO 'common deficiency' checklist mapped to actual regulator citation categories.",
+  "pmid_or_doi": "35610469 / 10.1007/s43441-022-00417-w",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Recent changes in quality in Japanese clinical trials. Ann Pharmacother. 2004. DOI: 10.1345/aph.1D155 (PMID 14742810)",
+  "takeaway": "Historical account of a national GCP-quality reform (Japan's 'shin-GCP') driven by inspection findings \u2014 comparative regulatory-history reference.",
+  "pmid_or_doi": "14742810 / 10.1345/aph.1D155",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Sariola S, et al. Big-pharmaceuticalisation: clinical trials and Contract Research Organisations in India. Soc Sci Med. 2015;131:239-246. DOI: 10.1016/j.socscimed.2014.11.052 (PMID 25476783)",
+  "takeaway": "Ethnographic/interview-based study of CRO growth and outsourcing economics in India post-TRIPS \u2014 CRO market/economics evidence with a research-ethics angle relevant to micro-CRO governance.",
+  "pmid_or_doi": "25476783 / 10.1016/j.socscimed.2014.11.052",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Smed M, Getz KA. Unfulfilled translation opportunities in industry sponsored clinical trials. Contemp Clin Trials. 2013;35(1):80-86. DOI: 10.1016/j.cct.2013.02.007 (PMID 23454567)",
+  "takeaway": "451-site-representative survey (Getz/Tufts CSDD-linked) on how CRO intermediation degrades site-to-sponsor knowledge transfer \u2014 CRO-model economics and quality-cost tradeoff evidence.",
+  "pmid_or_doi": "23454567 / 10.1016/j.cct.2013.02.007",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Schnitzbauer AA, et al. Challenges in the organization of investigator initiated trials: in transplantation medicine [German]. Chirurg. 2011;82(3):249-254. DOI: 10.1007/s00104-010-1997-0 (PMID 21416397)",
+  "takeaway": "Concrete IIT-organization case study (SiLVER trial, 45 sites/13 nations) covering financing, infrastructure, and CRO-delegation choices facing an academic sponsor \u2014 a real-world sponsor-investigator operating model.",
+  "pmid_or_doi": "21416397 / 10.1007/s00104-010-1997-0",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Drabu S, Gupta A, Bhadauria A. Emerging trends in contract research industry in India. Contemp Clin Trials. 2010;31(5):419-422. DOI: 10.1016/j.cct.2010.06.008 (PMID 20609394)",
+  "takeaway": "Early (2010) market-sizing snapshot of the CRO industry (~$18bn global 2008, 14% CAGR) with India-specific growth trajectory \u2014 historical CRO market-economics data point.",
+  "pmid_or_doi": "20609394 / 10.1016/j.cct.2010.06.008",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Hecker SJ, Preston C, Foote M. Production of high-quality marketing applications: strategies for biotechnology companies working with contract research organizations. Biotechnol Annu Rev. 2003;9:269-277. DOI: 10.1016/s1387-2656(03)09006-9 (PMID 14650931)",
+  "takeaway": "Early practitioner account of best-practice CRO/sponsor collaboration for regulatory-submission document production \u2014 historical CRO-quality-economics reference.",
+  "pmid_or_doi": "14650931 / 10.1016/s1387-2656(03)09006-9",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Rettig RA. The industrialization of clinical research. Health Aff (Millwood). 2000;19(2):129-146. DOI: 10.1377/hlthaff.19.2.129 (PMID 10718027)",
+  "takeaway": "Foundational health-policy account of clinical research's shift into a 'line of business' and the concomitant rise of the CRO industry \u2014 the historical-origin paper for the CRO-market bucket.",
+  "pmid_or_doi": "10718027 / 10.1377/hlthaff.19.2.129",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Recruitment and Retention of Patients With Ischemic Heart Disease Reporting Hopelessness in a Randomized Controlled Trial. Nurs Res. 2026. DOI: 10.1097/NNR.0000000000000896 (PMID 41705728)",
+  "takeaway": "Recent methods paper on retention strategies for a psychologically vulnerable cardiac cohort \u2014 practical recruitment/retention tactics.",
+  "pmid_or_doi": "41705728 / 10.1097/NNR.0000000000000896",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "The Psychology Behind the Efficacy of a Buddy System for Enhancing Retention in Dermatological Clinical Trials. Cureus. 2024;16:e72986. DOI: 10.7759/cureus.72986 (PMID 39640154)",
+  "takeaway": "Social-support ('buddy system') intervention shown to improve trial retention \u2014 a low-cost retention-design pattern OSSICRO could template for patient engagement.",
+  "pmid_or_doi": "39640154 / 10.7759/cureus.72986",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Dropout Rate of Participants in Randomized Clinical Trials That Use Virtual Reality to Train Balance and Gait in Parkinson's Disease: A Systematic Review With Meta-analysis and Meta-regression. J Med Syst. 2023. DOI: 10.1007/s10916-023-01930-7 (PMID 37010723)",
+  "takeaway": "Meta-analytic dropout-rate benchmarking for a technology-delivered intervention arm \u2014 quantitative retention baseline useful for power/attrition planning.",
+  "pmid_or_doi": "37010723 / 10.1007/s10916-023-01930-7",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Recruiting an underserved, difficult to reach population into a cancer trial: Strategies from the RESTORE Rehabilitation Trial for gay and bisexual prostate cancer patients. Clin Trials. 2022. DOI: 10.1177/17407745221077678 (PMID 35232299)",
+  "takeaway": "Concrete recruitment-strategy case study for a historically excluded population \u2014 supports equity-oriented recruitment-planning guidance in OSSICRO.",
+  "pmid_or_doi": "35232299 / 10.1177/17407745221077678",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Digital and virtual interventions for migraine: A systematic review of randomized controlled trials. Cephalalgia. 2026. DOI: 10.1177/03331024261422276 (PMID 41776980)",
+  "takeaway": "Systematic review of virtual/digital trial delivery models in one disease area \u2014 a comparator for virtual-trial design patterns and outcome consistency.",
+  "pmid_or_doi": "41776980 / 10.1177/03331024261422276",
+  "open_access": false,
+  "url": ""
+ },
+ {
+  "citation": "Hybrid Hospital at Home and Physical Activity for Adults Admitted to the Hospital With Acute Illness: A Randomized Clinical Trial. JAMA Netw Open. 2026. DOI: 10.1001/jamanetworkopen.2026.18812 (PMID 42329654)",
+  "takeaway": "Recent RCT of a hybrid decentralized/in-home care-delivery model with trial-outcome data \u2014 evidences hybrid DCT feasibility at scale.",
+  "pmid_or_doi": "42329654 / 10.1001/jamanetworkopen.2026.18812",
+  "open_access": false,
+  "url": ""
+ }
+]

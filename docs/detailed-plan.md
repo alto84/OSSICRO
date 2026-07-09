@@ -102,3 +102,14 @@ ClinicalTrials.gov API v2 (discovery, eligibility, sites), PubMed/E-utilities (e
 - **Matching engine** — multi-directional matching across trial / condition / medication: patient profile → eligible trials; condition/diagnosis → trials + available therapies; medication/mechanism → trials, labels, and supporting evidence. Sources: ClinicalTrials.gov API v2, PubMed/E-utilities, openFDA. Computable-eligibility parsing turns free-text criteria into checkable predicates with a transparent, cited match rationale. This is the shared discovery front-door for all four entry points.
 - **Communication hub** — role-scoped, auditable messaging and document exchange connecting Patient, HCP, Micro-CRO, and Pharma, with routing to oversight entities (IRB/DSMB/FDA), status tracking, and notifications; privacy-preserving (HIPAA) and respecting the Medical-Affairs/Clinical-Development firewall.
 - **Reinforced principle** — OSSICRO drafts COMPLETE documentation to remove the paperwork barrier; it never replaces human, board/ethics, or medical judgment. Every artifact is a draft for qualified human review and the appropriate oversight bodies.
+
+## Adopted strategist improvements (2026-07-09)
+Full analysis in `strategy-review-fable-2026-07-09.md`. Seven ranked improvements + second tier, all adopted:
+1. SMART-on-FHIR chart ingestion behind a code-enforced privacy state machine (data spine; feeds matching + drafting).
+2. Eligibility-adjudication matching engine - mechanism-aware, three-valued (met/not-met/indeterminate), recall-first, with a public-benchmark eval harness (CHIA/TREC/n2c2).
+3. Provenance-linked drafts + attention-triaged review UX (single-pass HITL core).
+4. Adversarial pre-review + cross-document consistency engine (elevated "check" pass).
+5. Completeness ledger (green/amber/red open-items contract) - operating definition of COMPLETE documentation.
+6. Verifiable site-qualification dossier (pharma trust wedge + Micro-CRO moat).
+7. Living-compliance regulatory-change watch (anti-rot durable moat).
+Second tier: offline/single-container local deployment; dedicated safety-clock engine; publish computable eligibility as an open dataset.

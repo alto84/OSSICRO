@@ -29,3 +29,15 @@ Thumbs.db
 # Local data / PHI — never commit real patient or trial data
 data/local/
 *.phi
+
+# Downloaded source ORIGINALS kept local (indexed in sources/MANIFEST.md);
+# not committed to keep the repo lean (use Git LFS if sharing binaries later).
+sources/**/*.pdf
+sources/**/*.doc
+sources/**/*.docx
+sources/**/*.xls
+sources/**/*.xlsx
+sources/**/*.ppt
+sources/**/*.pptx
+sources/**/*.zip
+sources/download-log.tsv
