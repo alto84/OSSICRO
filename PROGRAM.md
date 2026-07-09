@@ -42,10 +42,10 @@ All OSSICRO materials and code live in a **standalone repository** at `C:\Users\
 | 2 Plan (IA + detailed plan + strategy) | done | `docs/detailed-plan.md`, `docs/strategy-review-fable-2026-07-09.md`, `wiki/INDEX.md` |
 | 3a Wiki (129 Obsidian pages) | done | `wiki/` |
 | 3b Engine (generate/check/validate) | done | `engine/` (runnable, 9/9 tests pass) |
-| 3b Template markdown library (78 docs) | pending | `templates/` (registry + 4 engine templates done) |
+| 3b Template markdown library | done | `templates/` (60 templates aligned to the registry) |
 | 3c Frontend (pharma-corporate) | done | `frontend/index.html` |
-| 4-6 Adversarial QA (6 Fable personas) + revise + re-review | pending (deferred — rate limit) | `qa/` |
-| 7 Reviewable state → hand to Alton | in progress | `README.md` summary |
+| 4-6 Adversarial QA (6 Fable personas) + revise + re-review | done | `qa/` (18 high findings; revised + re-reviewed; loop caught & fixed a propagated citation error) |
+| 7 Reviewable state → hand to Alton | done | `README.md` summary |
 
 ## Model-orchestration note
 Per principal directive: Fable subagents author + give second opinions; a Sonnet 5 agent runs the exhaustive academic/publication/institutional sweep. Every subagent reports its actual model; Fable→Opus fallbacks are logged in `docs/model-fallback-log.md`.
