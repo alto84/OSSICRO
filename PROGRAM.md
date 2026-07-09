@@ -26,7 +26,12 @@
 
 ## Location & repository plan
 
-All OSSICRO materials and code are centralized in this single folder (`ossicro/`), currently developed in-tree on the `ossicro` branch of the Sartor repo (in-tree so the autonomous authoring subagents write without sandbox friction). The folder is self-contained and split-ready (own `README.md`, `LICENSE`, `.gitignore`); after the first review passes it will be extracted to its own public GitHub repository (`git subtree split -P ossicro`, or a clean copy) — Alton creates that repo. Precursor exploration is preserved under `docs/exploration/`.
+All OSSICRO materials and code live in a **standalone repository** at `C:\Users\alto8\OSSICRO`, tracking **https://github.com/alto84/OSSICRO** (`origin/main`). This is the single source of truth; the project is no longer inside the Sartor repo. Each phase is committed and pushed to `origin`.
+
+- The **wiki** (`wiki/`) is an **Obsidian vault** — `[[wikilinks]]`, YAML frontmatter, tags, and callouts per [`wiki/_conventions.md`](wiki/_conventions.md). Obsidian formatting is the portable source of truth.
+- Local **originals** of public/open/openly-licensed documents are stored under [`sources/`](sources/README.md) alongside the `.md` wiki (government + open materials only; license-tracked in `sources/MANIFEST.md`).
+- Authoring subagents **return** page content; the orchestrator writes files into this repo (keeps Obsidian formatting normalized and avoids any subagent write friction).
+- Precursor exploration is preserved under `docs/exploration/`.
 
 ## Phase Log
 

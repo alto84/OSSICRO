@@ -2,7 +2,7 @@
 
 > Open-source coordination software + an exhaustively-researched regulatory knowledge base that lets an enrolling clinician assemble, check, validate, and route **every document** required to match a patient to an early-phase trial, activate a site, and reach enrollment — across sponsor, CRO, investigator / sponsor-investigator, IRB/ethics, DSMB/safety, pharmacovigilance, and pharma partner.
 
-**Status:** early build, in active autonomous development. This folder is the single source of truth for all OSSICRO materials and code; it is structured to be split into its own public GitHub repository after the first review passes.
+**Status:** early build, in active autonomous development. Repository: **https://github.com/alto84/OSSICRO**. The `wiki/` folder is an **Obsidian vault** (`[[wikilinks]]`, frontmatter, tags — see `wiki/_conventions.md`); local originals of cited public/open documents are kept under `sources/`.
 
 ---
 
@@ -29,6 +29,7 @@ OSSICRO makes the coordination labor cheap and the paperwork correct, so a clini
 | `docs/` | Detailed plan, system architecture, frontend strategy, model-fallback log, exploration provenance |
 | `qa/` | Adversarial QA memos (enrolling-physician / CRO / pharma personas + second opinions) |
 | `references/` | Bibliography + academic/CRO/gov institutional resources |
+| `sources/` | Local **originals** of cited public/open documents (CFR, ICH, FDA guidances & forms, openly-licensed templates), license-tracked |
 
 ## Hard line — not a substitute for qualified humans or oversight bodies
 
