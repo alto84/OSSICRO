@@ -5,7 +5,7 @@ status: mixed
 governing_authority:
   - "21 CFR 312.52 (transfer of obligations to a contract research organization)"
   - "21 CFR 312.3(b) (definition of contract research organization)"
-  - "21 CFR 312.23(a)(1)(viii) (identification of transferred obligations on the IND cover sheet, Form FDA 1571 Field 16)"
+  - "21 CFR 312.23(a)(1)(viii) (identification of transferred obligations on the IND cover sheet, Form FDA 1571 Field 14)"
   - "ICH E6(R3) (sponsor oversight of delegated activities and service providers)"
 tags: [cfr/312, role/cro, role/sponsor, role/sponsor-investigator, fda-form/1571, ossicro/micro-cro, lifecycle/activation, status/confirmed, status/interpretive]
 aliases: ["TORO", "Transfer of Obligations", "312.52 transfer"]
@@ -15,7 +15,7 @@ updated: 2026-07-09
 # Transfer of Regulatory Obligations (TORO)
 
 > [!authority] Governing authority
-> 21 CFR 312.52 (a sponsor may transfer any or all Part 312 sponsor obligations to a CRO, but only in a writing that describes the transfer; anything not described is not transferred); 21 CFR 312.3(b) (a CRO is a *person* that assumes sponsor obligations as an independent contractor); 21 CFR 312.23(a)(1)(viii) and Form FDA 1571 Field 16 (the transfer must be disclosed on the IND cover sheet). ICH E6(R3), as adopted by FDA (final guidance, September 2025), overlays a documented-oversight duty for all delegated activities. Status: **Mixed** — the 312.52 mechanics are confirmed black-letter law; the micro-CRO enumeration model is an interpretive OSSICRO position.
+> 21 CFR 312.52 (a sponsor may transfer any or all Part 312 sponsor obligations to a CRO, but only in a writing that describes the transfer; anything not described is not transferred); 21 CFR 312.3(b) (a CRO is a *person* that assumes sponsor obligations as an independent contractor); 21 CFR 312.23(a)(1)(viii) and Form FDA 1571 Field 14 (the transfer must be disclosed on the IND cover sheet). ICH E6(R3), as adopted by FDA (final guidance, September 2025), overlays a documented-oversight duty for all delegated activities. Status: **Mixed** — the 312.52 mechanics are confirmed black-letter law; the micro-CRO enumeration model is an interpretive OSSICRO position.
 
 The TORO is the written instrument by which a [[sponsor]] (including a [[sponsor-investigator]]) transfers named regulatory obligations to a [[cro|contract research organization]]. It is the single most consequential contracting artifact in the OSSICRO architecture, because 21 CFR 312.52 is the provision that makes software disintermediation of the sponsor role legally impossible — a transferee must be a *person* — and simultaneously makes OSSICRO's thin [[micro-cro-accountable-layer|micro-CRO]] lawful: a small, legally accountable entity can assume precisely enumerated obligations, and only those, in writing. The TORO is where that enumeration lives.
 
@@ -39,7 +39,7 @@ The TORO is the written instrument by which a [[sponsor]] (including a [[sponsor
 
 ## On-form disclosure
 
-The transfer is not private. 21 CFR 312.23(a)(1)(viii) requires the IND cover sheet to identify any CRO, the study involved, and **a listing of the obligations transferred**; this is Field 16 of [[form-fda-1571-ind-cover|Form FDA 1571]]. An amended TORO therefore triggers a 1571 information update. In commercial practice the TORO is a schedule appended to the Master Services Agreement or task order between sponsor and CRO ([[sponsor-cro-site-coordination]]); it is an essential record retained in the sponsor TMF ([[document-catalog]], [[startup-tmf-checklist]]).
+The transfer is not private. 21 CFR 312.23(a)(1)(viii) requires the IND cover sheet to identify any CRO, the study involved, and **a listing of the obligations transferred**; this is Field 14 of [[form-fda-1571-ind-cover|Form FDA 1571]]. An amended TORO therefore triggers a 1571 information update. In commercial practice the TORO is a schedule appended to the Master Services Agreement or task order between sponsor and CRO ([[sponsor-cro-site-coordination]]); it is an essential record retained in the sponsor TMF ([[document-catalog]], [[startup-tmf-checklist]]).
 
 ## Anatomy of the TORO instrument
 
@@ -69,7 +69,7 @@ The transfer is not private. 21 CFR 312.23(a)(1)(viii) requires the IND cover sh
 > | Annual report preparation | 312.33 | **Split** — drafting transferred; content ownership and signature retained |
 > | Maintaining an effective IND; FDA relationship; 1571 signature | 312.50, 312.23(a)(1) | **Retained** — never transferred in the OSSICRO model |
 >
-> OSSICRO the software generates the TORO, validates that every transferred item carries a citation and that the schedule reconciles against the Form 1571 Field 16 listing, and maintains the obligation-to-owner map in [[compliance-mapping]]. The signatures, and the assumption of liability they effect, belong to the humans and the entity.
+> OSSICRO the software generates the TORO, validates that every transferred item carries a citation and that the schedule reconciles against the Form 1571 Field 14 listing, and maintains the obligation-to-owner map in [[compliance-mapping]]. The signatures, and the assumption of liability they effect, belong to the humans and the entity.
 
 > [!warning] Non-delegable
 > The transferee under 21 CFR 312.52 must be a legal person or entity; **no obligation can be transferred to software**, and OSSICRO never holds, assumes, or discharges any sponsor obligation. The decision *which* obligations to transfer, the execution of the TORO by both parties, and the sponsor's continuing documented oversight of the transferee (ICH E6(R3)) are human/entity functions. Under the default rule of 312.52(a), any obligation the writing does not describe remains with the sponsor — a drafting omission is a retained legal duty, which is precisely why OSSICRO's completeness check on this instrument exists and why a qualified human must still review it.

@@ -51,3 +51,10 @@ OSSICRO produces **DRAFT** documentation for review, editing, and approval by qu
 ## License
 
 MIT (see `LICENSE`), with the non-delegable-function notice appended.
+
+## QA and the open revise loop
+
+A six-persona Fable review (legal, regulatory, ethical, physician, patient, pharma) has run; memos are in `qa/` with a consolidated **`qa/PUNCH-LIST.md`** (18 high / 23 medium / 15 low). Fixed now: the confirmed Form 1571 CRO-disclosure field (Field 16 -> **Field 14**). Open revise loop (tracked in the punch list), grouped:
+- **Verify-and-correct citations** (do not guess): 312.40(c) clinical-hold attribution on the IND page, the phantom E6(R3) Annex numbering in the document catalog, the SAE follow-up-report deadline, and a wiki-wide FDA-form-field verification pass.
+- **Reconcile contradictions / soften overclaims**: consent "comprehension checks" vs the consent-event bright line; the engine "pre-checking 21 CFR 56.111" (a substantive ethical judgment, not a completeness check).
+- **Add missing substance**: Micro-CRO civil (tort/contract) liability + insurance/indemnity; therapeutic-misconception safeguards for the treating-physician-as-sponsor-investigator; the retrieve-stage matching filters that can exclude before adjudication; n-of-1 re-identifiability; IIS/pharma acceptance realism; and honest framing of the frontend as a landing-page demo, not the end-to-end clinician app.
