@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+
+# Node / frontend build
+node_modules/
+dist/
+build/
+.cache/
+
+# Env / secrets — never commit
+.env
+.env.*
+*.key
+*.pem
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+
+# Local data / PHI — never commit real patient or trial data
+data/local/
+*.phi
