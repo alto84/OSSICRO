@@ -7,7 +7,8 @@ governing_authority:
   - "21 CFR 312.3(b); 312.50–312.59 (sponsor set, Mode B)"
   - "21 CFR 312.53(c) (Form FDA 1572); 21 CFR Part 54"
   - "ICH E6(R3) (investigator responsibilities, Annex 1)"
-tags: [role/investigator, role/sponsor-investigator, cfr/312, fda-form/1572, lifecycle/activation, status/mixed]
+  - "Medicare NCD 310.1 (routine costs in qualifying clinical trials)"
+tags: [role/investigator, role/sponsor-investigator, cfr/312, fda-form/1572, lifecycle/activation, lifecycle/feasibility, status/mixed]
 aliases: ["HCP Persona", "Physician Persona", "Enrolling Clinician"]
 updated: 2026-07-09
 ---
@@ -15,9 +16,9 @@ updated: 2026-07-09
 # Persona: Enrolling HCP / Physician
 
 > [!authority] Governing authority
-> [21 CFR 312.60–312.69](https://www.law.cornell.edu/cfr/text/21/part-312/subpart-D) (investigator obligation set); [21 CFR 312.3(b)](https://www.law.cornell.edu/cfr/text/21/312.3) and [312.50–312.59](https://www.law.cornell.edu/cfr/text/21/part-312/subpart-D) when the physician is a [[sponsor-investigator]]; [21 CFR 312.53(c)](https://www.law.cornell.edu/cfr/text/21/312.53) ([[form-fda-1572-statement-of-investigator|Form FDA 1572]]); [21 CFR Part 54](https://www.law.cornell.edu/cfr/text/21/part-54) (financial disclosure); ICH E6(R3) investigator responsibilities. Status: **Mixed** — the duties are confirmed; the burden-removal architecture is OSSICRO **interpretive** design.
+> [21 CFR 312.60–312.69](https://www.law.cornell.edu/cfr/text/21/part-312/subpart-D) (investigator obligation set); [21 CFR 312.3(b)](https://www.law.cornell.edu/cfr/text/21/312.3) and [312.50–312.59](https://www.law.cornell.edu/cfr/text/21/part-312/subpart-D) when the physician is a [[sponsor-investigator]]; [21 CFR 312.53(c)](https://www.law.cornell.edu/cfr/text/21/312.53) ([[form-fda-1572-statement-of-investigator|Form FDA 1572]]); [21 CFR Part 54](https://www.law.cornell.edu/cfr/text/21/part-54) (financial disclosure); ICH E6(R3) investigator responsibilities; [Medicare NCD 310.1](https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?NCDId=1&fromdb=true) (research billing). Status: **Mixed** — the duties are confirmed; the burden-removal architecture and all effort/cost figures are OSSICRO **interpretive** design.
 
-The enrolling physician is OSSICRO's load-bearing human and its core user. Their entry question: *"My patient needs this therapy. Make me an accepted site — without a research office, a regulatory department, or a study coordinator."* This page maps what the physician needs, the start-up burden OSSICRO removes, and — with equal weight — the duties no software can remove.
+The enrolling physician is OSSICRO's load-bearing human and its core user. Their entry question: *"My patient needs this therapy. Make me an accepted site — without a research office, a regulatory department, or a study coordinator."* This page maps what the physician needs, the start-up burden OSSICRO removes, and — with equal weight — the duties no software can remove, the residual hours no drafting can eliminate, and the prerequisites (IRB access, insurance, billing compliance, physical site capability) that must exist before a single document matters.
 
 ## Which hat: the first decision
 
@@ -29,13 +30,16 @@ The HCP's obligations depend entirely on the pathway ([[the-three-pathways-triag
 
 ## The intimidation points — why physicians don't enroll
 
-Harvard Catalyst's consult-service literature states the problem plainly: investigator-sponsors "often do not fully appreciate their regulatory obligations nor have resources to ensure compliance" ([Kim et al. 2014, PMID 24455986](https://pubmed.ncbi.nlm.nih.gov/24455986/)). Concretely, the barriers are:
+Harvard Catalyst's consult-service literature states the problem plainly: investigator-sponsors "often do not fully appreciate their regulatory obligations nor have resources to ensure compliance" ([Kim et al. 2014, PMID 24455986](https://pubmed.ncbi.nlm.nih.gov/24455986/)). Concretely, the barriers — including three hard stops that arise *before* any document is drafted — are:
 
 1. **The site-activation package** ([[site-activation]]): executed [[clinical-trial-agreement-and-budget|CTA and budget]]; IRB approval of protocol and ICF; signed 1572; current CV and license; [[form-fda-3454-3455-financial-disclosure|financial disclosure]]; GCP and protocol training records; lab certifications (CLIA/CAP) and normal ranges; [[delegation-of-authority-log]]; drug-accountability and storage SOPs — a dossier a hospital research office normally produces and a solo clinician has never assembled.
 2. **Mode B multiplies it**: the full [[ind-application-312-23|312.23 IND package]] ([[form-fda-1571-ind-cover|1571]] cover, general investigational plan, [[investigators-brochure|IB]], protocol, CMC, pharm/tox, prior human experience), the 30-day clock, then perpetual IND maintenance.
-3. **No track record**: pharma's feasibility screen weights prior GCP trial history and enrollment realism heavily; a new site starts at a structural disadvantage (see [[pharma]] and [[single-patient-site-and-pharma-acceptance]]).
-4. **Fear of inspection**: [21 CFR 312.68](https://www.law.cornell.edu/cfr/text/21/312.68) FDA access to records; BIMO inspection exposure feels existential to a clinician without a quality system.
-5. **Time**: the physician's clinical schedule does not include a paperwork department.
+3. **No IRB**: a solo or community clinic has no institutional IRB. Review must be purchased from an independent ("central") IRB registered under [21 CFR Part 56](https://www.law.cornell.edu/cfr/text/21/part-56) — which requires selecting one, executing a reliance/services agreement, paying fees (initial protocol review commonly in the low-thousands of dollars, plus continuing-review and amendment fees — *interpretive, market figures; confirm against the IRB's current fee schedule*), and assembling a submission package on that IRB's forms and timelines. **OSSICRO drafts the central-IRB submission package and tracks the review cycle; the IRB contract and its fees remain the physician's.** In Mode A, the sponsor typically designates and pays the central IRB.
+4. **Insurance and indemnification**: a clinical malpractice policy typically excludes research activity, and sponsor-investigator (Mode B) exposure generally requires a specific research rider or separate clinical-trial liability coverage. In Mode A, the CTA's indemnification and subject-injury provisions are the negotiated protection and warrant counsel review. **OSSICRO cannot solve this — insurance is a market problem, not a drafting problem.** It can only flag the gap at [[the-three-pathways-triage|triage]], before any dossier work begins, and surface the CTA indemnification clause for counsel. A physician who discovers this gap after assembling the package has been failed by the tool; hence it is a triage gate, not a footnote.
+5. **Research billing compliance**: Medicare pays the *routine costs* of a **qualifying** clinical trial only, under the Clinical Trial Policy ([NCD 310.1](https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?NCDId=1&fromdb=true)). Before the first study visit is billed, a [[medicare-coverage-analysis|Medicare coverage analysis]] must make the qualifying-trial determination and map every protocol item and service to its payer (sponsor-paid vs. routine cost vs. non-billable). Billing Medicare for items the sponsor pays for — or for a non-qualifying trial — is double-billing with False Claims Act exposure, and research-billing FCA settlements against real institutions exist. **OSSICRO drafts the coverage analysis and the qualifying-trial determination worksheet for qualified review; the billing execution and its attestations stay with the practice.**
+6. **No track record**: pharma's feasibility screen weights prior GCP trial history and enrollment realism heavily; a new site starts at a structural disadvantage (see [[pharma]] and [[single-patient-site-and-pharma-acceptance]]).
+7. **Fear of inspection**: [21 CFR 312.68](https://www.law.cornell.edu/cfr/text/21/312.68) FDA access to records; BIMO inspection exposure feels existential to a clinician without a quality system.
+8. **Time**: the physician's clinical schedule does not include a paperwork department. The honest answer to "how much time" is quantified below — drafting automation shrinks it but does not zero it.
 
 ## The duties the physician keeps — the non-delegable floor
 
@@ -56,12 +60,40 @@ Harvard Catalyst's consult-service literature states the problem plainly: invest
 | Financial-interest self-disclosure, updated for 1 year post-study | [21 CFR Part 54](https://www.law.cornell.edu/cfr/text/21/part-54); [312.64(d)](https://www.law.cornell.edu/cfr/text/21/312.64) |
 | **Mode B adds the sponsor floor**: hold and maintain the IND; sign the 1571; own causality/expectedness for [[ind-safety-report|7/15-day IND safety reports]]; the [[ind-annual-report-dsur|annual report]]; the 312.56(d) unreasonable-risk discontinuation decision | [21 CFR 312.50–312.59](https://www.law.cornell.edu/cfr/text/21/part-312/subpart-D), [312.32–312.33](https://www.law.cornell.edu/cfr/text/21/312.32) |
 
+## The residual burden — what remains after perfect drafting
+
+> [!interpretive] OSSICRO position — planning estimates, not benchmarks
+> The figures below are OSSICRO's interpretive planning estimates for a single-site, low-to-moderate-complexity protocol with OSSICRO producing all drafts. They are stated so a physician can decide *before* committing, and they deliberately under-promise. Assumptions: physician has no prior trial experience; GCP training ≈ 8 hours; one active protocol; actuals scale with phase, assessment-schedule density, and enrollment. Dollar figures are market approximations — confirm against current fee schedules.
+
+| Route | Setup (physician-hours) | Ongoing (physician-hours) | Out-of-pocket |
+|---|---|---|---|
+| **Mode A — site investigator** | ~25–40 h: GCP training (~8 h), protocol and IB reading, IRB back-and-forth, CTA/budget review with counsel, site initiation visit (SIV) | ~4–8 h/month at modest enrollment, plus **24/7 SAE availability from first dose**, plus ~2–4 h per monitoring visit | Usually minimal — sponsor pays the central IRB and per-visit budget; counsel time for CTA review is the main cash cost |
+| **Mode B — sponsor-investigator** | ~80–150 h even with complete drafting: the physician must *own* the IND package, not just receive it — IB comprehension, protocol finalization, CMC/pharm-tox sourcing decisions, 30-day-clock readiness | **IND maintenance is a standing part-time job**: ~10–20 h/month (safety review and causality calls, IRB continuing review, [[ind-annual-report-dsur|annual report]], amendment traffic), irreducible below a real floor because the judgment work is non-delegable | Central IRB fees (initial review in the low thousands; continuing review annually); research liability rider; [[micro-cro|Micro-CRO]] tier fees where obligations are formally assumed via [[transfer-of-regulatory-obligations-toro|TORO]]; monitoring costs |
+| **Expanded access (312.310)** | ~8–15 h: [[form-fda-3926-expanded-access|Form 3926]], manufacturer letter of authorization, IRB review, consent | Per-patient treatment plus FDA safety reporting for the duration of use | IRB review fee (single-patient expanded-access review is often expedited/reduced) |
+
+The table is the answer to barrier #8. Drafting automation removes the *assembly* hours (the dossier a research office would produce); it cannot remove the reading, the judgment calls, the availability, or the signatures.
+
+## Site readiness — capability, not paperwork
+
+> [!interpretive] OSSICRO position
+> The [[completeness-ledger]] proves the *documents* exist. This checklist proves the *site* can physically execute the protocol — a distinct question, and the one that actually determines whether "make me an accepted site" is achievable. Paperwork completeness does not confer conduct capability. OSSICRO generates this checklist from the protocol's schedule of assessments and scores it at [[the-three-pathways-triage|triage]], so conduct-infeasible protocols screen out **before** drafting begins, and every unmet item either resolves by contract before the 1572 names the facility or blocks the route.
+
+What must physically exist or be contracted:
+
+- **Investigational-product storage**: temperature-monitored, access-controlled, continuously logged with excursion alerting, at the ranges the IB specifies. A contracted research pharmacy satisfies this; a clinic sample cabinet does not.
+- **Staffing to populate the [[delegation-of-authority-log]]**: a coordinator (employed or contracted) for visit conduct, data entry, and kit processing. The physician alone cannot cover a serial-PK day and a clinic schedule simultaneously.
+- **Assessment-schedule feasibility**: serial PK draws, central-lab kit processing (centrifuge, −20/−70 °C freezer, ambient and frozen shipping logistics), protocol-specified imaging and specialty assessments — available on-site or contracted within the protocol's visit windows. Early-phase assessment schedules are frequently infeasible in a community clinic; this is a screening criterion, not a drafting gap.
+- **Laboratory capability**: CLIA/CAP certification and normal ranges are the documents; the capability question is turnaround time compatible with dosing and safety decisions.
+- **Emergency capability** commensurate with the investigational product's risk profile (for early-phase or high-risk IP: resuscitation equipment and an escalation pathway).
+- **Monitoring access**: workspace and source-document access for the monitor, or a remote source-data-verification arrangement.
+
 ## The burden OSSICRO removes
 
 > [!interpretive] OSSICRO position
 > Everything below is coordination labor — the ~90–95% of CRO direct cost that is labor, and precisely what makes the dual role impractical for a solo clinician. OSSICRO automates the drafting and tracking; every output is a **draft for qualified human review**, span-cited to its source ([[draft-provenance-model]]) and gated ([[non-delegable-functions-and-gates]]).
 
 - **Document assembly**: the entire Mode A activation dossier and the Mode B 312.23 IND package, generated from structured study/CV/site data by the [[generate-check-validate-engine]], with completeness checked against the essential-records matrix (ICH E6(R3) Appendix C; [[document-catalog]]) and open items tracked on the [[completeness-ledger]] (green/amber/red — amber and red always resolve to the physician or a qualified human).
+- **Central-IRB and billing packages**: the central-IRB submission package on the selected IRB's forms, and the draft [[medicare-coverage-analysis|Medicare coverage analysis]] with the NCD 310.1 qualifying-trial determination worksheet — both drafts for qualified review; the IRB contract, the billing attestations, and the insurance gap (see barriers #3–#5) are outside what software can absorb.
 - **Deadline machinery**: the 30-day IND clock ([[ind-submission-and-30-day-clock]]), IRB continuing-review dates, the [[safety-clock-engine|7/15-day safety clocks]] (computed and escalated; **never** the causality call and **never** auto-filed), annual-report anniversaries.
 - **Trust manufacturing**: the [[verifiable-site-qualification-dossier]] — a citation-complete, hash-chained qualification package that converts "no track record" into verifiable evidence a sponsor can audit (see [[pharma]]).
 - **Review economics**: the [[single-pass-review-ux]] triages the physician's attention to judgment calls only; deterministic and boilerplate spans are visually segregated from inferred/interpretive ones.
@@ -69,7 +101,7 @@ Harvard Catalyst's consult-service literature states the problem plainly: invest
 
 ## What the HCP needs to bring
 
-Qualification is the one input OSSICRO cannot generate: a medical license in good standing; training and experience appropriate to the investigational drug ([21 CFR 312.53(a)](https://www.law.cornell.edu/cfr/text/21/312.53) — the sponsor must select "qualified by training and experience"); current GCP training; access to the patient population; facilities adequate for the protocol (storage, labs — arranged, not necessarily owned); and the willingness to hold the signatures. OSSICRO surfaces gaps early (e.g., no temperature-monitored storage → resolve before the 1572 names the facility).
+Qualification is the one input OSSICRO cannot generate: a medical license in good standing; training and experience appropriate to the investigational drug ([21 CFR 312.53(a)](https://www.law.cornell.edu/cfr/text/21/312.53) — the sponsor must select "qualified by training and experience"); current GCP training; access to the patient population; site capability per the readiness checklist above (storage, staffing, assessment feasibility — arranged or contracted, not necessarily owned, but physically real before the 1572 names the facility); research-appropriate liability coverage; and the willingness to hold the signatures. OSSICRO surfaces gaps at triage — capability gaps, the insurance gap, and the billing-compliance prerequisite — before drafting effort is spent.
 
 ## Related
 
@@ -85,6 +117,7 @@ Qualification is the one input OSSICRO cannot generate: a medical license in goo
 - [[enrollment-and-consent]]
 - [[verifiable-site-qualification-dossier]]
 - [[completeness-ledger]]
+- [[medicare-coverage-analysis]]
 - [[micro-cro]]
 - [[patient]]
 - [[perspective-matrix]]
@@ -95,6 +128,9 @@ Qualification is the one input OSSICRO cannot generate: a medical license in goo
 - [21 CFR 312.60 — General responsibilities of investigators](https://www.law.cornell.edu/cfr/text/21/312.60)
 - [21 CFR 312.62 — Investigator recordkeeping and record retention](https://www.law.cornell.edu/cfr/text/21/312.62)
 - [21 CFR 312.64 — Investigator reports](https://www.law.cornell.edu/cfr/text/21/312.64)
+- [21 CFR Part 56 — Institutional Review Boards](https://www.law.cornell.edu/cfr/text/21/part-56)
+- [CMS — NCD 310.1, Routine Costs in Clinical Trials (Medicare Clinical Trial Policy)](https://www.cms.gov/medicare-coverage-database/view/ncd.aspx?NCDId=1&fromdb=true)
+- [HHS Guidance Portal — Medicare Clinical Trial Policy (CTP)](https://www.hhs.gov/guidance/document/medicare-clinical-trial-policy-ctp)
 - [FDA — Investigator Responsibilities: Protecting the Rights, Safety, and Welfare of Study Subjects (2009 guidance)](https://www.fda.gov/regulatory-information/search-fda-guidance-documents/investigator-responsibilities-protecting-rights-safety-and-welfare-study-subjects)
 - [FDA — Frequently Asked Questions: Statement of Investigator (Form FDA 1572) (2010 guidance)](https://www.fda.gov/regulatory-information/search-fda-guidance-documents/frequently-asked-questions-statement-investigator-form-fda-1572)
 - [FDA — Investigational New Drug Applications Prepared and Submitted by Sponsor-Investigators (draft guidance, 2015)](https://www.fda.gov/regulatory-information/search-fda-guidance-documents/investigational-new-drug-applications-prepared-and-submitted-sponsor-investigators)

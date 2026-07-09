@@ -32,7 +32,7 @@ These definitions are load-bearing: each expedited-reporting trigger is a conjun
 | **Serious** | Death, a life-threatening adverse event, inpatient hospitalization or prolongation of existing hospitalization, persistent or significant incapacity or substantial disruption of the ability to conduct normal life functions, congenital anomaly/birth defect, or an important medical event that may jeopardize the patient and require intervention to prevent one of these outcomes (medical judgment). |
 | **Life-threatening** | The patient was, in the view of the investigator or sponsor, at immediate risk of death from the event as it occurred (not hypothetically had it been more severe). |
 
-A **SUSAR** (serious *and* unexpected *and* suspected adverse reaction — ICH E2A terminology) is the event class that triggers the 15-day IND safety report; the fatal/life-threatening subset triggers the 7-day report.
+A **SUSAR** (serious *and* unexpected *and* suspected adverse reaction) is the event class that triggers the 15-day IND safety report; the fatal/life-threatening subset triggers the 7-day report. The acronym itself is EU usage — it originates in the EU Clinical Trials Directive/Regulation (Suspected Unexpected Serious Adverse Reaction); FDA's regulations describe the same class without using the term. The underlying concept is defined by [[ich-e2a|ICH E2A]] (serious, unexpected, and with a reasonable possibility of causal relationship).
 
 ## 2. The escalation chain
 
@@ -55,7 +55,9 @@ The sponsor must notify **FDA and all participating investigators** in an IND sa
 
 **7-calendar-day report** — 312.32(c)(2): any **unexpected fatal or life-threatening suspected adverse reaction** must be reported to FDA no later than 7 calendar days after the sponsor's initial receipt of the information, followed by a complete report within the 15-day frame.
 
-**Format** — narrative, [[form-fda-3500a-medwatch|FDA Form 3500A]], or an electronic format FDA can process (ICH E2B for CBER-regulated products); each report is prominently identified as an "IND safety report" and submitted to the reviewing division. Relevant follow-up information must be submitted **as soon as the information is available**, identified as a follow-up IND safety report (312.32(d)). Submission of a safety report does not constitute an admission that the drug caused the event (312.32(e)).
+**Format** — narrative, [[form-fda-3500a-medwatch|FDA Form 3500A]], or an electronic format FDA can process (ICH E2B for CBER-regulated products); each report is prominently identified as an "IND safety report" and submitted to the reviewing division. Submission of a safety report does not constitute an admission that the drug caused the event (312.32(e)).
+
+**Follow-up (312.32(d))** — the sponsor must promptly investigate all safety information it receives (312.32(d)(1)). Relevant follow-up information to an IND safety report must be submitted **as soon as the information is available**, identified as a "Follow-up IND Safety Report" (312.32(d)(2)) — the regulation sets no fixed day-count for routine follow-up. There is, however, a hard backstop: if the sponsor's investigation shows that an adverse event **not initially determined to be reportable** under paragraph (c) is in fact reportable, the sponsor must report it as soon as possible but **in no case later than 15 calendar days after the determination is made** (312.32(d)(3)). This 15-day clock — keyed to the reportability determination, not to routine follow-up — is the enforceable deadline and is the one reflected in [[sponsor|sponsor obligations]].
 
 ### Stage 4 — IRB and DSMB routing
 
@@ -70,7 +72,8 @@ The sponsor must notify **FDA and all participating investigators** in an IND sa
 | SAE at site | Event awareness | Immediately | Investigator → sponsor (312.64(b)) |
 | Serious + unexpected + suspected AR | Sponsor determines it qualifies | 15 calendar days | FDA + all participating investigators (312.32(c)(1)) |
 | Unexpected fatal/life-threatening suspected AR | Sponsor's initial receipt | 7 calendar days | FDA (312.32(c)(2)); complete report within 15 |
-| Follow-up information | Information available | As soon as available (312.32(d)) | FDA + investigators |
+| Follow-up to an existing IND safety report | Information available | As soon as available; no fixed day-count (312.32(d)(2)) | FDA + investigators |
+| AE later determined reportable (was not initially) | Reportability determination made | 15 calendar days after the determination (312.32(d)(3)) | FDA + all participating investigators |
 | Unanticipated problem | Investigator awareness | Promptly, per IRB policy | IRB (312.66; 56.108(b)(1)) |
 | Annual rollup | IND anniversary | Within 60 days | FDA — see [[annual-reporting-and-amendments]] |
 
@@ -101,6 +104,7 @@ Under 21 CFR 312.3(b) the investigator-to-sponsor report (312.64(b)) and the spo
 ## Sources
 
 - [21 CFR 312.32 — IND safety reporting (eCFR)](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-D/part-312/subpart-B/section-312.32)
+- [21 CFR 312.32 — IND safety reporting (Cornell LII)](https://www.law.cornell.edu/cfr/text/21/312.32)
 - [21 CFR 312.64 — Investigator reports (eCFR)](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-D/part-312/subpart-D/section-312.64)
 - [21 CFR 312.66 — Assurance of IRB review (eCFR)](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-D/part-312/subpart-D/section-312.66)
 - [21 CFR 56.108 — IRB functions and operations (Cornell LII)](https://www.law.cornell.edu/cfr/text/21/56.108)

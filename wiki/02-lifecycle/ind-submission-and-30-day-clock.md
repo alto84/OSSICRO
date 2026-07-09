@@ -3,7 +3,7 @@ title: "IND Submission & the 30-Day Clock"
 section: "02-lifecycle"
 status: confirmed
 governing_authority:
-  - "21 CFR 312.40 (general requirements; the 30-day waiting period)"
+  - "21 CFR 312.40 (conditions for use; when an IND goes into effect; the 30-day period)"
   - "21 CFR 312.42 (clinical holds and requests for modification)"
   - "21 CFR 312.20–312.23 (IND requirement, content, format)"
 tags: [lifecycle/ind, cfr/312, fda-form/1571, role/fda, role/sponsor-investigator, status/confirmed]
@@ -14,9 +14,9 @@ updated: 2026-07-09
 # IND Submission & the 30-Day Clock
 
 > [!authority] Governing authority
-> [21 CFR 312.40](https://www.ecfr.gov/current/title-21/section-312.40) (general requirements for use of an investigational new drug in a clinical investigation; the 30-day waiting period); [21 CFR 312.42](https://www.ecfr.gov/current/title-21/section-312.42) (clinical holds and requests for modification); [21 CFR 312.20](https://www.ecfr.gov/current/title-21/section-312.20)–[312.23](https://www.ecfr.gov/current/title-21/section-312.23) (IND requirement, content, format). Status: **Confirmed**.
+> [21 CFR 312.40](https://www.ecfr.gov/current/title-21/section-312.40) (conditions for using an investigational new drug in a clinical investigation; when an IND goes into effect; the 30-day period); [21 CFR 312.42](https://www.ecfr.gov/current/title-21/section-312.42) (clinical holds and requests for modification); [21 CFR 312.20](https://www.ecfr.gov/current/title-21/section-312.20)–[312.23](https://www.ecfr.gov/current/title-21/section-312.23) (IND requirement, content, format). Status: **Confirmed** (citations re-verified against Cornell LII, 2026-07-09).
 
-Submitting the IND starts a statutory waiting period. Under [21 CFR 312.40(b)](https://www.ecfr.gov/current/title-21/section-312.40), a sponsor may begin a clinical investigation only after (1) the IND has been submitted to FDA and (2) **30 calendar days have elapsed** from FDA's receipt of the IND — unless FDA notifies the sponsor earlier that studies may begin, or unless FDA imposes a **clinical hold** ([21 CFR 312.42](https://www.ecfr.gov/current/title-21/section-312.42)) that prohibits or restricts the investigation. This "safe-to-proceed by default" mechanism — silence-plus-30-days equals authorization — is the operative gate between IND preparation and site activation, and it is one of the two independent authorizations (the other being IRB approval) that must both clear before any subject is enrolled. OSSICRO computes and tracks this clock precisely; it never submits, and it never treats clock expiry as permission to dose without confirming the parallel IRB and site-activation gates.
+Submitting the IND starts a statutory waiting period. Under [21 CFR 312.40(b)](https://www.ecfr.gov/current/title-21/section-312.40), an IND goes into effect — and a clinical investigation may begin — either (1) **30 calendar days after FDA receives the IND**, unless FDA notifies the sponsor within that window that the investigations are subject to a **clinical hold** under [21 CFR 312.42](https://www.ecfr.gov/current/title-21/section-312.42); or (2) on **earlier notification** by FDA that the investigations may begin. This "safe-to-proceed by default" mechanism — silence-plus-30-days equals authorization — is the operative gate between IND preparation and site activation, and it is one of the two independent authorizations (the other being IRB approval) that must both clear before any subject is enrolled. OSSICRO computes and tracks this clock precisely; it never submits, and it never treats clock expiry as permission to dose without confirming the parallel IRB and site-activation gates.
 
 ## Submission and the IND number
 
@@ -30,36 +30,32 @@ The IND number and the receipt date are load-bearing metadata: they anchor the c
 
 ## The 30-day clock (312.40)
 
-[21 CFR 312.40](https://www.ecfr.gov/current/title-21/section-312.40) sets the mechanics:
+[21 CFR 312.40](https://www.ecfr.gov/current/title-21/section-312.40) sets the mechanics. Its subsections are frequently miscited; the accurate structure is:
 
-- **312.40(a)** — the sponsor must have submitted an IND meeting 312.23, and each participating investigator must have the necessary IRB approval and a signed agreement, before the drug is administered.
-- **312.40(b)(1)** — the sponsor may **not** begin a clinical investigation until **30 days after FDA receives the IND**, except as provided in 312.40(b)(2).
-- **312.40(b)(2)** — the sponsor **may** begin earlier if FDA notifies the sponsor that investigations may proceed.
-- **312.40(c)** — FDA may, at any time during the 30 days, impose a clinical hold under 312.42.
-- **312.40(d)** — the sponsor may not begin, and must continue to withhold or restrict, if FDA has imposed a hold.
+- **312.40(a)** — *conditions for use.* An investigational new drug may be used in a clinical investigation only if (a)(1) the sponsor has submitted an IND that is **in effect** under paragraph (b) and complies with all applicable requirements of Part 312 and **Parts 50 and 56**, and (a)(2) each participating investigator conducts the investigation in compliance with Part 312 and Parts 50 and 56. IRB review and approval flow through Part 56; the **signed investigator agreement (Form FDA 1572)** is required separately under [21 CFR 312.53(c)](https://www.ecfr.gov/current/title-21/section-312.53), not under 312.40(a).
+- **312.40(b)** — *when the IND goes into effect.* **(b)(1)** — 30 days after FDA receives the IND, **unless** FDA notifies the sponsor within that period that the investigations are subject to a clinical hold under 312.42; **(b)(2)** — on earlier FDA notification that the investigations may begin.
+- **312.40(c)** — *shipment.* A sponsor may **ship** the investigational drug to named investigators once the IND is in effect (30 days after FDA receipt, or on earlier FDA authorization). This subsection governs shipment, **not** the clinical-hold power.
+- **312.40(d)** — *administration bar.* An **investigator may not administer** the investigational drug to human subjects until the IND is **in effect** under paragraph (b).
 
-The clock is measured from FDA's **receipt date**, not the sponsor's send date. During the 30 days FDA conducts its initial safety review; **silence is authorization** — if FDA does not act, the IND goes into effect and the investigation may begin on day 31.
+The **clinical-hold power itself lives in [312.42](https://www.ecfr.gov/current/title-21/section-312.42)**; it enters the 30-day clock through the exception in 312.40(b)(1) (a hold prevents the IND from going into effect). The clock is measured from FDA's **receipt date**, not the sponsor's send date. During the 30 days FDA conducts its initial safety review; **silence is authorization** — if FDA imposes no hold, the IND goes into effect and the investigation may begin on day 31.
 
 > [!warning] Non-delegable
 > The decision to **begin dosing** — i.e., to treat the 30-day clock as satisfied and enrollment as authorized — is the sponsor-investigator's regulated act, and it is lawful only when the IND is in effect (no hold), IRB approval is documented ([[irb-submission-and-approval]]), and the site is activated ([[site-activation]]). OSSICRO computes the day-31 date and the state of every parallel gate and presents a consolidated "clear-to-enroll" view; it does **not** authorize enrollment. A qualified human confirms all gates and makes the call. See [[non-delegable-functions-and-gates]].
 
 ## The clinical hold (312.42)
 
-A **clinical hold** is an FDA order to delay a proposed investigation or to suspend an ongoing one ([21 CFR 312.42(a)](https://www.ecfr.gov/current/title-21/section-312.42)). It may apply to the entire IND or to a specific protocol. Grounds vary by phase; the principal statutory/regulatory grounds under [312.42(b)](https://www.ecfr.gov/current/title-21/section-312.42) include:
+A **clinical hold** is an FDA order to delay a proposed investigation or to suspend an ongoing one ([21 CFR 312.42(a)](https://www.ecfr.gov/current/title-21/section-312.42)). It may apply to the entire IND or to a specific protocol. The grounds are organized by study type under [312.42(b)](https://www.ecfr.gov/current/title-21/section-312.42):
 
-- **subjects would be exposed to an unreasonable and significant risk** of illness or injury;
-- the clinical investigators are **not qualified** by training and experience;
-- the **investigator's brochure is misleading, erroneous, or materially incomplete**;
-- the IND **does not contain sufficient information** required under 312.23 to assess subject risk;
-- (Phase 2/3) the plan or protocol is **clearly deficient** in design to meet its stated objectives;
-- for certain expanded-access/treatment protocols, additional 312.42(b)(2)–(b)(4) grounds.
+- **Phase 1 studies — 312.42(b)(1).** FDA may impose a hold if (b)(1)(i) human subjects are or would be exposed to an **unreasonable and significant risk** of illness or injury; (b)(1)(ii) the clinical investigators are **not qualified** by scientific training and experience; (b)(1)(iii) the **investigator's brochure is misleading, erroneous, or materially incomplete**; or (b)(1)(iv) the IND **does not contain sufficient information** required under 312.23 to assess subject risk.
+- **Phase 2 or 3 studies — 312.42(b)(2).** Any of the Phase 1 grounds, **or** the plan or protocol is **clearly deficient in design** to meet its stated objectives.
+- **Expanded-access / treatment protocols — 312.42(b)(3).** A hold may issue if the criteria of subpart I are not satisfied or the expanded-access submission fails to comply with subpart I.
+- **Studies not designed to be adequate and well-controlled — 312.42(b)(4).** Distinct grounds including that the protocol would impede enrollment in, or otherwise interfere with, a concurrent controlled trial; insufficient drug supply; a demonstrated lack of effectiveness; a better benefit/risk alternative; or that the drug has already received marketing approval for the same indication and population.
 
 Process ([312.42(c)–(e)](https://www.ecfr.gov/current/title-21/section-312.42)):
 
-- FDA ordinarily **discusses the deficiency** with the sponsor first (except where subject safety requires immediate action) and then issues the hold.
-- FDA provides written notice of the hold, specifying the reasons, within **30 days** of imposition.
-- The sponsor responds with a **complete response** addressing every deficiency.
-- FDA must respond to a complete response within **30 days**; the hold is lifted only when FDA notifies the sponsor that the investigation may proceed.
+- **312.42(c)** — FDA ordinarily **discusses the deficiency** with the sponsor and attempts resolution before imposing the hold, except where subject safety requires immediate action.
+- **312.42(d)** — as soon as possible, and **no more than 30 days** after imposing the hold, the Division Director provides the sponsor a **written explanation** of the basis for the hold.
+- **312.42(e)** — when the sponsor submits, in writing, a **complete response** addressing every deficiency and requests removal of the hold, **FDA must respond in writing within 30 calendar days**; the hold is lifted only when FDA notifies the sponsor that the investigation may proceed.
 - No subject may be enrolled or dosed under a held protocol until the hold is removed.
 
 > [!warning] Non-delegable
@@ -67,7 +63,7 @@ Process ([312.42(c)–(e)](https://www.ecfr.gov/current/title-21/section-312.42)
 
 ## Interaction with the IRB clock (confirmed)
 
-The 30-day FDA clock and IRB approval are **independent and both mandatory**. [312.40(a)](https://www.ecfr.gov/current/title-21/section-312.40) requires IRB approval for each participating investigator before administration; [21 CFR 56.103](https://www.ecfr.gov/current/title-21/section-56.103) independently prohibits FDA-regulated research without prior IRB review and approval. Enrollment is gated on the **later** of: (a) day 31 (or earlier FDA "proceed" notice) with no hold in force, and (b) documented IRB approval. Neither clears the other. See [[irb-submission-and-approval]] and [[phase-model-overview]].
+The 30-day FDA clock and IRB approval are **independent and both mandatory**. [312.40(a)](https://www.ecfr.gov/current/title-21/section-312.40) conditions use of the drug on compliance with **Part 56** (IRB review and approval) for each participating investigator, and [312.40(d)](https://www.ecfr.gov/current/title-21/section-312.40) bars administration until the IND is in effect; separately, [21 CFR 56.103](https://www.ecfr.gov/current/title-21/section-56.103) independently prohibits FDA-regulated research without prior IRB review and approval. Enrollment is gated on the **later** of: (a) day 31 (or earlier FDA "proceed" notice) with no hold in force, and (b) documented IRB approval. Neither clears the other. See [[irb-submission-and-approval]] and [[phase-model-overview]].
 
 ## What OSSICRO tracks at this phase
 
@@ -92,8 +88,9 @@ The 30-day FDA clock and IRB approval are **independent and both mandatory**. [3
 - [[non-delegable-functions-and-gates]]
 
 ## Sources
-- [21 CFR 312.40 — General requirements for use of an investigational new drug in a clinical investigation (eCFR)](https://www.ecfr.gov/current/title-21/section-312.40)
-- [21 CFR 312.42 — Clinical holds and requests for modification (eCFR)](https://www.ecfr.gov/current/title-21/section-312.42)
+- [21 CFR 312.40 — Treatment of an investigational new drug; conditions for use and when an IND goes into effect (eCFR)](https://www.ecfr.gov/current/title-21/section-312.40) · [Cornell LII mirror](https://www.law.cornell.edu/cfr/text/21/312.40)
+- [21 CFR 312.42 — Clinical holds and requests for modification (eCFR)](https://www.ecfr.gov/current/title-21/section-312.42) · [Cornell LII mirror](https://www.law.cornell.edu/cfr/text/21/312.42)
+- [21 CFR 312.53 — Selecting investigators and monitors (signed Form FDA 1572) (eCFR)](https://www.ecfr.gov/current/title-21/section-312.53)
 - [21 CFR 312.23 — IND content and format (eCFR)](https://www.ecfr.gov/current/title-21/section-312.23)
 - [21 CFR 56.103 — Circumstances in which IRB review is required (eCFR)](https://www.ecfr.gov/current/title-21/section-56.103)
 - [FDA — Clinical Holds and the IND process (FDA IND resources)](https://www.fda.gov/drugs/investigational-new-drug-ind-application/clinical-holds)

@@ -16,9 +16,9 @@ updated: 2026-07-09
 # IRB / IEC — Institutional Review Board / Independent Ethics Committee
 
 > [!authority] Governing authority
-> 21 CFR Part 56 (IRB standards for FDA-regulated research); 21 CFR Part 50 (informed consent); 45 CFR Part 46 (revised Common Rule, for federally supported research); 21 CFR 312.66 (investigator's IRB assurance); ICH E6(R3) Section 1. Status: **Mixed** — the regulatory requirements are confirmed black-letter law; OSSICRO's pre-check and gating design is an interpretive position, marked inline.
+> 21 CFR Part 56 (IRB standards for FDA-regulated research); 21 CFR Part 50 (informed consent); 45 CFR Part 46 (revised Common Rule, for federally supported research); 21 CFR 312.66 (investigator's IRB assurance); ICH E6(R3) Section 1. Status: **Mixed** — the regulatory requirements are confirmed black-letter law; OSSICRO's completeness-check and gating design is an interpretive position, marked inline.
 
-The IRB (US) / IEC (ICH international usage) is the independent body constituted to protect the rights, safety, and welfare of human research subjects. It is the ethics gatekeeper of the entire lifecycle: no investigator may involve a human subject in FDA-regulated research without prior IRB review and approval (21 CFR 56.103(a)), and enrollment in every OSSICRO-supported pathway — [[two-modes-site-vs-sponsor-investigator|Mode A, Mode B]], and [[expanded-access-workflow|expanded access]] — is gated on documented IRB action. The IRB's approval judgment is the paradigm non-delegable function: software may assemble, pre-check, route, and track the submission, but the review and the approval decision belong to the convened (or duly expedited) board and to no one else.
+The IRB (US) / IEC (ICH international usage) is the independent body constituted to protect the rights, safety, and welfare of human research subjects. It is the ethics gatekeeper of the entire lifecycle: no investigator may involve a human subject in FDA-regulated research without prior IRB review and approval (21 CFR 56.103(a)), and enrollment in every OSSICRO-supported pathway — [[two-modes-site-vs-sponsor-investigator|Mode A, Mode B]], and [[expanded-access-workflow|expanded access]] — is gated on documented IRB action. The IRB's approval judgment is the paradigm non-delegable function: software may assemble, completeness-check, route, and track the submission, but the review and the approval decision belong to the convened (or duly expedited) board and to no one else.
 
 ## 1. Which rule applies: 21 CFR 50/56 vs. 45 CFR 46
 
@@ -51,11 +51,11 @@ Review at convened meetings requires a **majority quorum including at least one 
 
 ## 4. Criteria for approval (21 CFR 56.111; 45 CFR 46.111)
 
-The board may approve research only after determining that **all** of the following are satisfied — this list is the completeness spine OSSICRO's [[irb-submission-package]] validator pre-checks:
+The board may approve research only after determining that **all** of the following are satisfied. These are substantive ethical determinations — weighings of risk, benefit, equity, and safeguard adequacy — reserved to the board's deliberation; they are not document-presence properties, and no software check can establish or predict that any of them is met:
 
 1. Risks to subjects are minimized by sound research design and, where appropriate, by using procedures already performed for diagnosis or treatment (56.111(a)(1)).
 2. Risks are reasonable in relation to anticipated benefits and the importance of the knowledge expected (56.111(a)(2)).
-3. Selection of subjects is equitable (56.111(a)(3)).
+3. Selection of subjects is equitable, the board being "particularly cognizant of the special problems of research involving vulnerable populations" (56.111(a)(3)).
 4. Informed consent will be sought from each prospective subject or legally authorized representative per Part 50 (56.111(a)(4)).
 5. Informed consent will be appropriately documented per 50.27 (56.111(a)(5)).
 6. Where appropriate, the research plan makes **adequate provision for monitoring the data collected to ensure the safety of subjects** (56.111(a)(6)) — the criterion that drives the data-safety-monitoring plan and, where warranted, a [[dsmb-dmc]].
@@ -64,27 +64,37 @@ The board may approve research only after determining that **all** of the follow
 
 The Common Rule adds the up-front "key information" requirement to consent (45 CFR 46.116(a)(5)(i)); see [[informed-consent-form]].
 
-## 5. The investigator interface (21 CFR 312.66) and records (56.115)
+## 5. Vulnerable populations and additional safeguards (56.111(b); 45 CFR 46 Subparts B–D)
+
+56.111(b) requires that when some or all subjects — "such as children, prisoners, pregnant women, handicapped, or mentally disabled persons, or economically or educationally disadvantaged persons" — are likely to be vulnerable to coercion or undue influence, **additional safeguards** be included in the study to protect their rights and welfare. This criterion has operational consequences for OSSICRO's user base and document generation, not just for the board:
+
+- **Regulatory branches.** The Common Rule's Subpart B (pregnant women, fetuses, neonates), Subpart C (prisoners), and Subpart D (children) impose category-specific approval conditions when they apply. FDA regulations have a children's counterpart (21 CFR 50 Subpart D) but **no FDA counterpart to Subparts B and C** — for an FDA-only study enrolling pregnant women or prisoners, 56.111(a)(3) and (b) are the operative hooks, and many IRBs apply the Subpart B/C frameworks by policy. The [[irb-submission-package]] generator must branch on these populations: protocol eligibility sections, consent language, and the submission cover materials all differ, and the applicable subpart determinations must be surfaced to the board, never resolved by the software.
+- **The last-option patient.** The population OSSICRO's [[patient]]-facing pathways will actually attract — seriously ill patients who have exhausted approved options, often in under-resourced settings — is precisely the group most susceptible to undue influence and therapeutic misconception. 21 CFR 50.20 requires that consent be sought only under circumstances that "minimize the possibility of coercion or undue influence"; a treatment-access framing of a research or expanded-access pathway works against that requirement. Drafted consent and recruitment materials must therefore distinguish research intent from clinical care, avoid framing enrollment as treatment, disclose realistic prospect of benefit, and prompt the drafter on decisional-impairment considerations (surrogate/LAR consent under 50.20 and state law) where the disease or its treatment can impair capacity.
+- **Economic vulnerability and cost disclosure.** 50.25(b)(3) requires disclosure of "any additional costs to the subject that may result from participation." For expanded access, a sponsor may charge for the investigational drug **only with prior written FDA authorization** (21 CFR 312.8(a)(3), (c)) and only up to direct-cost recovery plus specified expanded-access administrative costs (312.8(d)); who bears drug, procedure, and monitoring costs in Mode B must be resolved and disclosed in the consent before submission. Financial-toxicity exposure is itself an undue-influence and equitable-selection consideration the board will weigh under 56.111(a)(3) and (b).
+
+Operational detail — screening prompts, undue-influence risk factors for option-exhausted patients, Subpart B/C/D branch handling in the generator, and cost/financial-toxicity disclosure guidance — is consolidated at [[vulnerable-populations]].
+
+## 6. The investigator interface (21 CFR 312.66) and records (56.115)
 
 Under 312.66 the [[investigator]] (or [[sponsor-investigator]]) must assure that an IRB compliant with Part 56 is responsible for initial and continuing review and approval; must promptly report to the IRB all changes in the research activity and all unanticipated problems involving risk to human subjects or others; and must not make any changes in the research without IRB approval, except where necessary to eliminate apparent immediate hazards. These commitments are also attested on [[form-fda-1572-statement-of-investigator|Form FDA 1572]] (Field 9). The IRB itself must prepare and maintain the records enumerated at 56.115 (research proposals reviewed, minutes with votes, continuing-review activities, correspondence, membership roster, written procedures) — the counterparty documents OSSICRO expects back into the TMF are the approval letter, approved consent form, and continuing-review/amendment approvals (see [[irb-submission-and-approval]] and [[document-catalog]]).
 
-## 6. Single-IRB mandate and central IRBs
+## 7. Single-IRB mandate and central IRBs
 
 For cooperative research subject to the Common Rule, US institutions must rely on a **single IRB** (45 CFR 46.114(b), compliance date January 20, 2020); the NIH sIRB policy ([NOT-OD-16-094](https://grants.nih.gov/grants/guide/notice-files/NOT-OD-16-094.html)) applies to multi-site NIH awards from January 25, 2018. FDA regulations permit but do not compel central IRB use. For an OSSICRO sponsor-investigator without an institutional IRB, an independent/central IRB (e.g., WCG, Advarra) is the practical IRB of record, engaged through a reliance or services agreement. See [[single-irb-mandate-and-central-irbs]] for the reliance mechanics (SMART IRB / IREx).
 
 > [!warning] Non-delegable
-> The IRB's review and approval judgment — the ethics determination under 21 CFR 56.111 / 45 CFR 46.111 — is non-delegable to software, to the sponsor, to the investigator, and to OSSICRO. Likewise the IRB's continuing-review, amendment-approval, and suspension/termination authority (56.108–56.113). OSSICRO assembles and pre-checks the submission package and gates enrollment on the documented approval letter; it never renders, predicts as authoritative, or substitutes for the board's decision.
+> The IRB's review and approval judgment — the ethics determination under 21 CFR 56.111 / 45 CFR 46.111 — is non-delegable to software, to the sponsor, to the investigator, and to OSSICRO. Likewise the IRB's continuing-review, amendment-approval, and suspension/termination authority (56.108–56.113). OSSICRO assembles and completeness-checks the submission package and gates enrollment on the documented approval letter; it never renders, predicts as authoritative, or substitutes for the board's decision.
 
 > [!interpretive] OSSICRO position
-> OSSICRO's engine performs a **completeness and consistency pre-check of the submission package against the 56.111 criteria** (each element mapped to its supporting document) before routing to a human for submission — a drafting/QC aid modeled on published institutional checklist systems (see [[prior-art-vcap-irex-smartirb]]). This is an efficiency layer for the submitter; it has no bearing on, and asserts nothing about, how the IRB will or should decide. Enrollment gating on the approval letter in the TMF is a code-enforced control implementing 56.103(a), per [[non-delegable-functions-and-gates]].
+> OSSICRO's engine performs an **administrative completeness and internal-consistency check of the submission package against the IRB of record's published submission requirements** — required documents present, required fields populated, cross-document consistency (protocol ↔ consent ↔ 1572) — before routing to a human for submission, a drafting/QC aid modeled on published institutional checklist systems (see [[prior-art-vcap-irex-smartirb]]). It is deliberately **not** keyed to the 56.111 criteria: those are ethical judgments, not document-presence properties, and a criterion-keyed package would invite anchoring toward a foregone conclusion. Where assembled material bears on a 56.111 criterion (e.g., the data-safety-monitoring plan under 56.111(a)(6)), the engine labels it **"material the board will weigh"** — never "criterion satisfied" or "pre-checked." **Anti-anchoring rule:** the system displays no predicted, scored, or implied approval-readiness for any ethics determination, to the submitter or to anyone else. Enrollment gating on the approval letter in the TMF is a code-enforced control implementing 56.103(a), per [[non-delegable-functions-and-gates]].
 
 ## Related
 
 - [[irb-submission-and-approval]] · [[irb-review-workflow]] · [[irb-submission-package]]
-- [[single-irb-mandate-and-central-irbs]]
+- [[single-irb-mandate-and-central-irbs]] · [[vulnerable-populations]]
 - [[informed-consent-form]] · [[informed-consent-document-vs-event]] · [[enrollment-and-consent]]
-- [[investigator]] · [[sponsor-investigator]] · [[dsmb-dmc]]
-- [[safety-reporting-lifecycle]] · [[pharmacovigilance-safety]]
+- [[investigator]] · [[sponsor-investigator]] · [[dsmb-dmc]] · [[patient]]
+- [[safety-reporting-lifecycle]] · [[pharmacovigilance-safety]] · [[expanded-access-workflow]]
 - [[non-delegable-functions-and-gates]] · [[entity-map]] · [[regulatory-landscape]] · [[glossary]]
 
 ## Sources
@@ -93,6 +103,7 @@ For cooperative research subject to the Common Rule, US institutions must rely o
 - [21 CFR Part 50 — Protection of Human Subjects (eCFR)](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-A/part-50)
 - [45 CFR Part 46 — Protection of Human Subjects (eCFR)](https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-A/part-46)
 - [21 CFR 312.66 — Assurance of IRB review (eCFR)](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-D/part-312/subpart-D/section-312.66)
+- [21 CFR 312.8 — Charging for investigational drugs under an IND (Cornell LII)](https://www.law.cornell.edu/cfr/text/21/312.8)
 - [OHRP — Revised Common Rule (2018 Requirements)](https://www.hhs.gov/ohrp/regulations-and-policy/regulations/45-cfr-46/index.html)
 - [OHRP — Categories of Research That May Be Reviewed Through an Expedited Review Procedure (1998)](https://www.hhs.gov/ohrp/regulations-and-policy/guidance/categories-of-research-expedited-review-procedure-1998/index.html)
 - [NIH NOT-OD-16-094 — Single IRB Policy for Multi-Site Research](https://grants.nih.gov/grants/guide/notice-files/NOT-OD-16-094.html)

@@ -16,7 +16,7 @@ updated: 2026-07-09
 # Single-Patient Site and Pharma Acceptance: The Backend to Accept an n-of-1 Site
 
 > [!authority] Governing authority
-> 21 CFR 312.310 and Part 312 Subpart I (individual-patient access); 21 CFR 312.53 and Part 54 (investigator qualification and financial disclosure); 21 CFR 312.32 (safety-data exchange); FDCA § 561A (the manufacturer's non-compellable decision to supply); ICH E6(R3) (risk-proportionate site selection and oversight); 42 U.S.C. § 1320a-7b(b) and 42 CFR 1001.952(d) (Anti-Kickback and safe harbor). Status: **Mixed** — the acceptance requirements and the supply/safety obligations are black-letter or binding; the "minimal-but-compliant" package and OSSICRO's dossier design are interpretive positions.
+> 21 CFR 312.310 and Part 312 Subpart I (individual-patient access); 21 CFR 312.53 and Part 54 (investigator qualification and financial disclosure); 21 CFR 312.32 (safety-data exchange); FDCA § 561A (the manufacturer's non-compellable decision to supply); ICH E6(R3) (risk-proportionate site selection and oversight); 42 U.S.C. § 1320a-7b(b) and 42 CFR 1001.952(d) (Anti-Kickback and safe harbor). Status: **Mixed** — the acceptance requirements and the supply/safety obligations are black-letter or binding; the "minimal-but-compliant" package, the route-likelihood ranking, and OSSICRO's dossier design are interpretive positions.
 
 The hardest coordination problem OSSICRO solves is asymmetric: a single physician with a single patient needs a pharma company to say **yes** — supply the drug, exchange safety data, accept the site — for an engagement so small that the company's standard site-onboarding machinery is economically absurd to run for it. This page is written from the **pharma side**: what a manufacturer actually needs to accept an n-of-1 site without either (a) violating its GCP, safety, and compliance obligations, or (b) spending six-figure activation cost on a one-patient engagement. It is the counterpart to the physician-facing [single-patient-site-enrollment](../02-lifecycle/single-patient-site-enrollment.md) and [expanded-access-coordination](expanded-access-coordination.md) pages.
 
@@ -27,10 +27,38 @@ A "one physician, one patient, one pharma therapy" request resolves to one of th
 | Route | Structure | Pharma role | Backend the manufacturer runs |
 |-------|-----------|-------------|-------------------------------|
 | **1. Individual-patient expanded access** | [§ 312.310](expanded-access-coordination.md), [Form 3926](../03-documents/form-fda-3926-expanded-access.md) | **Supplier** (must agree; not sponsor) | Expanded-access intake → LOA/supply decision → safety-data exchange |
-| **2. One-patient site added to an existing sponsor protocol** | Site activation on the company's [IND](../02-lifecycle/ind-submission-and-30-day-clock.md) | **Sponsor** | Expedited [site qualification](pharma-partner-interface-iis.md) → CTA → SIV → drug release |
+| **2. One-patient site added to an existing sponsor protocol** | Site activation on the company's [IND](../02-lifecycle/ind-submission-and-30-day-clock.md) | **Sponsor** | Full [site qualification and activation](pharma-partner-interface-iis.md) → CTA → SIV → drug release |
 | **3. Sponsor-investigator single-patient study** | Physician holds own IND; pharma supplies/funds | **Supporter** ([IIS](pharma-partner-interface-iis.md)) | Medical-Affairs IIS review → supply/grant → safety exchange |
 
 The manufacturer's first job is to **triage to the correct route**, because the document set, the accountable parties, and the legal exposure differ entirely. OSSICRO's engine performs the same triage from the physician side; the two must agree on which route is live.
+
+### Route likelihood is not symmetric — triage accordingly
+
+The three routes are not equally likely to be granted, and a triage that treats them as interchangeable will send a physician down the path pharma is least likely to accept:
+
+- **Route 1 (individual-patient expanded access)** is the purpose-built regulatory mechanism for exactly this fact pattern and is the route manufacturers most commonly grant when they grant anything. The manufacturer's role is bounded (supplier, not sponsor), the process is standing (most companies operate a § 561A-published expanded-access intake), and the marginal cost per request is low.
+- **Route 3 (sponsor-investigator study)** is viable where the physician can carry sponsor obligations and the manufacturer's Medical Affairs function has an IIS program open to single-patient or small-N proposals. It shifts the sponsor burden off the company, which is often what makes it acceptable.
+- **Route 2 (adding a one-patient site to an active company protocol)** is the **least likely route to be granted** and should be the default only when the sponsor has an open site-identification need that the physician's site happens to fill. See the next section for why.
+
+This ranking is an interpretive position grounded in sponsor practice, not a regulatory requirement; it is nevertheless the ordering OSSICRO's triage applies unless facts indicate otherwise.
+
+## Why Route 2 is the hard sell: sponsor-side costs OSSICRO cannot reduce
+
+OSSICRO's dossier compresses the *site-side* qualification evidence, but adding any site — even a one-subject site — to an active protocol imposes **sponsor-side marginal costs that software running at the site does not absorb**:
+
+- **Protocol-specific EDC build:** a new site account, roles, and user training in the sponsor's validated EDC instance.
+- **IRT/RTSM configuration and a new drug-supply shipping lane:** randomization/trial-supply system changes plus depot-to-site logistics, qualification of the shipping route, and temperature-excursion handling for a lane that will serve one subject.
+- **Monitoring:** scheduled interim monitoring visits (or risk-based remote equivalents) for a one-subject site — a per-site fixed cost that no enrollment volume amortizes.
+- **Indemnification and insurance:** amendment of the sponsor's clinical-trial insurance and indemnity schedules to add the site and institution.
+- **Inspection footprint:** every added site is an added [BIMO](fda-interactions-meetings-holds.md)-inspectable node the sponsor must stand behind.
+- **Internal change control on an active protocol:** site-list changes ripple through the sponsor's TMF, monitoring plan, and (where applicable) regulatory notifications — process cost borne entirely by the sponsor mid-enrollment.
+
+Because these costs are the sponsor's and are largely fixed per site, sponsors mid-enrollment **routinely refuse one-patient site additions outright**. The expected counter-offers, which the physician should anticipate rather than treat as failure:
+
+- **Referral to the nearest active site** — the sponsor keeps its site list closed and offers the patient screening at an existing site; or
+- **Individual-patient expanded access (Route 1)** — the sponsor supplies drug outside the trial, keeping the trial's site economics and data integrity untouched.
+
+Both counter-offers are legitimate and often serve the patient faster than a site-activation fight. OSSICRO's triage therefore prefers Routes 1 and 3 and surfaces Route 2 only where travel/medical constraints rule out an existing site *and* the sponsor has signaled openness to site addition. Where a sponsor's risk assessment does permit an expedited qualification in place of a full SQV, ICH E6(R3) risk-proportionality supports it — but that is the sponsor's discretionary call, not a package the physician can compel.
 
 ## What the manufacturer needs to say yes (the acceptance gate)
 
@@ -41,9 +69,9 @@ A sponsor's trust gate for an unproven, tiny site is **evidence of legally-accou
 3. **Demonstrable GCP training** (ICH E6(R3)) for the PI and any delegated staff.
 4. **SOPs** for [informed consent](informed-consent-document-vs-event.md), [drug accountability/storage](../03-documents/drug-accountability-log.md) (temperature-monitored), source documentation, and AE/SAE reporting.
 5. **[Financial disclosures](../03-documents/form-fda-3454-3455-financial-disclosure.md)** (Part 54; Forms 3454/3455) and an [FMV-set](../03-documents/clinical-trial-agreement-and-budget.md) budget where any payment flows.
-6. **A validated, [Part 11](../05-ossicro-system/part-11-and-ai-credibility.md)-compliant document/data environment** with audit trails and access control.
+6. **A validated, [Part 11](../05-ossicro-system/part-11-and-ai-credibility.md)-compliant document/data environment** — for **Routes 2 and 3**, where trial records subject to Part 11 predicate rules are created and maintained electronically. For **Route 1** (individual-patient expanded access) this is *not* a manufacturer requirement: treating physicians run expanded access on ordinary medical-records practice (paper or institutional EMR), and expanded-access coordinators do not demand Part 11 validation evidence. OSSICRO's Part 11 tooling is a convenience for the Route 1 physician, not a gate item.
 7. **Pharmacovigilance intake** capable of meeting expedited-reporting timelines.
-8. **Inspection readiness** ([BIMO](fda-interactions-meetings-holds.md)).
+8. **Inspection readiness** ([BIMO](fda-interactions-meetings-holds.md)) — proportionate to route; for Route 1 this reduces to keeping records adequate to the § 312.310 treatment plan and reporting duties.
 
 The [research corpus](../references/institutional-resources.md)'s load-bearing finding: "the single most persuasive artifact to a skeptical sponsor is a complete, internally-consistent essential-documents package plus a credentialed accountable investigator." That is the exact deliverable OSSICRO is built to produce.
 
@@ -68,17 +96,17 @@ Whichever route is live, a **safety-data exchange** must be defined so that adve
 
 The economic tension — full activation cost vs. a one-patient engagement — is resolved by **risk-proportionality** (ICH E6(R3)): the package is scaled to a single-patient treatment or study, not to a multi-site pivotal trial, while every irreducible element is still present. A minimal-but-compliant n-of-1 package is, per route:
 
-- **Expanded access (Route 1):** [Form 3926](../03-documents/form-fda-3926-expanded-access.md) + clinical narrative + treatment/monitoring plan; the manufacturer's LOA; physician qualification statement; [consent form](../03-documents/informed-consent-form.md); IRB approval or § 56.105 chair concurrence; drug-accountability SOP. **No CTA, no full site-activation binder** — expanded access is treatment, not a trial.
-- **One-patient site (Route 2):** the standard [activation essential-document set](pharma-partner-interface-iis.md) (CTA + FMV budget, IRB approval, 1572, CVs/licenses, 3454/3455, delegation log, training, SOPs), run through an **expedited** qualification rather than a full SQV where the sponsor's risk assessment permits.
+- **Expanded access (Route 1):** [Form 3926](../03-documents/form-fda-3926-expanded-access.md) + clinical narrative + treatment/monitoring plan; the manufacturer's LOA; physician qualification statement; [consent form](../03-documents/informed-consent-form.md); IRB approval or § 56.105 chair concurrence; drug-accountability SOP; ordinary medical-records practice for documentation. **No CTA, no full site-activation binder, no Part 11 validation evidence** — expanded access is treatment, not a trial.
+- **One-patient site (Route 2):** the standard [activation essential-document set](pharma-partner-interface-iis.md) (CTA + FMV budget, IRB approval, 1572, CVs/licenses, 3454/3455, delegation log, training, SOPs). A dossier this complete supports the *site side* of qualification, and where the sponsor's risk assessment permits, E6(R3) supports an expedited qualification in place of a full SQV — but the sponsor-side marginal costs enumerated above remain, and the realistic outcome is often a counter-offer (referral to an active site, or Route 1) rather than activation.
 - **Sponsor-investigator study (Route 3):** IIS concept + protocol; support/grant agreement; the physician's own [IND package](../02-lifecycle/pre-ind-and-ind-preparation.md); SDEA; financial disclosure.
 
 > [!interpretive] OSSICRO position
-> OSSICRO's wedge on the pharma side is a **[verifiable site-qualification dossier](../05-ossicro-system/verifiable-site-qualification-dossier.md)**: a citation-complete, hash-chained manifest that maps each acceptance-gate requirement (1–8 above) to the artifact that satisfies it, its governing citation, and the human signer — rendered so a Medical Affairs reviewer or expanded-access coordinator can verify a one-patient site in a single pass instead of running full onboarding machinery. This is what makes accepting an n-of-1 site economically rational for the manufacturer: the coordination cost that normally makes tiny engagements uneconomic is absorbed by the software, while the accountable spine (PI qualification, IRB, consent, causality, supply decision) stays human and gated. The claim that a verifiable dossier is *sufficient* to change a manufacturer's acceptance calculus is interpretive and unproven at scale; what is confirmed is that a complete, credentialed, internally-consistent package is what a sponsor's trust gate actually requires. The failed disintermediation plays ([Science 37, TrialSpark](../00-overview/failed-disintermediation-case-studies.md)) warn that the dossier's value depends on a real accountable entity standing behind it — the [micro-CRO accountable layer](../01-roles-responsibilities/micro-cro-accountable-layer.md) or the sponsor-investigator personally — never the software itself. Status: interpretive.
+> OSSICRO's wedge on the pharma side is a **[verifiable site-qualification dossier](../05-ossicro-system/verifiable-site-qualification-dossier.md)**: a citation-complete, hash-chained manifest that maps each acceptance-gate requirement (1–8 above) to the artifact that satisfies it, its governing citation, and the human signer — rendered so a Medical Affairs reviewer or expanded-access coordinator can verify a one-patient site in a single pass instead of running full onboarding machinery. The dossier's leverage is greatest where site-side evidence is the binding constraint (Routes 1 and 3); it cannot make Route 2 economic for a sponsor, because the sponsor's own marginal costs (EDC build, IRT/supply lane, monitoring, insurance, inspection footprint, change control) are outside the site's control. The claim that a verifiable dossier is *sufficient* to change a manufacturer's acceptance calculus is interpretive and unproven at scale; what is confirmed is that a complete, credentialed, internally-consistent package is what a sponsor's trust gate actually requires. The failed disintermediation plays ([Science 37, TrialSpark](../00-overview/failed-disintermediation-case-studies.md)) warn that the dossier's value depends on a real accountable entity standing behind it — the [micro-CRO accountable layer](../01-roles-responsibilities/micro-cro-accountable-layer.md) or the sponsor-investigator personally — never the software itself. Status: interpretive.
 
 ## What OSSICRO generates vs. what stays human
 
-- **Generates (drafts for review):** route triage; the per-route minimal-but-compliant package; the verifiable qualification dossier mapped to the manufacturer's acceptance gate; the LOA/supply-request and safe-harbor-shaped support agreement skeleton; the SDEA scaffold; safety-report drafts and deadline computation.
-- **Stays human/entity (gated):** the manufacturer's supply decision and LOA signature; FMV and anti-kickback judgment; PI qualification attestation; IRB approval; the consent event; causality/expectedness determinations; and the accountable entity that stands behind the dossier.
+- **Generates (drafts for review):** route triage (Routes 1/3 preferred; Route 2 flagged with its expected counter-offers); the per-route minimal-but-compliant package; the verifiable qualification dossier mapped to the manufacturer's acceptance gate; the LOA/supply-request and safe-harbor-shaped support agreement skeleton; the SDEA scaffold; safety-report drafts and deadline computation.
+- **Stays human/entity (gated):** the manufacturer's supply decision and LOA signature; the sponsor's site-addition and SQV-waiver decisions; FMV and anti-kickback judgment; PI qualification attestation; IRB approval; the consent event; causality/expectedness determinations; and the accountable entity that stands behind the dossier.
 
 ## Related
 - [[single-patient-site-enrollment]]
