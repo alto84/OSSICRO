@@ -33,6 +33,8 @@ Given a structured `Study` record, the engine:
 | `ossicro/validate.py` | rule engine |
 | `ossicro/gates.py` | gate enforcement / human sign-off recording |
 | `ossicro/compliance.py` | compliance map |
+| `ossicro/register_linter.py` | anti-AI-slop **register linter** (deterministic; `python -m ossicro.register_linter <file>`) |
+| `registry/banned-constructions.json` | versioned banned-construction registry (LLM mannerisms / promotional slop) |
 | `ossicro/cli.py` | `python -m ossicro.cli demo` |
 | `fixtures/sample_study.json` | synthetic single-patient (n-of-1) sponsor-investigator study — no real PHI |
 
