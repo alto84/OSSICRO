@@ -1,0 +1,87 @@
+{
+  "study_id": "SI-2026-001",
+  "title": "A Phase 2 Single-Patient Study of Investigational Agent XYZ-101 in Refractory Focal Epilepsy",
+  "phase": "2",
+  "protocol_number": "XYZ101-EPIL-002",
+  "protocol_version": "2.0",
+  "ind_number": "IND 176432",
+  "ind_serial_number": "0000",
+  "drug": { "name": "XYZ-101 (investigational)" },
+  "investigator": {
+    "name": "Jordan A. Rivera, MD",
+    "degrees": "MD; Board-certified Neurology; 12 years clinical research experience (CV attached)",
+    "address": "Montclair Neurology Associates, 200 Bloomfield Ave, Montclair, NJ 07042",
+    "license_number": "NJ-MD-88213",
+    "license_state": "NJ",
+    "phone": "973-555-0142"
+  },
+  "site": {
+    "name": "Montclair Neurology Associates",
+    "address": "200 Bloomfield Ave, Montclair, NJ 07042",
+    "clinical_lab": {
+      "name": "Quest Diagnostics - Teterboro",
+      "address": "1 Malcolm Ave, Teterboro, NJ 07608"
+    }
+  },
+  "irb": {
+    "name": "Advarra IRB",
+    "address": "6100 Merriweather Dr, Suite 600, Columbia, MD 21044",
+    "phone": "877-992-4724"
+  },
+  "subinvestigators": "None (single-investigator site)",
+  "contacts": {
+    "monitor_name": "Jordan A. Rivera, MD (sponsor-investigator)",
+    "monitor_phone": "",
+    "injury_contact_name": "Jordan A. Rivera, MD",
+    "injury_contact_phone": "973-555-0142",
+    "research_contact": "Study Coordinator, 973-555-0148"
+  },
+  "delegation": { "effective_date": "2026-07-15" },
+  "consent": {
+    "purpose": "to evaluate the safety and preliminary efficacy of XYZ-101 in reducing seizure frequency in refractory focal epilepsy",
+    "duration": "approximately 24 weeks (screening, a 16-week treatment period, and follow-up)",
+    "procedures": "clinic visits, electroencephalography (EEG), blood draws, a seizure diary, and administration of the investigational agent XYZ-101",
+    "risks": "possible dizziness, somnolence, and elevated liver enzymes; because XYZ-101 is investigational, there may be risks that are not yet known",
+    "benefits": "your seizures may or may not improve; information from this study may help future patients with epilepsy",
+    "alternatives": "continued standard antiseizure medications, participation in a different clinical trial, or making no change to your current treatment",
+    "confidentiality_statement": "your research records will be kept confidential to the extent permitted by law"
+  },
+  "required_documents": [
+    "form-fda-1571-ind-cover",
+    "form-fda-1572-statement-of-investigator",
+    "delegation-of-authority-log",
+    "informed-consent-form-part50",
+    "clinical-protocol-ich-m11-ceshharp",
+    "investigators-brochure",
+    "data-safety-monitoring-plan"
+  ],
+  "existing_documents": [
+    {
+      "doc_id": "clinical-protocol-ich-m11-ceshharp",
+      "state": "approved",
+      "fields": {
+        "protocol_number": "XYZ101-EPIL-002",
+        "protocol_version": "1.0",
+        "protocol_date": "2026-05-01",
+        "title": "A Phase 2 Single-Patient Study of Investigational Agent XYZ-101 in Refractory Focal Epilepsy",
+        "objectives": "Primary: characterize safety and tolerability. Secondary: change in monthly seizure frequency.",
+        "eligibility_criteria": "Adults with refractory focal epilepsy; >= 4 seizures/month; failed >= 2 antiseizure medications.",
+        "dosing_plan": "XYZ-101 titrated per the protocol dose-escalation schedule.",
+        "safety_monitoring": "Per the Data and Safety Monitoring Plan and the medical monitor.",
+        "statistical_section": "Descriptive summaries; single-patient (n-of-1) design.",
+        "investigator_name": "Jordan A. Rivera, MD",
+        "ind_number": "IND 176432"
+      }
+    }
+  ],
+  "safety_reports": [
+    {
+      "report_id": "SAE-001",
+      "subject_code": "S-01",
+      "event_term": "Elevated ALT (Grade 2)",
+      "onset_date": "2026-08-10",
+      "serious": true,
+      "seriousness_criteria": "medically important event"
+    }
+  ]
+}

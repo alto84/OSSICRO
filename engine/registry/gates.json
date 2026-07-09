@@ -1,0 +1,58 @@
+[
+  {
+    "id": "informed-consent",
+    "name": "Informed consent event",
+    "description": "Obtaining and documenting a subject's legally effective informed consent. OSSICRO drafts the consent FORM; the consent EVENT (disclosure, comprehension, voluntary agreement, signature) is a human act between a qualified clinician and the subject and can never be executed by software.",
+    "responsible_role": "investigator",
+    "citation": "21 CFR 50.20, 50.25, 50.27; 21 CFR 312.60"
+  },
+  {
+    "id": "irb-approval",
+    "name": "IRB review and approval determination",
+    "description": "The determination that a study, consent document, or amendment satisfies the criteria for approval is the convened (or expedited) IRB's judgment. OSSICRO prepares submission packages and tracks status; it never renders or records an approval on the IRB's behalf.",
+    "responsible_role": "irb",
+    "citation": "21 CFR 56.108-56.111; 21 CFR 312.66"
+  },
+  {
+    "id": "sae-causality",
+    "name": "SAE causality / expectedness determination",
+    "description": "Judging whether a serious adverse event is a suspected adverse reaction (reasonable possibility of causal relationship) and whether it is unexpected is a medical judgment of the qualified physician / medical monitor. OSSICRO computes deadlines and drafts report shells; it never sets causality or expectedness.",
+    "responsible_role": "medical-monitor",
+    "citation": "21 CFR 312.32(a), 312.32(b), 312.32(c); ICH E2A"
+  },
+  {
+    "id": "ind-1571-signature",
+    "name": "Form FDA 1571 sponsor signature",
+    "description": "The sponsor's (or sponsor-investigator's) signature on Form FDA 1571 is a binding legal attestation of the sponsor commitments, including the 30-day wait. Software cannot be a sponsor (21 CFR 312.52) and cannot execute this signature.",
+    "responsible_role": "sponsor-investigator",
+    "citation": "21 CFR 312.23(a)(1); 21 CFR 312.52; Form FDA 1571"
+  },
+  {
+    "id": "1572-signature",
+    "name": "Form FDA 1572 investigator signature",
+    "description": "The investigator's signature on the Statement of Investigator is a personal, non-delegable commitment to conduct the study per the protocol, Part 50, and Part 56. OSSICRO fills the form; only the named investigator signs it.",
+    "responsible_role": "investigator",
+    "citation": "21 CFR 312.53(c)(1); Form FDA 1572"
+  },
+  {
+    "id": "financial-disclosure-certification",
+    "name": "Financial disclosure certification / disclosure",
+    "description": "Certification (Form 3454) or disclosure (Form 3455) of financial interests is a personal attestation by each listed investigator under Part 54. OSSICRO pre-populates from structured data; the certifying signature is human.",
+    "responsible_role": "investigator",
+    "citation": "21 CFR 54.4; Forms FDA 3454/3455"
+  },
+  {
+    "id": "submission-to-fda",
+    "name": "Submission to FDA",
+    "description": "Transmitting any document to FDA (IND, amendment, safety report, annual report, withdrawal notice) is an explicit human-authorized act of the sponsor/sponsor-investigator. OSSICRO assembles complete, validated packages; it never files.",
+    "responsible_role": "sponsor-investigator",
+    "citation": "21 CFR 312.20, 312.23, 312.40; FD&C Act 505(i)"
+  },
+  {
+    "id": "statistical-signoff",
+    "name": "Statistical sign-off",
+    "description": "Approval of the statistical analysis plan and the statistical content of the clinical study report is the qualified biostatistician's professional judgment. OSSICRO drafts structure and checks pre-specification; it does not sign off analyses.",
+    "responsible_role": "biostatistician",
+    "citation": "ICH E9 / E9(R1); ICH E3"
+  }
+]

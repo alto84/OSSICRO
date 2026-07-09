@@ -17,3 +17,7 @@ Running tally will be appended as OSSICRO phases execute.
 - 7 Fable regulatory/document briefs: all reported `claude-fable-5` (no fallback). [1 returned a probe placeholder - regenerated separately.]
 - 3 Sonnet academic/institutional/publication sweeps: all reported `claude-sonnet-5` (no fallback).
 - 1 Fable synthesis: reported `claude-fable-5` (no fallback).
+
+## OSSICRO Phase 3 (2026-07-09)
+- Wiki authoring (30 Fable cluster-agents): all reported `claude-fable-5` (no fallback); 129 pages, no probes.
+- Engine builder (standalone Fable): reported `claude-fable-5`; TERMINATED by session rate-limit mid-write (had written 9/14 files); orchestrator completed the remaining 5 files by hand and verified (demo runs, 9/9 tests pass).
