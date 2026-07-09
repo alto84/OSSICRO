@@ -2,7 +2,20 @@
 
 > Open-source coordination software + an exhaustively-researched regulatory knowledge base that lets an enrolling clinician assemble, check, validate, and route **every document** required to match a patient to an early-phase trial, activate a site, and reach enrollment — across sponsor, CRO, investigator / sponsor-investigator, IRB/ethics, DSMB/safety, pharmacovigilance, and pharma partner.
 
-**Status:** early build, in active autonomous development. Repository: **https://github.com/alto84/OSSICRO**. The `wiki/` folder is an **Obsidian vault** (`[[wikilinks]]`, frontmatter, tags — see `wiki/_conventions.md`); local originals of cited public/open documents are kept under `sources/`.
+**Status:** reviewable prototype, built autonomously. Repository: **https://github.com/alto84/OSSICRO**. The `wiki/` folder is an **Obsidian vault** (`[[wikilinks]]`, frontmatter, tags — see `wiki/_conventions.md`); local originals of cited public/open documents are kept under `sources/`.
+
+### Current state (2026-07-09)
+
+| Area | State |
+|------|-------|
+| **Regulatory wiki** | 129 Obsidian pages across overview, roles, lifecycle, documents, coordination, system, personas, references — regulatory register, cited to 21 CFR / ICH / FDA, non-delegable gates surfaced. Authored by 30 Fable agents. |
+| **Engine** (`engine/`) | Runnable pure-stdlib prototype: 60-document registry + 8 gates; provenance-emitting generation; completeness ledger (green/amber/red); cross-document consistency; rule engine; **code-enforced** gate hard line. `python -m ossicro.cli demo`; **9/9 tests pass**. |
+| **Source library** (`sources/`) | **1,015-document manifest**; **588 originals downloaded** (~342 MB, local + gitignored) — CFR, ICH, FDA guidances/forms, ethics texts, institutional templates, data standards. From a 24-agent Sonnet 5 scrape. |
+| **Frontend** (`frontend/`) | Self-contained, theme-aware pharma-corporate landing page. |
+| **Plan & strategy** | `docs/detailed-plan.md` + `docs/strategy-review-fable-2026-07-09.md` (7 adopted improvements). |
+| **Remaining** | Full 78-doc markdown template library; six-persona QA (legal/regulatory/ethical/physician/patient/pharma) + revise loop. |
+
+**Honesty note.** This is a **prototype for review**, not a production system or validated regulatory tool. The engine is a working demonstration of the design, not the full document set. Regulatory content is researched and cited but **must be independently verified** before any real use. Nothing here performs a non-delegable regulated function.
 
 ---
 
