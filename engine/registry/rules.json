@@ -1,0 +1,155 @@
+[
+  {
+    "id": "R-1572-IRB",
+    "description": "Form 1572 must list the reviewing IRB",
+    "citation": "21 CFR 312.53(c)(1)(iv)",
+    "doc_id": "form-fda-1572-statement-of-investigator",
+    "strategy": "deterministic",
+    "check": "field_nonempty",
+    "principle_text": "Form 1572 item 5 must name the IRB responsible for review and approval of the study. Presence of a named IRB on the form is fact-shaped; whether that IRB is appropriate for the study is a human intake question, not this rule's job.",
+    "params": {
+      "field": "irb_name",
+      "pass_message": "Form 1572 item 5 names the reviewing IRB: {value}",
+      "fail_message": "Form 1572 does not name a reviewing IRB (item 5)."
+    },
+    "resolving_question": "Which IRB (name and address) will review and approve this study? Enter it on Form 1572 item 5 (21 CFR 312.53(c)(1)(iv)).",
+    "version": "2026-07-09"
+  },
+  {
+    "id": "R-1572-PHASE",
+    "description": "Form 1572 item 8 phase must trace to and equal the study record",
+    "citation": "21 CFR 312.53(c)(1)(vii)",
+    "doc_id": "form-fda-1572-statement-of-investigator",
+    "strategy": "provenance",
+    "check": "field_traces_to_study",
+    "principle_text": "Form 1572 item 8 must state the phase of clinical investigation. Migrated from a frozen phase-label whitelist (which over-fired on legitimate labels and validated the string, not its origin): the facts checked are origin and fidelity -- the filled value carries a provenance record tracing to study.phase and equals it. Whether an unusual phase label is appropriate is a human question at study-record intake, not a rendering-time whitelist.",
+    "params": {
+      "field": "phase",
+      "source": "phase",
+      "pass_message": "Form 1572 item 8 phase ({value}) traces to and equals the study record ({source}).",
+      "missing_message": "Form 1572 item 8 phase is missing or empty.",
+      "untraced_message": "Form 1572 item 8 phase does not carry a provenance record tracing to the study record ({source}).",
+      "no_fact_message": "The study record has no phase at path '{source}' for Form 1572 item 8 to trace to.",
+      "mismatch_message": "Form 1572 item 8 phase ({value!r}) does not equal the study record phase ({reference!r})."
+    },
+    "resolving_question": "What phase of clinical investigation will be conducted? State it in the study record and on Form 1572 item 8 (21 CFR 312.53(c)(1)(vii)).",
+    "version": "2026-07-09"
+  },
+  {
+    "id": "R-1571-30DAY",
+    "description": "IND cover must carry the 30-day clock commitment as a verbatim-locked span",
+    "citation": "21 CFR 312.40(b)(1)",
+    "doc_id": "form-fda-1571-ind-cover",
+    "strategy": "provenance",
+    "check": "verbatim_spans_present",
+    "principle_text": "The sponsor must commit not to begin clinical investigations until 30 days after FDA receipt of the IND. Migrated from a substring match on '30 days' and '312.40' (judgment smuggled into a lexical proxy): the commitment sentence is a verbatim-locked template span; generation stamps its provenance record and this rule verifies presence and byte-identity by SHA-256. The property is deterministic and true by construction.",
+    "params": {
+      "spans": ["commitment-30-day-wait"],
+      "sha256": {
+        "commitment-30-day-wait": "2fca142d8d7233dbf6a47d4bdbaf41325dc2e663cc7f5426001e71dc11b768f7"
+      },
+      "pass_message": "Form 1571 carries the verbatim 30-day-wait commitment span (provenance record + SHA-256 verified).",
+      "fail_message": "Form 1571 30-day-wait commitment span failed verification: {problems}"
+    },
+    "resolving_question": "Restore the sponsor commitment not to begin clinical investigations until 30 days after FDA receipt of the IND (21 CFR 312.40(b)(1)).",
+    "version": "2026-07-09"
+  },
+  {
+    "id": "R-ICF-50.25",
+    "description": "ICF must contain the 8 basic elements of informed consent (presence, by construction)",
+    "citation": "21 CFR 50.25(a)(1)-(8)",
+    "doc_id": "informed-consent-form-part50",
+    "strategy": "provenance",
+    "check": "verbatim_spans_present",
+    "principle_text": "The ICF must contain the eight basic elements of informed consent. This rule covers PRESENCE only, which is fact-shaped by construction: the ICF template is structured into eight named element sections, each stamping a provenance record citing its 50.25(a)(n) subsection when rendered. Migrated from marker-string matching (which trained the generator to paste citation strings, not to disclose risks). ADEQUACY of each element is quality-shaped and belongs to the concept reviewer: see R-ICF-50.25-ADEQ.",
+    "params": {
+      "spans": [
+        "icf-element-1",
+        "icf-element-2",
+        "icf-element-3",
+        "icf-element-4",
+        "icf-element-5",
+        "icf-element-6",
+        "icf-element-7",
+        "icf-element-8"
+      ],
+      "sha256": {
+        "icf-element-1": "9b3a963c80a670792f755033530f11f5c32bd4453fb06ca093bae4cd5623a32a",
+        "icf-element-2": "5675a292cabdcca3678317c54ce3b88dde5e3e1d0bdbcd02ced50511e00220f2",
+        "icf-element-3": "31bb7d78b1d0ea8b206c24dbe5cad496794908da7e91974f076d65d271f89608",
+        "icf-element-4": "474d4c14fe10f905d9c614cec4c9d104a8e98efdc35de708d3ea3fe323cf99de",
+        "icf-element-5": "bfafd2fa067e8465d8811643e0a8eeb4786d9d1064823e727e526992c88f5751",
+        "icf-element-6": "53d3370ee6e0efb547cf57bb55ebfa01f9828a50adf8ebe154c1ce201fe49062",
+        "icf-element-7": "fa53e45b006f181fae71377d251746e640b56142e8199e5813f899cf92b5c26b",
+        "icf-element-8": "8cbd90f2a2379b228abb93189d5e74b99bee36884aaf2be186cf4a1b1dd5b7a8"
+      },
+      "pass_message": "ICF contains all 8 basic-element sections of 21 CFR 50.25(a) (provenance records + SHA-256 verified).",
+      "fail_message": "ICF basic-element section verification failed: {problems}"
+    },
+    "resolving_question": "Add the missing basic element section(s) of informed consent to the ICF (21 CFR 50.25(a)).",
+    "version": "2026-07-09"
+  },
+  {
+    "id": "R-ICF-50.25-ADEQ",
+    "description": "ICF basic elements must be substantively adequate for the subject population (concept-reviewed; deferred)",
+    "citation": "21 CFR 50.25(a)(1)-(8)",
+    "doc_id": "informed-consent-form-part50",
+    "strategy": "concept",
+    "check": null,
+    "principle_text": "21 CFR 50.25(a)(1)-(8): assess whether each basic element of informed consent is substantively adequate -- in particular whether the risks section discloses the reasonably foreseeable risks of this product for this population, in language the subject population can understand, without minimization or promotional framing. Presence of the eight sections is verified structurally (R-ICF-50.25); this rule judges whether the filled content actually informs. Deferred: not executed by run_rules; handed to the concept reviewer when the review port lands.",
+    "params": {},
+    "resolving_question": "Does each consent element substantively inform the subject population in language they can understand? Route deficiencies to the drafting physician for rewrite and IRB review.",
+    "version": "2026-07-09"
+  },
+  {
+    "id": "R-DOA-PI",
+    "description": "Delegation log must name the PI of record",
+    "citation": "ICH E6(R3) 2.7; 21 CFR 312.60",
+    "doc_id": "delegation-of-authority-log",
+    "strategy": "deterministic",
+    "check": "field_equals_study",
+    "principle_text": "The delegation log must name the principal investigator of record, matching the study record. Identity equality on a structured field is fact-shaped; investigator supervision itself is non-delegable under 21 CFR 312.60.",
+    "params": {
+      "field": "investigator_name",
+      "path": "investigator.name",
+      "pass_message": "Delegation log names the PI of record: {value}",
+      "mismatch_message": "Delegation log PI ({value!r}) does not match the study PI of record ({reference!r}).",
+      "mismatch_question": "Who is the principal investigator of record? Reconcile the delegation log with the study record (ICH E6(R3) 2.7).",
+      "missing_message": "Delegation log does not name a principal investigator.",
+      "missing_question": "Name the principal investigator on the delegation log (ICH E6(R3) 2.7; supervision is non-delegable under 21 CFR 312.60)."
+    },
+    "resolving_question": "Name the principal investigator on the delegation log (ICH E6(R3) 2.7; supervision is non-delegable under 21 CFR 312.60).",
+    "version": "2026-07-09"
+  },
+  {
+    "id": "R-PROT-VERSION",
+    "description": "Protocol must carry version and date identifiers",
+    "citation": "ICH M11; ICH E6(R3) Appendix B",
+    "doc_id": "clinical-protocol-ich-m11-ceshharp",
+    "strategy": "deterministic",
+    "check": "fields_nonempty",
+    "principle_text": "The protocol must carry a version number and date so amendments are traceable under 21 CFR 312.30. Presence of the identifiers is fact-shaped.",
+    "params": {
+      "fields": ["protocol_version", "protocol_date"],
+      "pass_message": "Protocol carries version and date identifiers.",
+      "fail_message": "Protocol lacks a version and/or date identifier ({missing})."
+    },
+    "resolving_question": "Assign the protocol a version number and date (ICH M11; ICH E6(R3) Appendix B) so amendments are traceable under 21 CFR 312.30.",
+    "version": "2026-07-09"
+  },
+  {
+    "id": "R-SAE-CAUSALITY",
+    "description": "Serious safety reports require a human causality determination (never auto-resolved)",
+    "citation": "21 CFR 312.32(a)-(c); ICH E2A",
+    "doc_id": null,
+    "strategy": "deterministic",
+    "check": "human_determination_pending",
+    "principle_text": "Every serious safety report needs a HUMAN causality/expectedness determination by the medical monitor. Whether a determination has been recorded is fact-shaped; the determination itself is a non-delegable human judgment (gate 'sae-causality'). This rule fails toward the gate and never fills the determination.",
+    "params": {
+      "pass_message": "No serious safety report is awaiting a causality determination.",
+      "fail_message": "{count} serious safety report(s) awaiting human causality/expectedness determination: {ids}. The engine computes deadlines only; it never makes this call."
+    },
+    "resolving_question": "Medical monitor: is there a reasonable possibility the drug caused the event(s) ({ids}), and is each event unexpected per the IB? (21 CFR 312.32(a)-(c); gate 'sae-causality').",
+    "version": "2026-07-09"
+  }
+]

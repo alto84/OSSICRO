@@ -33,6 +33,10 @@ Given a structured `Study` record, the engine:
 | `ossicro/validate.py` | rule engine |
 | `ossicro/gates.py` | gate enforcement / human sign-off recording |
 | `ossicro/compliance.py` | compliance map |
+| `registry/rules.json` | the validation rules **as data**: each `{id, citation, strategy: deterministic\|provenance\|concept}` — the boundary doctrine made executable |
+| `ossicro/rules.py` | rules-as-data loader; fails loudly at load on a missing citation or unknown strategy |
+| `ossicro/review_port.py` | concept-reviewer **port**: `ConceptReviewer` protocol + deterministic offline stub + `validate_report` (drops any finding inside a verbatim-locked span or quoting absent text) |
+| `ossicro/pipeline.py` | `run_check` composes deterministic rules → ledger → consistency → tripwire → concept reviewer → gate packet (cheapest-first, escalate-only; findings add reds/notes, never clear a gate) |
 | `ossicro/register_linter.py` | **register tripwire** — fast, fallible, non-authoritative for voice (deterministic; `python -m ossicro.register_linter <file>`). A clean lint is not a voice claim; voice authority is the concept-based reviewer applying `docs/WRITING-PRINCIPLES.md`. Its chat-residue and (once built) 21 CFR 50.20 rules are genuine hard rules; the mannerism tier is a dated, non-blocking smoke signal |
 | `registry/banned-constructions.json` | two-tier registry via a per-rule `tier` field: **hard-rule** (chat-transcript residue + 21 CFR 50.20 exculpatory-consent, `scope`-gated) hard-fails; **example** (dated mannerisms) is a non-blocking smoke signal that also seeds the concept-based voice reviewer's rubric |
 | `ossicro/cli.py` | `python -m ossicro.cli demo` |

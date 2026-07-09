@@ -217,6 +217,61 @@ FIELD_SOURCES: Dict[str, Dict[str, Tuple[str, str]]] = {
     },
 }
 
+# ---------------------------------------------------------------------------
+# Verbatim-locked template spans: doc_id -> span_id -> (canonical text, citation).
+#
+# These are fixed template prose, present BY CONSTRUCTION of generation.
+# When a registered span renders, generation stamps a ProvenanceRecord for
+# it, so provenance-strategy rules (ossicro.rules) verify the span's
+# presence and byte-identity (SHA-256 registered in registry/rules.json)
+# instead of substring-hunting for proxy words in the prose.
+# ---------------------------------------------------------------------------
+
+VERBATIM_SPANS: Dict[str, Dict[str, Tuple[str, str]]] = {
+    "form-fda-1571-ind-cover": {
+        "commitment-30-day-wait": (
+            "COMMITMENTS: I agree not to begin clinical investigations until 30 days\n"
+            "after FDA's receipt of the IND unless I receive earlier notification by\n"
+            "FDA that the studies may begin (21 CFR 312.40(b)(1)).",
+            "21 CFR 312.40(b)(1)",
+        ),
+    },
+    "informed-consent-form-part50": {
+        "icf-element-1": (
+            "1. RESEARCH STATEMENT, PURPOSE, DURATION, PROCEDURES - 50.25(a)(1)",
+            "21 CFR 50.25(a)(1)",
+        ),
+        "icf-element-2": (
+            "2. REASONABLY FORESEEABLE RISKS OR DISCOMFORTS - 50.25(a)(2)",
+            "21 CFR 50.25(a)(2)",
+        ),
+        "icf-element-3": (
+            "3. BENEFITS THAT MAY REASONABLY BE EXPECTED - 50.25(a)(3)",
+            "21 CFR 50.25(a)(3)",
+        ),
+        "icf-element-4": (
+            "4. APPROPRIATE ALTERNATIVE PROCEDURES OR TREATMENTS - 50.25(a)(4)",
+            "21 CFR 50.25(a)(4)",
+        ),
+        "icf-element-5": (
+            "5. CONFIDENTIALITY OF RECORDS - 50.25(a)(5)",
+            "21 CFR 50.25(a)(5)",
+        ),
+        "icf-element-6": (
+            "6. COMPENSATION AND MEDICAL TREATMENT FOR INJURY - 50.25(a)(6)",
+            "21 CFR 50.25(a)(6)",
+        ),
+        "icf-element-7": (
+            "7. WHOM TO CONTACT - 50.25(a)(7)",
+            "21 CFR 50.25(a)(7)",
+        ),
+        "icf-element-8": (
+            "8. VOLUNTARY PARTICIPATION - 50.25(a)(8)",
+            "21 CFR 50.25(a)(8)",
+        ),
+    },
+}
+
 MISSING_MARKER = "[[MISSING: %s]]"
 
 
@@ -259,6 +314,19 @@ def generate_document(study: Study, doc_id: str, doc_registry: Dict[str, dict]) 
         return value
 
     rendered = _PLACEHOLDER.sub(substitute, template)
+
+    # Stamp provenance for verbatim-locked template spans that rendered.
+    # The span is present by construction; the record is what lets a
+    # provenance-strategy rule verify it without inspecting prose meaning.
+    for span_id, (span_text, span_citation) in VERBATIM_SPANS.get(doc_id, {}).items():
+        if span_text in rendered:
+            provenance.append(
+                ProvenanceRecord(
+                    span=span_id,
+                    source="template:%s#%s" % (doc_id, span_id),
+                    citation=span_citation,
+                )
+            )
 
     return Document(
         doc_id=doc_id,

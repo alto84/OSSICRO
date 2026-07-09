@@ -49,6 +49,23 @@ class ProvenanceRecord:
 
 
 @dataclass
+class StudyFact:
+    """A provenance-stamped study-record fact (StudyFacts v0).
+
+    The canonical fact spine the generators consume: every value carries
+    where it came from and who (if anyone) attested it. Empty
+    ``attested_by``/``date`` means the datum entered at study-record
+    intake without a recorded attestation -- honestly unattested, never
+    fabricated.
+    """
+
+    value: str
+    source: str          # dotted path into the raw study record, e.g. 'investigator.name'
+    attested_by: str = ""  # named human who attested the value ('' = unattested intake)
+    date: str = ""         # attestation/collection date ('' = unrecorded)
+
+
+@dataclass
 class HumanSignoff:
     """A recorded human execution of a non-delegable gate.
 
@@ -265,3 +282,31 @@ class Study:
             return None
         text = str(node).strip()
         return text if text else None
+
+    def fact(self, path: str) -> Optional[StudyFact]:
+        """Return the provenance-stamped StudyFact at a dotted path, or None.
+
+        Wraps ``resolve`` (which stays the single raw-data walker):
+        the fact's ``source`` is the path itself, and attestation
+        metadata is read from ``raw['attestations'][path]`` when the
+        intake record carries it, e.g.
+
+            "attestations": {"phase": {"attested_by": "Jordan A. Rivera, MD",
+                                       "date": "2026-07-01"}}
+
+        Absent that, the fact is returned with empty attribution --
+        marked unattested rather than invented.
+        """
+        value = self.resolve(path)
+        if value is None:
+            return None
+        attestations = self.raw.get("attestations", {})
+        meta = attestations.get(path, {}) if isinstance(attestations, dict) else {}
+        if not isinstance(meta, dict):
+            meta = {}
+        return StudyFact(
+            value=value,
+            source=path,
+            attested_by=str(meta.get("attested_by", "")).strip(),
+            date=str(meta.get("date", "")).strip(),
+        )
