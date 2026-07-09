@@ -33,8 +33,8 @@ Given a structured `Study` record, the engine:
 | `ossicro/validate.py` | rule engine |
 | `ossicro/gates.py` | gate enforcement / human sign-off recording |
 | `ossicro/compliance.py` | compliance map |
-| `ossicro/register_linter.py` | anti-AI-slop **register linter** (deterministic; `python -m ossicro.register_linter <file>`) |
-| `registry/banned-constructions.json` | versioned banned-construction registry (LLM mannerisms / promotional slop) |
+| `ossicro/register_linter.py` | **register tripwire** — fast, fallible, non-authoritative for voice (deterministic; `python -m ossicro.register_linter <file>`). A clean lint is not a voice claim; voice authority is the concept-based reviewer applying `docs/WRITING-PRINCIPLES.md`. Its chat-residue and (once built) 21 CFR 50.20 rules are genuine hard rules; the mannerism tier is a dated, non-blocking smoke signal |
+| `registry/banned-constructions.json` | two-tier registry via a per-rule `tier` field: **hard-rule** (chat-transcript residue + 21 CFR 50.20 exculpatory-consent, `scope`-gated) hard-fails; **example** (dated mannerisms) is a non-blocking smoke signal that also seeds the concept-based voice reviewer's rubric |
 | `ossicro/cli.py` | `python -m ossicro.cli demo` |
 | `fixtures/sample_study.json` | synthetic single-patient (n-of-1) sponsor-investigator study — no real PHI |
 
