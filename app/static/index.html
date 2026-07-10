@@ -353,6 +353,15 @@
   .savecard{position:sticky;bottom:10px;z-index:25}
   @keyframes fieldflash{0%,100%{box-shadow:none}25%,75%{box-shadow:0 0 0 3px color-mix(in srgb,var(--amber) 65%,transparent)}}
   .field.flash{animation:fieldflash 1.6s ease 2;border-radius:8px}
+  .card.flash{animation:fieldflash 1.6s ease 2}
+
+  /* ---------- committed profile (attribution of the input-of-record) ---------- */
+  .commitcard{border-color:color-mix(in srgb,var(--brand) 35%,var(--line))}
+  .commitmeta{display:flex;gap:8px 18px;flex-wrap:wrap;align-items:center;margin:8px 0 2px;font-size:.9rem}
+  .pendrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--line);
+    border-left:4px solid var(--amber);border-radius:10px;padding:9px 13px;margin:7px 0;background:var(--surface)}
+  .pendrow .plbl{font-weight:700;font-size:.88rem;flex:1;min-width:170px}
+  .pendrow .plbl code{font-size:.68rem;color:var(--muted);background:transparent;padding:0}
 
   /* ---------- sign-off form (records the human act; never performs it) ---------- */
   .soform{margin-top:9px;padding:12px 14px;border-radius:10px;background:var(--surface);
@@ -416,7 +425,7 @@
     <button class="step" data-screen="intake" disabled><span class="n">2</span>
       <span class="steplbl">Physician intake<small>chart import · field-by-field confirm</small></span></button>
     <button class="step" data-screen="check" disabled><span class="n">3</span>
-      <span class="steplbl">Generate &amp; ledger<small>drafts · clocks · gates</small></span></button>
+      <span class="steplbl">Commit, generate &amp; ledger<small>commit profile · drafts · clocks · gates</small></span></button>
     <button class="step" data-screen="package" disabled><span class="n">4</span>
       <span class="steplbl">Package review<small>FDA + manufacturer views</small></span></button>
   </nav>
@@ -520,6 +529,24 @@
         The ledger, clocks, and package below no longer reflect the saved intake — regenerate first.</span>
       <button class="btn primary" id="staleRegenBtn">Regenerate now</button>
     </div>
+
+    <!-- ---- committed profile: the named attribution of the input-of-record ---- -->
+    <div class="card commitcard" id="commitCard">
+      <div class="eyebrow">Input of record</div>
+      <h3 style="margin-bottom:2px">Committed profile
+        <span class="pill amber" id="profilePill" style="vertical-align:2px"><span class="dot"></span>…</span></h3>
+      <p class="muted small" style="margin-top:0;max-width:86ch">
+        Before any draft is generated, a named clinician <b>commits</b> the confirmed intake as the
+        input of record — an attribution of <i>who confirmed what data these drafts are generated
+        from</i>. It is <b>not a signature</b> and executes no regulatory act: consent, IRB
+        concurrence, causality, and submission to FDA remain their humans' non-delegable gates.
+        The commit stores your name, the time, and SHA-256 fingerprints of each confirmed value —
+        never the values themselves.
+      </p>
+      <div id="commitBody"><p class="muted small" style="margin:6px 0 0">
+        The profile state loads with the case — save the intake or run a check.</p></div>
+    </div>
+
     <div class="card tight">
       <div class="btnrow">
         <button class="btn primary" id="genBtn">Generate documents</button>
@@ -688,9 +715,14 @@
      POST /api/case
      POST /api/case/{id}/fhir/import   (maps a FHIR bundle -> PROPOSALS ONLY; never writes intake)
      POST /api/case/{id}/intake        (input-of-record — only physician-confirmed values arrive here)
-     POST /api/case/{id}/generate
-     GET  /api/case/{id}/check
-     GET  /api/case/{id}/package
+     POST /api/case/{id}/profile/commit   {actor}             (named attribution of the input-of-record)
+     POST /api/case/{id}/profile/confirm  {actor, field_ids}  (per-field re-confirmation after a change)
+     POST /api/case/{id}/generate      (409 unless the profile is COMMITTED with a matching hash)
+     GET  /api/case/{id}/check         (runs in every state — it is the repair loop)
+     GET  /api/case/{id}/package       (409 unless COMMITTED, same as generate)
+   GET /api/case/{id} and /check both return a "profile" block:
+     {state:"UNCOMMITTED"|"COMMITTED"|"CONFIRMING", profile_hash, pending:[field_ids],
+      committed_by, committed_at}
    ============================================================ */
 
 const S = {           // client state
@@ -701,7 +733,8 @@ const S = {           // client state
   check: null,        // {ledger,totals,consistency,gate_packet,clocks,stale,...}
   pkg: null,          // package payload
   intakeRev: 0,       // server revision of the saved intake
-  generatedRev: null  // intake revision the current drafts were generated from
+  generatedRev: null, // intake revision the current drafts were generated from
+  profile: null       // {state,profile_hash,pending,committed_by,committed_at} | null = not yet reported
 };
 
 /* ---------------- utilities ---------------- */
@@ -737,7 +770,10 @@ async function api(path, opts){
   try { body = txt ? JSON.parse(txt) : null; } catch { body = { raw: txt }; }
   if (!res.ok){
     const msg = (body && (body.error || body.detail || body.message)) || (res.status + " " + res.statusText);
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = res.status;      // callers can branch (e.g. 409 = profile not committed)
+    err.body = body;
+    throw err;
   }
   return body;
 }
@@ -786,6 +822,7 @@ $("#startBtn").addEventListener("click", async () => {
     S.caseId = caseRes.case_id;
     S.schema = schemaRes.fields || [];
     S.intakeRev = 0; S.generatedRev = null;
+    setProfile(caseRes.profile || { state:"UNCOMMITTED", pending:[] });  // fresh case = uncommitted
     location.hash = S.caseId;                  // resumable URL — survives restarts
     $("#caseChip").textContent = "case " + S.caseId;
     renderIntake();
@@ -828,6 +865,7 @@ async function resumeCase(cid){
     S.schema = schemaRes.fields || [];
     S.intakeRev = caseRes.intake_rev ?? 0;
     S.generatedRev = caseRes.generated_rev ?? null;
+    setProfile(caseRes.profile || null);
     $("#caseChip").textContent = "case " + cid;
     renderIntake();
     const serverIntake = caseRes.intake || {};
@@ -864,9 +902,10 @@ async function resumeCase(cid){
 function staleNow(){ return S.generatedRev != null && S.intakeRev !== S.generatedRev; }
 function updateStaleUI(){
   const stale = staleNow();
+  const profBlocked = !!(S.profile && S.profile.state !== "COMMITTED");
   $("#staleBanner3").classList.toggle("show", stale);
   $("#staleBanner4").classList.toggle("show", stale);
-  $("#toPackageBtn").disabled = stale || !S.check;
+  $("#toPackageBtn").disabled = stale || !S.check || profBlocked;
   ["#exportJsonBtn", "#verifyPkgBtn", "#printBtn", "#refreshPkgBtn"]
     .forEach(sel => { const b = $(sel); if (b) b.disabled = stale; });
 }
@@ -1364,6 +1403,10 @@ async function saveIntake(opts){
     S.intakeSaved = true;
     if (res && res.intake_rev != null) S.intakeRev = res.intake_rev;
     mirrorIntake();
+    // An intake write after a commit is the COMMITTED -> CONFIRMING transition;
+    // re-read the profile block so the commit panel reflects it immediately.
+    if (res && res.profile !== undefined) setProfile(res.profile);
+    else await refreshProfile();
     updateStaleUI();
     const n = Object.keys(fields).length, total = S.schema.length;
     $("#intakeStatus").textContent =
@@ -1385,8 +1428,212 @@ $("#saveGenBtn").addEventListener("click", async () => {
   if (await saveIntake()){ show("check"); await generateDocs(); }
 });
 
+/* ---------------- committed profile (HC1/HC5, INV-8) ----------------
+   Commit is a NAMED ATTRIBUTION of the input-of-record: who confirmed the
+   data these drafts are generated from. It is not a signature, executes no
+   gate, and the server stores only value hashes — never chart values.
+   State machine (server-derived, never stored):
+     UNCOMMITTED --commit{actor}--> COMMITTED --any intake edit--> CONFIRMING
+     CONFIRMING --confirm{actor,field_ids} drains pending--> COMMITTED (new hash)
+   /generate and /package 409 unless COMMITTED; /check runs in every state. */
+const P = { actor: "" };   // confirming clinician — persists across panel re-renders
+
+function fieldLabel(fid){
+  const f = schemaField(fid);
+  return f ? f.label : fid;
+}
+function fmtWhen(iso){
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d) ? String(iso) : d.toLocaleString();
+}
+function setProfile(p){
+  S.profile = p || null;
+  renderCommitPanel();
+  updateStaleUI();
+}
+function setProfileFrom409(body){
+  // a 409 from generate/package/commit carries {state, pending} — fold it in
+  setProfile(Object.assign({}, S.profile || {}, {
+    state: body.state || "UNCOMMITTED",
+    pending: body.pending || []
+  }));
+}
+async function refreshProfile(){
+  if (!S.caseId) return;
+  try {
+    const res = await api("/api/case/" + encodeURIComponent(S.caseId));
+    if (res && res.profile !== undefined) setProfile(res.profile);
+  } catch {}   // panel keeps its last honest state; next check refreshes it
+}
+
+function renderCommitPanel(){
+  const pill = $("#profilePill"), box = $("#commitBody");
+  if (!pill || !box) return;
+  const p = S.profile;
+  if (!p){
+    pill.className = "pill amber";
+    pill.innerHTML = '<span class="dot"></span>not loaded';
+    box.innerHTML = '<p class="muted small" style="margin:6px 0 0">' +
+      'The profile state loads with the case — save the intake or run a check.</p>';
+    return;
+  }
+  const st = String(p.state || "UNCOMMITTED").toUpperCase();
+  const actorBox = `
+    <label class="confirmclin">Confirming clinician
+      <input type="text" id="commitActor" placeholder="Your name" autocomplete="off"
+             value="${esc(P.actor)}">
+    </label>`;
+  if (st === "COMMITTED"){
+    pill.className = "pill green";
+    pill.innerHTML = '<span class="dot"></span>committed';
+    box.innerHTML = `
+      <div class="commitmeta">
+        <span>Committed by <b>${esc(p.committed_by || "—")}</b></span>
+        <span class="muted">at <span class="mono">${esc(fmtWhen(p.committed_at))}</span></span>
+        ${p.profile_hash
+          ? `<span class="sha" data-sha="${esc(p.profile_hash)}"
+               title="Input-of-record hash — click to copy">${esc(String(p.profile_hash).slice(0, 23))}…</span>`
+          : ""}
+      </div>
+      <p class="muted small" style="margin:4px 0 0">Drafts may be generated. Editing any intake field
+        re-opens confirmation for exactly that field — nothing is generated from an unconfirmed input.</p>`;
+  } else if (st === "CONFIRMING"){
+    const pend = p.pending || [];
+    pill.className = "pill amber";
+    pill.innerHTML = '<span class="dot"></span>re-confirmation needed';
+    if (pend.length === 0){
+      // M1: hash drifted from the commit but nothing is pending (all changes
+      // staged/reverted) — the only next action is a plain recommit.
+      box.innerHTML = `
+        <p class="small" style="margin:8px 0 4px">The confirmed changes are staged, but the profile
+          hasn't been recommitted yet — generation stays closed until a named clinician recommits it
+          under the new fingerprint.</p>
+        <div class="btnrow" style="margin-top:6px">
+          ${actorBox}
+          <button type="button" class="btn primary" id="commitBtn" disabled>Recommit profile</button>
+        </div>`;
+    } else {
+      box.innerHTML = `
+        <p class="small" style="margin:8px 0 4px"><b>${pend.length}</b> field${pend.length === 1 ? " has" : "s have"}
+          changed since <b>${esc(p.committed_by || "the last commit")}</b> committed the profile
+          ${p.committed_at ? `at <span class="mono">${esc(fmtWhen(p.committed_at))}</span>` : ""}.
+          Each changed field needs a named re-confirmation; confirming the last one recommits the
+          profile under a new hash.</p>
+        <div class="btnrow" style="margin:6px 0 4px">${actorBox}</div>
+        ${pend.map(fid => `
+          <div class="pendrow" data-pend="${esc(fid)}">
+            <span class="plbl">${esc(fieldLabel(fid))} <code>${esc(fid)}</code></span>
+            <a class="fixlink" data-fid="${esc(fid)}">Review in intake →</a>
+            <button type="button" class="btn" data-reconfirm="${esc(fid)}" disabled>Re-confirm</button>
+          </div>`).join("")}
+        <p class="muted small" style="margin:8px 0 0">Re-confirming records your name against the field's
+          new value fingerprint — it is an attribution, not a signature, and clears no gate.</p>`;
+    }
+  } else {  // UNCOMMITTED
+    pill.className = "pill amber";
+    pill.innerHTML = '<span class="dot"></span>uncommitted';
+    box.innerHTML = `
+      <p class="small" style="margin:8px 0 4px">No committed profile yet. A named clinician must commit
+        the confirmed intake before any draft is generated — the generate and package actions stay
+        closed until then.</p>
+      <div class="btnrow" style="margin-top:6px">
+        ${actorBox}
+        <button type="button" class="btn primary" id="commitBtn" disabled>Commit profile</button>
+      </div>`;
+  }
+  wireCommitPanel();
+}
+
+function wireCommitPanel(){
+  const syncButtons = () => {
+    const has = !!(P.actor && P.actor.trim());
+    const cb = $("#commitBtn");
+    if (cb) cb.disabled = !has;
+    $$("#commitBody [data-reconfirm]").forEach(b => b.disabled = !has);
+  };
+  const nameEl = $("#commitActor");
+  if (nameEl) nameEl.addEventListener("input", () => { P.actor = nameEl.value; syncButtons(); });
+  syncButtons();
+  const cb = $("#commitBtn");
+  if (cb) cb.addEventListener("click", commitProfile);
+  $$("#commitBody [data-reconfirm]").forEach(b =>
+    b.addEventListener("click", () => confirmFields([b.dataset.reconfirm], b)));
+  $$("#commitBody .fixlink").forEach(a =>
+    a.addEventListener("click", () => gotoField(a.dataset.fid)));
+  $$("#commitBody .sha").forEach(el => el.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(el.dataset.sha); toast("Profile hash copied."); }
+    catch { toast(el.dataset.sha); }
+  }));
+}
+
+async function commitProfile(){
+  const actor = (P.actor || "").trim();
+  if (!actor){ toast("Enter the confirming clinician's name — commit is a named attribution.", true); return; }
+  const btn = $("#commitBtn");
+  if (btn){ btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Committing…'; }
+  try {
+    const res = await api(`/api/case/${S.caseId}/profile/commit`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ actor })
+    });
+    setProfile((res && res.profile) || { state:"COMMITTED", committed_by: actor, pending: [] });
+    toast(`Profile committed by ${actor} — the input of record now carries this attribution.`);
+  } catch (e) {
+    if (e.status === 409 && e.body && (e.body.pending || e.body.state)) setProfileFrom409(e.body);
+    else renderCommitPanel();                       // restore the button state
+    toast(e.message, true);
+  }
+}
+
+async function confirmFields(fieldIds, btn){
+  const actor = (P.actor || "").trim();
+  if (!actor){ toast("Enter the confirming clinician's name first.", true); return; }
+  if (btn){ btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Confirming…'; }
+  try {
+    const res = await api(`/api/case/${S.caseId}/profile/confirm`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ actor, field_ids: fieldIds })
+    });
+    const prof = (res && res.profile) || null;
+    setProfile(prof);
+    if (prof && String(prof.state).toUpperCase() === "COMMITTED")
+      toast("All changed fields re-confirmed — profile recommitted under a new hash. Regenerate to pick it up.");
+    else
+      toast(`Re-confirmed ${fieldIds.map(fieldLabel).join(", ")} — ` +
+            `${((prof && prof.pending) || []).length} field(s) still pending.`);
+  } catch (e) {
+    renderCommitPanel();
+    toast(e.message, true);
+  }
+}
+
+/* route the user to the commit panel instead of surfacing a raw 409 */
+function gotoCommitPanel(){
+  show("check", true);
+  const card = $("#commitCard");
+  if (!card) return;
+  setTimeout(() => {
+    card.scrollIntoView({ behavior:"smooth", block:"center" });
+    card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash");
+    const nameEl = $("#commitActor");
+    if (nameEl) try { nameEl.focus({ preventScroll:true }); } catch {}
+  }, 60);
+}
+function explainCommitGate(){
+  const confirming = S.profile && String(S.profile.state).toUpperCase() === "CONFIRMING";
+  toast(confirming
+    ? "Fields changed since the last commit — a named clinician must re-confirm them before drafts are generated."
+    : "A named clinician must commit the confirmed profile before drafts are generated.");
+  gotoCommitPanel();
+}
+
 /* ---------------- screen 3: generate + check ---------------- */
 async function generateDocs(){
+  if (S.profile && String(S.profile.state).toUpperCase() !== "COMMITTED"){
+    explainCommitGate();                       // friendly gate, not a raw 409
+    return;
+  }
   const btn = $("#genBtn");
   btn.disabled = true;
   $("#genStatus").innerHTML = '<span class="spin"></span>Generating drafts from the engine…';
@@ -1403,7 +1650,12 @@ async function generateDocs(){
     $("#checkBtn").disabled = false;
   } catch (e) {
     $("#genStatus").textContent = "";
-    toast(e.message, true);
+    if (e.status === 409 && e.body && (e.body.state || e.body.pending)){
+      setProfileFrom409(e.body);               // server is the authority on the profile state
+      explainCommitGate();
+    } else {
+      toast(e.message, true);
+    }
   } finally {
     btn.disabled = false;
   }
@@ -1416,9 +1668,11 @@ $("#checkBtn").addEventListener("click", async () => {
 });
 
 async function runCheck(){
+  // /check runs in EVERY profile state — it is the repair loop back to COMMITTED.
   S.check = await api(`/api/case/${S.caseId}/check`);
   if (S.check.intake_rev != null) S.intakeRev = S.check.intake_rev;
   if (S.check.generated_rev != null) S.generatedRev = S.check.generated_rev;
+  if (S.check.profile !== undefined) setProfile(S.check.profile);
   renderClocks();
   renderLedger();
   markDone("check"); enableStep("package");
@@ -1647,7 +1901,17 @@ async function loadPackage(){
     renderPackage();
     markDone("package");
   } catch (e) {
-    $("#pkgLoading").innerHTML = `<p class="muted" style="margin:0">Could not assemble package: ${esc(e.message)}</p>`;
+    if (e.status === 409 && e.body && (e.body.state || e.body.pending)){
+      setProfileFrom409(e.body);
+      $("#pkgLoading").innerHTML = `<p class="muted" style="margin:0">
+        A named clinician must commit the confirmed profile before the package is assembled —
+        nothing is drafted from an unconfirmed input.
+        <button type="button" class="btn primary" id="pkgGotoCommit" style="margin-left:10px">Go to the commit panel</button></p>`;
+      const b = $("#pkgGotoCommit");
+      if (b) b.addEventListener("click", gotoCommitPanel);
+    } else {
+      $("#pkgLoading").innerHTML = `<p class="muted" style="margin:0">Could not assemble package: ${esc(e.message)}</p>`;
+    }
     return;
   }
   $("#pkgLoading").style.display = "none";

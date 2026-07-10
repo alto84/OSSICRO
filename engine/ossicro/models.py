@@ -46,6 +46,9 @@ class ProvenanceRecord:
     span: str        # the template field / text span that was filled
     source: str      # the structured-data path and value that filled it
     citation: str    # governing CFR/ICH/form authority for the span
+    input_hash: str = ""  # sha256 of the canonicalized intake consumed by the
+                          # generation that produced this record (INV-3).
+                          # "" = pre-INV-3 record or engine-only test path.
 
 
 @dataclass
@@ -180,6 +183,8 @@ class Document:
     rendered: str = ""
     gate_id: Optional[str] = None
     signoffs: List[HumanSignoff] = field(default_factory=list)
+    input_hash: str = ""  # sha256 of the canonicalized intake this document
+                          # was generated from (INV-3; package-manifest grain)
 
     def has_signoff(self, gate_id: str) -> bool:
         return any(s.gate_id == gate_id for s in self.signoffs)

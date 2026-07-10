@@ -1074,12 +1074,16 @@ class TestEngineEgressBoundary(unittest.TestCase):
             r"^\s*(?:import|from)\s+(urllib\.request|socket|requests|httpx|"
             r"httplib2|aiohttp|http\.client)\b", re.MULTILINE)
         offenders = []
+        swept = []
         for path in sorted((ENGINE_ROOT / "ossicro").glob("*.py")):
             if path.name == "review_claude.py":
                 continue  # the one sanctioned egress (never imports the PHI path)
+            swept.append(path.name)
             if forbidden.search(path.read_text(encoding="utf-8")):
                 offenders.append(path.name)
         self.assertEqual(offenders, [])
+        # INV-3: the profile module is part of the swept engine surface.
+        self.assertIn("profile.py", swept)
 
     def test_egress_module_never_imports_phi_path(self):
         src = (ENGINE_ROOT / "ossicro" / "review_claude.py").read_text(

@@ -122,8 +122,13 @@ Canonical form, versioned:
 
 4. **Per-field value hash** (for pending detection and INV-8-clean storage):
    `field_value_hash(v) = "sha256:" + sha256("ossicro-field-v1\n" + canonical_value)`.
-   The commit object stores these hashes, **never the values** — a committed_profile
-   block leaks nothing from the chart even if a case JSON escapes.
+   The commit object stores these hashes, **never the values**. **Privacy limit
+   (corrected after review M2):** these hashes are unkeyed, so a value from a
+   low-entropy space (sex, age, dates, coded diagnoses, formulary drug names) is
+   recoverable by offline enumeration — a hash of an enumerable value is not
+   de-identification. Acceptable for synthetic-only fixtures; the object is NOT
+   PHI-safe at rest. Hardening = HMAC-SHA256 under a server-side secret held
+   outside the case JSON, riding the auth work (Q3). Do not claim "leaks nothing".
 
 Explicit exclusions from the hash: `signoffs` (separate gate axis; §7 handles the
 interaction), `confirmations` / `field_provenance` (attribution about the input, not the

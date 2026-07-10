@@ -13,8 +13,16 @@ SHARED API CONTRACT:
     GET  /api/case/{id}                 -> {intake, signoffs, intake_rev, generated_rev}
     POST /api/case/{id}/intake          -> {ok, intake_rev}
     POST /api/case/{id}/generate        -> {route_id, documents, generated_rev, intake_rev}
+                                           (INV-3 hard gate: 409 {error, pending, state}
+                                           unless a named human committed the profile
+                                           and the intake still matches its hash;
+                                           /package gated identically)
     GET  /api/case/{id}/check           -> ledger (questions as {text,field_id}), clocks, stale, ...
     POST /api/case/{id}/signoff         -> record a human gate act (role must match the gate)
+    POST /api/case/{id}/profile/commit  -> {actor}: named human commits the intake profile
+                                           (INV-3; hashes only, never values — INV-8)
+    POST /api/case/{id}/profile/confirm -> {actor, field_ids}: named per-field re-confirmation;
+                                           draining pending auto-recommits (new hash)
     POST /api/case/{id}/fhir/import     -> {proposals, never_extracted, summary}
                                            ({bundle:{...}} or {use_sample:true};
                                            MAPS ONLY — never writes intake)
@@ -62,6 +70,15 @@ from ossicro.fhir_ingest import (                                # noqa: E402
 from ossicro.gates import record_signoff as gates_record_signoff  # noqa: E402
 from ossicro.models import GateViolation                     # noqa: E402
 from ossicro.pipeline import run_check                       # noqa: E402
+from ossicro.profile import (                                # noqa: E402
+    ProfileNotCommitted,
+    commit_profile,
+    confirm_fields,
+    pending_fields,
+    profile_hash,
+    require_committed,
+    stamp_input_hash,
+)
 from ossicro.registry import load_documents, load_gates      # noqa: E402
 from ossicro.review_port import DeterministicStubReviewer    # noqa: E402
 
@@ -97,7 +114,14 @@ def _new_case() -> dict:
             # which fields, when, and whether the value came from the chart. This
             # persists in the case JSON, so a chart-confirmed value stays
             # distinguishable from a hand-typed one across a page reload.
-            "confirmations": [], "field_provenance": {}}
+            "confirmations": [], "field_provenance": {},
+            # INV-3: the committed profile (input-of-record). None = UNCOMMITTED
+            # — every legacy case loads UNCOMMITTED via _normalize_case; no
+            # auto-commit, ever (a synthesized commit would be software
+            # performing the named-human act). generated_hash is the committed
+            # profile hash consumed by the last /generate (hash authority for
+            # staleness; the rev counters stay as display metadata).
+            "committed_profile": None, "generated_hash": None}
 
 
 def _normalize_case(case: dict) -> dict:
@@ -186,9 +210,14 @@ def _apply_signoffs(case: dict, documents: dict) -> None:
             continue
 
 
-def _study_and_docs(case: dict):
+def _study_and_docs(case: dict, intake: dict | None = None):
+    # B1: callers on the gated paths pass a snapshot so the gate check, the
+    # build, and the hash stamp all consume the SAME input even if another
+    # request mutates case["intake"] concurrently (GET /package and /check run
+    # outside _LOCK). Default to the live dict for the non-gated callers.
+    intake = case["intake"] if intake is None else intake
     route = _route_for(case)
-    study = build_study(case["intake"], route)
+    study = build_study(intake, route)
     documents = generate_route_documents(study, route, DOC_REGISTRY)
     _apply_signoffs(case, documents)
     return route, study, documents
@@ -334,7 +363,41 @@ def _clock_entries(study, route) -> list:
 
 
 def _is_stale(case: dict) -> bool:
-    return case.get("generated_rev") is not None and case["generated_rev"] != case["intake_rev"]
+    """Hash authority (INV-3 §6): staleness = drift from the committed hash.
+
+    Subsumes the rev counters: every case the old counter rule called stale
+    the hash rule also calls stale, plus it un-stales the revert-to-committed
+    case and stales the never-committed / drifted-from-commit cases. The
+    legacy fallback branch keeps pre-INV-3 cases byte-identical.
+    """
+    cp = case.get("committed_profile")
+    if case.get("generated_hash"):                     # post-INV-3 generation
+        return (cp is None
+                or case["generated_hash"] != cp["profile_hash"]
+                or profile_hash(case["intake"]) != cp["profile_hash"])
+    return (case.get("generated_rev") is not None      # legacy fallback, verbatim
+            and case["generated_rev"] != case["intake_rev"])
+
+
+def _profile_block(case: dict) -> dict:
+    """The derived profile state (never stored — unrepresentable drift)."""
+    cp = case.get("committed_profile")
+    if cp is None:
+        return {"state": "UNCOMMITTED", "profile_hash": None, "pending": [],
+                "committed_by": None, "committed_at": None}
+    pending = pending_fields(case["intake"], cp)
+    committed = (not pending
+                 and profile_hash(case["intake"]) == cp.get("profile_hash"))
+    # M1: a reachable state — all changed fields staged/reverted so pending is
+    # empty, yet the hash still differs from the commit (a stale commit). The
+    # refusal must always name a next action; here it is a plain recommit.
+    recommit_needed = (not committed) and (not pending)
+    return {"state": "COMMITTED" if committed else "CONFIRMING",
+            "profile_hash": cp.get("profile_hash"),
+            "pending": pending,
+            "recommit_needed": recommit_needed,
+            "committed_by": cp.get("committed_by"),
+            "committed_at": cp.get("committed_at")}
 
 
 # ---------------------------------------------------------------------------
@@ -342,9 +405,17 @@ def _is_stale(case: dict) -> bool:
 # ---------------------------------------------------------------------------
 
 def _generate_payload(case: dict) -> dict:
-    route, study, documents = _study_and_docs(case)
+    # INV-3 hard gate: the deliverable path never runs on an unconfirmed
+    # input. require_committed raises ProfileNotCommitted (-> 409, fail
+    # closed) unless the current intake's hash equals the committed hash.
+    intake = dict(case["intake"])   # B1: one snapshot for gate + build + stamp
+    committed_hash = require_committed(intake, case.get("committed_profile"))
+    route, study, documents = _study_and_docs(case, intake)
+    # On this path the consumed hash IS the committed hash (by the gate).
+    stamp_input_hash(documents, committed_hash)
     case["route_id"] = route["route_id"]
     case["generated_rev"] = case["intake_rev"]
+    case["generated_hash"] = committed_hash
     ordered = [d for d in route["documents"] if d in documents]
     return {
         "route_id": route["route_id"],
@@ -354,6 +425,7 @@ def _generate_payload(case: dict) -> dict:
         ],
         "intake_rev": case["intake_rev"],
         "generated_rev": case["generated_rev"],
+        "profile": _profile_block(case),
     }
 
 
@@ -378,21 +450,70 @@ def _ledger_question_objs(item) -> list:
     return out
 
 
+_PROFILE_ADVISORY = (
+    "Sign-off predates a profile change — confirm it still applies or "
+    "re-execute the act (INV-3 §6.1)."
+)
+
+
 def _check_payload(case: dict) -> dict:
-    route, study, documents = _study_and_docs(case)
+    intake = dict(case["intake"])   # B1: snapshot so the stamped hash matches what was built
+    route, study, documents = _study_and_docs(case, intake)
+    # /check runs in EVERY profile state (it is the repair loop) and stamps
+    # the TRUE consumed-input hash — recomputed from the intake actually
+    # consumed, never the committed hash (INV-3 §6 honesty rule).
+    consumed_hash = profile_hash(intake)
+    stamp_input_hash(documents, consumed_hash)
+    profile = _profile_block(case)
+    cp = case.get("committed_profile")
+    committed_hash_now = cp.get("profile_hash") if cp else None
+    signoff_by_key = {(s.get("gate_id"), s.get("doc_id")): s
+                      for s in case.get("signoffs", [])}
     reviewer = _select_reviewer()
     result = run_check(study, documents, DOC_REGISTRY, GATE_REGISTRY, reviewer=reviewer)
     totals = {"green": 0, "amber": 0, "red": 0}
     ledger = []
     for item in result.ledger:
         totals[item.status] = totals.get(item.status, 0) + 1
+        notes = list(item.notes)
+        # §6.1 advisory (escalate-only: a note, never a demotion or a
+        # promotion): a green/amber gated item whose recorded sign-off
+        # carries a committed-profile hash that differs from the CURRENT
+        # committed hash predates a profile change. Legacy sign-offs with
+        # no recorded hash are exempt (can't compare what was never
+        # recorded — honest absence).
+        if item.status in ("green", "amber") and item.gate_id:
+            so = signoff_by_key.get((item.gate_id, item.doc_id))
+            so_hash = (so or {}).get("input_hash") or ""
+            if so_hash and committed_hash_now and so_hash != committed_hash_now:
+                notes.append(_PROFILE_ADVISORY)
         ledger.append({
             "doc_id": item.doc_id,
             "title": item.title,
             "status": item.status,
             "gate_id": item.gate_id,
             "questions": _ledger_question_objs(item),
-            "notes": item.notes,
+            "notes": notes,
+        })
+    # App-level resolving question (INV-3 §6): injected HERE, never in the
+    # engine pipeline — the engine's escalate-only layers stay untouched,
+    # and this can only add, never clear.
+    if profile["state"] != "COMMITTED":
+        if profile["state"] == "CONFIRMING":
+            q = ("Profile changed since commit — a named clinician must "
+                 "re-confirm before generation: %s (INV-3)."
+                 % ", ".join(profile["pending"]))
+        else:
+            q = ("Profile not committed — a named clinician must commit the "
+                 "intake profile before generation (INV-3 / HC1).")
+        totals["red"] = totals.get("red", 0) + 1
+        ledger.insert(0, {
+            "doc_id": "committed-profile",
+            "title": "Committed profile (input-of-record)",
+            "status": "red",
+            "gate_id": None,
+            "questions": [{"text": q, "field_id": None}],
+            "notes": [],
         })
     consistency = [
         {
@@ -440,11 +561,17 @@ def _check_payload(case: dict) -> dict:
         "intake_rev": case["intake_rev"],
         "generated_rev": case["generated_rev"],
         "signoffs": list(signed.values()),
+        "profile": profile,
     }
 
 
 def _package_payload(case: dict) -> dict:
-    route, study, documents = _study_and_docs(case)
+    # INV-3 hard gate: same fail-closed rule as /generate — no package over
+    # an unconfirmed input. Raises ProfileNotCommitted (-> 409).
+    intake = dict(case["intake"])   # B1: snapshot — GET /package runs outside _LOCK
+    committed_hash = require_committed(intake, case.get("committed_profile"))
+    route, study, documents = _study_and_docs(case, intake)
+    stamp_input_hash(documents, committed_hash)  # consumed == committed (gated)
     # The engine's assemble pass owns the contract manifest: every route
     # document hashed (SHA-256 over rendered utf-8, verifier-compatible),
     # explicit ABSENT entries for anything missing, plus the package-level
@@ -452,6 +579,7 @@ def _package_payload(case: dict) -> dict:
     pkg = assemble_submission(study, documents, route, DOC_REGISTRY, GATE_REGISTRY,
                               reviewer=_select_reviewer())
     pkg["stale"] = _is_stale(case)
+    pkg["profile"] = _profile_block(case)
     return pkg
 
 
@@ -481,8 +609,13 @@ def _record_signoff(case: dict, payload: dict):
     except ValueError:
         return None, "date must be YYYY-MM-DD (the date the human act was performed)", 400
 
+    cp = case.get("committed_profile")
     record = {"gate_id": gate_id, "doc_id": doc_id, "signer_name": signer,
               "role": role, "date": date,
+              # INV-3 §6.1: the committed profile hash at signoff time ("" when
+              # no commit exists yet — legacy-compatible honest absence), so a
+              # later profile change can surface the advisory note in /check.
+              "input_hash": (cp or {}).get("profile_hash") or "",
               "recorded_at": datetime.datetime.now(datetime.timezone.utc)
               .strftime("%Y-%m-%dT%H:%M:%SZ")}
     signoffs = [s for s in case.get("signoffs", [])
@@ -490,6 +623,80 @@ def _record_signoff(case: dict, payload: dict):
     signoffs.append(record)
     case["signoffs"] = signoffs
     return record, None, 200
+
+
+# ---------------------------------------------------------------------------
+# INV-3 profile commit / confirm (attribution, NOT a gate sign-off — never
+# routed through gates.record_signoff). Returns (body, status); callers hold
+# _LOCK and persist.
+# ---------------------------------------------------------------------------
+
+def _utcnow_z() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _append_confirmation(case: dict, actor: str, action: str, field_ids: list) -> None:
+    """One attribution trail, not two: commit/reconfirm land in the existing
+    confirmations trail with an ``action`` key (design §5.3)."""
+    case.setdefault("confirmations", []).append({
+        "actor": actor,
+        "action": action,
+        "field_ids": sorted(field_ids),
+        "from_chart": [],
+        "at": _utcnow_z(),
+    })
+
+
+def _profile_commit(case: dict, payload: dict):
+    """POST /api/case/{id}/profile/commit {actor} -> (body, status)."""
+    actor = str(payload.get("actor", "")).strip()
+    if not actor:
+        return {"error": "actor is required — the profile is committed by a "
+                         "named human (HC1/HC5)"}, 400
+    cp = case.get("committed_profile")
+    if cp is not None:
+        pending = pending_fields(case["intake"], cp)
+        if pending:
+            return {"error": "pending fields must be re-confirmed via "
+                             "/profile/confirm, not re-committed wholesale",
+                    "pending": pending, "state": "CONFIRMING"}, 409
+    try:
+        new_cp = commit_profile(case["intake"], actor, prior=cp)
+    except GateViolation as exc:
+        return {"error": str(exc)}, 400
+    new_cp["intake_rev_at_commit"] = case["intake_rev"]
+    case["committed_profile"] = new_cp
+    _append_confirmation(case, actor, "commit",
+                         list(new_cp["field_hashes"].keys()))
+    return {"ok": True, "profile": _profile_block(case)}, 200
+
+
+def _profile_confirm(case: dict, payload: dict):
+    """POST /api/case/{id}/profile/confirm {actor, field_ids} -> (body, status)."""
+    actor = str(payload.get("actor", "")).strip()
+    if not actor:
+        return {"error": "actor is required — fields are re-confirmed by a "
+                         "named human (HC1/HC5)"}, 400
+    field_ids = payload.get("field_ids")
+    if not isinstance(field_ids, list) or not field_ids:
+        return {"error": "expected {field_ids:[...]} — the field ids to "
+                         "re-confirm"}, 400
+    field_ids = [str(f) for f in field_ids]
+    cp = case.get("committed_profile")
+    if cp is None:
+        return {"error": "profile has never been committed — nothing is "
+                         "pending; use /profile/commit"}, 400
+    try:
+        new_cp = confirm_fields(case["intake"], cp, actor, field_ids)
+    except (ValueError, GateViolation) as exc:
+        return {"error": str(exc)}, 400
+    if new_cp.get("intake_rev_at_commit") is None:
+        # confirm_fields auto-recommitted (pending drained -> NEW hash);
+        # stamp the app-side counter bridge.
+        new_cp["intake_rev_at_commit"] = case["intake_rev"]
+    case["committed_profile"] = new_cp
+    _append_confirmation(case, actor, "reconfirm", field_ids)
+    return {"ok": True, "profile": _profile_block(case)}, 200
 
 
 # ---------------------------------------------------------------------------
@@ -503,6 +710,8 @@ _CASE_CHECK = re.compile(r"^/api/case/([^/]+)/check$")
 _CASE_PACKAGE = re.compile(r"^/api/case/([^/]+)/package$")
 _CASE_SIGNOFF = re.compile(r"^/api/case/([^/]+)/signoff$")
 _CASE_FHIR_IMPORT = re.compile(r"^/api/case/([^/]+)/fhir/import$")
+_CASE_PROFILE_COMMIT = re.compile(r"^/api/case/([^/]+)/profile/commit$")
+_CASE_PROFILE_CONFIRM = re.compile(r"^/api/case/([^/]+)/profile/confirm$")
 
 
 # ---------------------------------------------------------------------------
@@ -618,6 +827,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json({"error": "unknown case"}, 404)
             try:
                 return self._send_json(_package_payload(case))
+            except ProfileNotCommitted as exc:  # INV-3 hard gate: fail closed
+                return self._send_json({"error": "profile not committed",
+                                        "pending": exc.pending,
+                                        "state": exc.state}, 409)
             except TriggerDateError as exc:
                 return self._send_json({"error": str(exc), "field_id": exc.field_id}, 400)
             except Exception as exc:
@@ -637,6 +850,7 @@ class Handler(BaseHTTPRequestHandler):
                 "intake_rev": case["intake_rev"],
                 "generated_rev": case["generated_rev"],
                 "route_id": case.get("route_id"),
+                "profile": _profile_block(case),
             })
 
         if path.startswith("/static/"):
@@ -712,6 +926,11 @@ class Handler(BaseHTTPRequestHandler):
                     payload = _generate_payload(case)
                     _save_case(case_id)
                 return self._send_json(payload)
+            except ProfileNotCommitted as exc:  # INV-3 hard gate: fail closed,
+                # nothing was generated and nothing was persisted.
+                return self._send_json({"error": "profile not committed",
+                                        "pending": exc.pending,
+                                        "state": exc.state}, 409)
             except TriggerDateError as exc:
                 return self._send_json({"error": str(exc), "field_id": exc.field_id}, 400)
             except Exception as exc:
@@ -751,6 +970,36 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json({"error": err}, status)
             return self._send_json({"ok": True, "signoff": record,
                                     "signoffs": case["signoffs"]})
+
+        m = _CASE_PROFILE_COMMIT.match(path)
+        if m:
+            case_id = m.group(1)
+            case = self._case(case_id)
+            if case is None:
+                return self._send_json({"error": "unknown case"}, 404)
+            payload = self._read_json()
+            if payload is None or not isinstance(payload, dict):
+                return self._send_json({"error": "expected a JSON object"}, 400)
+            with _LOCK:
+                body, status = _profile_commit(case, payload)
+                if status == 200:
+                    _save_case(case_id)
+            return self._send_json(body, status)
+
+        m = _CASE_PROFILE_CONFIRM.match(path)
+        if m:
+            case_id = m.group(1)
+            case = self._case(case_id)
+            if case is None:
+                return self._send_json({"error": "unknown case"}, 404)
+            payload = self._read_json()
+            if payload is None or not isinstance(payload, dict):
+                return self._send_json({"error": "expected a JSON object"}, 400)
+            with _LOCK:
+                body, status = _profile_confirm(case, payload)
+                if status == 200:
+                    _save_case(case_id)
+            return self._send_json(body, status)
 
         return self._send_json({"error": "not found", "path": path}, 404)
 
