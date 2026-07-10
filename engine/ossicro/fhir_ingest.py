@@ -12,12 +12,21 @@ of ``docs/ehr-integration/privacy-state-machine.md``:
   a list of ``ExtractionProposal`` dicts the physician confirms field-by-field
   in the frontend; only the existing ``POST /api/case/{id}/intake`` writes the
   input-of-record.
-- NEVER-EXTRACT (mapping spec §1.3, INV-8): ``Patient.name`` / ``identifier``
-  / ``address`` / ``telecom`` and ``Patient.birthDate`` *as a value* are
-  structurally excluded — birthDate is consumed inside the age computation and
-  discarded. NPI is never a license number. Skipped elements are reported in
-  ``never_extracted`` (paths only, never values). A final leak-guard drops any
-  proposal whose value would carry a patient identifier string.
+- SINGLE SUBJECT (INV-8, M1): a bundle carrying more than one ``Patient`` is
+  refused — cross-patient contamination on a single-patient federal form is
+  both a correctness and a privacy failure.
+- NEVER-EXTRACT + FREE-TEXT TAINT (mapping spec §1.3, INV-8, B1): structured
+  ``Patient.name`` / ``identifier`` / ``address`` / ``telecom`` and
+  ``Patient.birthDate`` *as a value* are structurally excluded. Beyond that,
+  any value taken from FREE TEXT (a ``.text`` element, a ``dosageInstruction``
+  narrative) is treated as TAINTED: it passes through a hardened, case- and
+  format-insensitive leak-guard that harvests forbidden strings from every
+  Patient (including ``contained``) and ``RelatedPerson`` in the bundle and
+  from birthDate in several written forms. A tainted value that cannot be
+  verified against any patient basis (no Patient resource to check) is dropped
+  — fail closed. Coded controlled-terminology displays (SNOMED/LOINC/RxNorm/
+  ICD-10 ``coding.display``) are not free text and are not tainted. Skipped
+  elements are reported in ``never_extracted`` (paths only, never values).
 - UNATTESTED HONESTY (INV-6): an absent or malformed element yields NO
   proposal — never a guess, never a population prior.
 - MANUAL fields (35 of 55) have no chart source and are never proposed.
@@ -29,11 +38,14 @@ Entry point:
 
 Each proposal: {field_id, label, value,
                 source: {resource, path, coding}, confidence, section}.
-Confidence per mapping spec §1.2: exactly coded = "high"; text / inferred /
-mapper-composed = "medium"; DERIVED-LOCAL app suggestions = "low" (no chart
-authority at all). In upload/paste mode (no SMART ``fhirUser``) every
-``investigator.*`` proposal is capped at "medium" — the practitioner identity
-is inferred from Encounter/Condition participants (mapping spec §3).
+Confidence per mapping spec §1.2: exactly coded + unambiguous = "high"; text /
+inferred / mapper-composed / more-than-one-candidate = "medium"; DERIVED-LOCAL
+app suggestions = "low" (no chart authority at all). In upload/paste mode (no
+SMART ``fhirUser``) every ``investigator.*`` proposal is capped at "medium" —
+the practitioner identity is inferred from participants (mapping spec §3). The
+investigational-agent identity (``drug.name``) is capped at "medium" always:
+an RxNorm-coded candidate is, if anything, *less* likely to be the
+investigational agent, so a coded hit is not license to skip scrutiny (B2).
 """
 
 from __future__ import annotations
@@ -41,6 +53,7 @@ from __future__ import annotations
 import datetime
 import hashlib
 import json
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 from . import routes as routes_mod
@@ -55,10 +68,22 @@ V2_0360 = "http://terminology.hl7.org/CodeSystem/v2-0360"
 BIRTHSEX_EXT = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex"
 MCODE_PRIMARY_CANCER = "mcode-primary-cancer-condition"
 
+CLINICAL_STATUS_SYS = "http://terminology.hl7.org/CodeSystem/condition-clinical"
+VERIFICATION_STATUS_SYS = "http://terminology.hl7.org/CodeSystem/condition-ver-status"
+
 LOINC_STAGE_GROUP = "21908-9"
 LOINC_ECOG = "89247-1"
 LOINC_KARNOFSKY = "89243-0"
 LOINC_DISEASE_STATUS = "88040-1"
+
+# Condition statuses that quarantine a diagnosis from ever being proposed (M4):
+# a refuted or mistakenly-entered diagnosis, or one no longer active, must not
+# reach an FDA form. Absent status is permitted (many valid Conditions omit it).
+_DEAD_CLINICAL_STATUS = frozenset({"inactive", "resolved", "remission"})
+_DEAD_VERIFICATION_STATUS = frozenset({"refuted", "entered-in-error"})
+
+# Observation statuses that count as attested results.
+_FINAL_OBS_STATUS = ("final", "amended", "corrected")
 
 # Field ids this module may EVER propose (AUTO + DERIVED-LOCAL). MANUAL fields
 # are structurally impossible to propose: they are not in this whitelist.
@@ -83,6 +108,10 @@ _FIELD_META: Dict[str, Dict[str, str]] = {
     for f in routes_mod.intake_fields()
 }
 TOTAL_INTAKE_FIELDS = len(_FIELD_META)
+
+# Internal marker: a proposal whose value was taken from free text (see B1).
+# Stripped from every returned proposal in the entry point.
+_TAINT = "_tainted"
 
 
 class BundleError(ValueError):
@@ -136,16 +165,26 @@ def _coding_in(codeable: Optional[Dict[str, Any]], system: str,
     return None
 
 
-def _cc_display(codeable: Optional[Dict[str, Any]]) -> Optional[str]:
-    """CodeableConcept text, else first coding display."""
-    if not isinstance(codeable, dict):
-        return None
-    if codeable.get("text"):
-        return str(codeable["text"])
+def _coded_display(codeable: Optional[Dict[str, Any]]) -> Optional[str]:
+    """First coding.display — controlled terminology, NOT free text (untainted)."""
     for c in _codings(codeable):
         if c.get("display"):
             return str(c["display"])
     return None
+
+
+def _cc_value(codeable: Optional[Dict[str, Any]]) -> Tuple[Optional[str], bool]:
+    """(value, tainted). Prefer the CodeableConcept.text (richer, physician-
+    facing) but mark it TAINTED — free text can embed PHI and must pass the
+    leak-guard. Fall back to a coding.display, which is controlled terminology
+    and therefore NOT tainted.
+    """
+    if not isinstance(codeable, dict):
+        return None, False
+    if codeable.get("text"):
+        return str(codeable["text"]), True          # free text -> tainted
+    disp = _coded_display(codeable)
+    return disp, False                                # coded display -> clean
 
 
 def _coding_summary(codeable: Optional[Dict[str, Any]]) -> Optional[str]:
@@ -176,7 +215,8 @@ def bundle_sha256(bundle: Dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 
 def _proposal(field_id: str, value: str, resource: str, path: str,
-              coding: Optional[str], confidence: str) -> Dict[str, Any]:
+              coding: Optional[str], confidence: str,
+              tainted: bool = False) -> Dict[str, Any]:
     if field_id not in PROPOSABLE_FIELDS:
         raise AssertionError(
             "refusing to propose non-AUTO field %r (mapping spec: MANUAL fields "
@@ -189,7 +229,14 @@ def _proposal(field_id: str, value: str, resource: str, path: str,
         "source": {"resource": resource, "path": path, "coding": coding},
         "confidence": confidence,
         "section": meta["section"],
+        _TAINT: tainted,
     }
+
+
+def _cap(confidence: str, ceiling: str) -> str:
+    """Lower ``confidence`` to ``ceiling`` if it exceeds it (high>medium>low)."""
+    order = {"low": 0, "medium": 1, "high": 2}
+    return confidence if order.get(confidence, 1) <= order.get(ceiling, 1) else ceiling
 
 
 # --- Patient section ---------------------------------------------------------
@@ -227,8 +274,10 @@ def _extract_patient(bundle, proposals, never_extracted, as_of):
                 "birthDate discarded)", None, confidence))
 
     # patient.sex — administrative gender, cross-checked against birthsex ext.
+    # 'unknown' is the ABSENCE of a fact, not a fact: unattested, never a
+    # high-confidence assertion of the string "unknown" (MIN3 / INV-6).
     gender = patient.get("gender")
-    if gender in ("male", "female", "other", "unknown"):
+    if gender in ("male", "female", "other"):
         birthsex = None
         for ext in patient.get("extension", []) or []:
             if isinstance(ext, dict) and ext.get("url") == BIRTHSEX_EXT:
@@ -277,15 +326,26 @@ def _age_from_birthdate(birth: str, as_of: datetime.date) -> Optional[Tuple[str,
     return str(years), confidence
 
 
+def _condition_ok(cond: Dict[str, Any]) -> bool:
+    """True unless the Condition is refuted, entered-in-error, or no longer
+    active (M4). Absent status is permitted."""
+    ver = _coding_in(cond.get("verificationStatus"), VERIFICATION_STATUS_SYS)
+    if ver is not None and ver.get("code") in _DEAD_VERIFICATION_STATUS:
+        return False
+    clin = _coding_in(cond.get("clinicalStatus"), CLINICAL_STATUS_SYS)
+    if clin is not None and clin.get("code") in _DEAD_CLINICAL_STATUS:
+        return False
+    return True
+
+
 def _primary_conditions(bundle) -> List[Dict[str, Any]]:
-    conditions = _of_type(bundle, "Condition")
+    conditions = [c for c in _of_type(bundle, "Condition") if _condition_ok(c)]
     mcode = [c for c in conditions if _has_profile(c, MCODE_PRIMARY_CANCER)]
     if mcode:
         return mcode
     active = []
     for c in conditions:
-        status = _coding_in(c.get("clinicalStatus"),
-                            "http://terminology.hl7.org/CodeSystem/condition-clinical")
+        status = _coding_in(c.get("clinicalStatus"), CLINICAL_STATUS_SYS)
         if status is not None and status.get("code") == "active":
             active.append(c)
     return active
@@ -295,11 +355,12 @@ def _extract_diagnosis(bundle, proposals):
     candidates = _primary_conditions(bundle)
     if not candidates:
         return
-    parts, codings = [], []
+    parts, codings, tainted = [], [], False
     for cond in candidates:
-        label = _cc_display(cond.get("code"))
+        label, is_tainted = _cc_value(cond.get("code"))
         if not label:
             continue
+        tainted = tainted or is_tainted
         summary = _coding_summary(cond.get("code"))
         parts.append("%s (%s)" % (label, summary) if summary else label)
         if summary:
@@ -307,45 +368,67 @@ def _extract_diagnosis(bundle, proposals):
     if not parts:
         return
     dx = " | ".join(parts) if len(parts) > 1 else parts[0]
-    stage = _observation_value_text(bundle, LOINC_STAGE_GROUP)
-    ecog = (_observation_value_text(bundle, LOINC_ECOG)
-            or _observation_value_text(bundle, LOINC_KARNOFSKY))
+    stage, stage_dt, _ = _latest_observation(bundle, LOINC_STAGE_GROUP)
+    ecog, ecog_dt, ecog_tainted = _latest_observation(bundle, LOINC_ECOG)
+    if ecog is None:
+        ecog, ecog_dt, ecog_tainted = _latest_observation(bundle, LOINC_KARNOFSKY)
+    tainted = tainted or ecog_tainted
     bits = [dx]
     if stage:
-        bits.append("Stage: %s" % stage)
+        bits.append("Stage: %s%s" % (stage, (" (as of %s)" % stage_dt) if stage_dt else ""))
     if ecog:
-        bits.append("Performance status: %s" % ecog)
-    note = ("multiple active cancer Conditions — all candidates shown; "
+        bits.append("Performance status: %s%s" % (ecog, (" (as of %s)" % ecog_dt) if ecog_dt else ""))
+    note = ("multiple active Conditions — all candidates shown; "
             if len(parts) > 1 else "")
     proposals.append(_proposal(
         "patient.diagnosis", ". ".join(bits) + ".",
         "Condition",
         "Condition.code (+ Observation 21908-9 stage group, Observation "
-        "89247-1 ECOG) — %smapper-composed narrative" % note,
+        "89247-1 ECOG, most recent by effective date) — %smapper-composed "
+        "narrative" % note,
         "; ".join(codings) or None,
-        "medium"))  # composed prose is medium always (mapping spec §2)
+        "medium", tainted=tainted))  # composed prose is medium always (§2)
 
 
-def _observation_value_text(bundle, loinc_code: str) -> Optional[str]:
+def _latest_observation(bundle, loinc_code: str) -> Tuple[Optional[str], Optional[str], bool]:
+    """(value_text, effective_date, tainted) for the MOST RECENT final
+    Observation of ``loinc_code`` (M3: recency, not bundle order). A stale
+    performance status silently overwriting a current one is a clinical
+    misrepresentation; we sort by effective date descending and disclose it.
+    """
+    matches = []
     for obs in _of_type(bundle, "Observation"):
-        if obs.get("status") not in ("final", "amended", "corrected"):
+        if obs.get("status") not in _FINAL_OBS_STATUS:
             continue
         if _coding_in(obs.get("code"), LOINC, loinc_code) is None:
             continue
-        return _cc_display(obs.get("valueCodeableConcept"))
-    return None
+        when = obs.get("effectiveDateTime") or (obs.get("effectivePeriod") or {}).get("start")
+        matches.append((str(when)[:10] if when else "", obs))
+    if not matches:
+        return None, None, False
+    matches.sort(key=lambda kv: kv[0], reverse=True)  # ISO dates sort chronologically
+    when, obs = matches[0]
+    value, tainted = _cc_value(obs.get("valueCodeableConcept"))
+    return value, (when or None), tainted
 
 
 def _extract_prior_therapies(bundle, proposals):
-    lines, codings = [], []
+    lines, codings, tainted, seen_rx = [], [], False, set()
     for mr in _of_type(bundle, "MedicationRequest"):
         if mr.get("status") not in ("completed", "stopped"):
             continue
         med = mr.get("medicationCodeableConcept")
         rx = _coding_in(med, RXNORM)
-        agent = (rx.get("display") if rx and rx.get("display") else _cc_display(med))
+        if rx and rx.get("code"):
+            if rx["code"] in seen_rx:          # de-duplicate re-orders/refills (MIN2)
+                continue
+            seen_rx.add(rx["code"])
+            agent, agent_tainted = (rx.get("display") or rx["code"]), False
+        else:
+            agent, agent_tainted = _cc_value(med)
         if not agent:
             continue
+        tainted = tainted or agent_tainted
         period = None
         for di in mr.get("dosageInstruction", []) or []:
             bounds = ((di.get("timing") or {}).get("repeat") or {}).get("boundsPeriod")
@@ -361,24 +444,18 @@ def _extract_prior_therapies(bundle, proposals):
     if not lines:
         return
     value = "; ".join(lines) + "."
-    outcome = None
-    for obs in _of_type(bundle, "Observation"):
-        if (_coding_in(obs.get("code"), LOINC, LOINC_DISEASE_STATUS) is not None
-                and obs.get("status") in ("final", "amended", "corrected")):
-            outcome = _cc_display(obs.get("valueCodeableConcept"))
-            when = obs.get("effectiveDateTime")
-            if outcome and when:
-                outcome = "%s (%s)" % (outcome, str(when)[:10])
-            break
+    outcome, outcome_dt, outcome_tainted = _latest_observation(bundle, LOINC_DISEASE_STATUS)
     if outcome:
-        value += " Documented response: %s." % outcome
+        tainted = tainted or outcome_tainted
+        value += " Documented response: %s%s." % (
+            outcome, (" (%s)" % outcome_dt) if outcome_dt else "")
     proposals.append(_proposal(
         "patient.prior_therapies", value, "MedicationRequest",
         "MedicationRequest[status completed|stopped].medicationCodeableConcept "
-        "+ dosageInstruction.timing.repeat.boundsPeriod (+ Observation 88040-1 "
-        "disease status) — mapper-composed narrative",
+        "(de-duplicated by RxNorm) + dosageInstruction.timing.repeat.boundsPeriod "
+        "(+ Observation 88040-1 disease status) — mapper-composed narrative",
         "; ".join(codings) or None,
-        "medium"))  # composed prose is medium always
+        "medium", tainted=tainted))  # composed prose is medium always
 
 
 # --- Physician section ---------------------------------------------------------
@@ -386,10 +463,6 @@ def _extract_prior_therapies(bundle, proposals):
 _INVESTIGATOR_CAP_NOTE = (
     "practitioner inferred from Encounter/Condition participants "
     "(upload mode, no fhirUser) — capped at medium")
-
-
-def _cap_medium(confidence: str) -> str:
-    return "medium" if confidence == "high" else confidence
 
 
 def _extract_practitioner(bundle, proposals, never_extracted):
@@ -404,13 +477,12 @@ def _extract_practitioner(bundle, proposals, never_extracted):
             "Practitioner.identifier[system=us-npi] (NPI is NOT a license "
             "number and never fills a license field)")
 
-    # investigator.name
+    # investigator.name — a practitioner's own name is not patient PHI; not tainted.
     name = _render_human_name((pr.get("name") or [None])[0])
     if name:
         proposals.append(_proposal(
             "investigator.name", name, "Practitioner",
-            "Practitioner.name — " + _INVESTIGATOR_CAP_NOTE, None,
-            _cap_medium("high")))
+            "Practitioner.name — " + _INVESTIGATOR_CAP_NOTE, None, "medium"))
 
     # investigator.degrees
     degrees, degrees_coded = [], False
@@ -428,8 +500,7 @@ def _extract_practitioner(bundle, proposals, never_extracted):
             "Practitioner",
             "Practitioner.qualification.code.coding (v2-0360)"
             if degrees_coded else "Practitioner.name.suffix",
-            "HL7 v2-0360" if degrees_coded else None,
-            _cap_medium("high" if degrees_coded else "medium")))
+            "HL7 v2-0360" if degrees_coded else None, "medium"))
 
     # PractitionerRole for this practitioner -> telecom + organization address.
     role = None
@@ -438,17 +509,17 @@ def _extract_practitioner(bundle, proposals, never_extracted):
             role = r
             break
 
-    # investigator.address — PractitionerRole.organization address; medium always.
+    # investigator.address — PractitionerRole.organization address; the
+    # provenance stamp names the resource the value was actually read from (M6).
     org = _resolve(bundle, (role or {}).get("organization"))
     address = _render_address(((org or {}).get("address") or [None])[0])
-    addr_path = "PractitionerRole.organization -> Organization.address"
+    addr_resource, addr_path = "Organization", "PractitionerRole.organization -> Organization.address"
     if address is None:
         address = _render_address((pr.get("address") or [None])[0])
-        addr_path = "Practitioner.address (fallback)"
+        addr_resource, addr_path = "Practitioner", "Practitioner.address (fallback)"
     if address:
         proposals.append(_proposal(
-            "investigator.address", address,
-            "Organization" if org else "Practitioner", addr_path, None, "medium"))
+            "investigator.address", address, addr_resource, addr_path, None, "medium"))
 
     # investigator.phone / email — PractitionerRole telecom, Practitioner fallback.
     for system, field_id in (("phone", "investigator.phone"),
@@ -469,8 +540,7 @@ def _extract_practitioner(bundle, proposals, never_extracted):
                 "PractitionerRole" if from_role else "Practitioner",
                 ("PractitionerRole.telecom[%s] — " % system) + _INVESTIGATOR_CAP_NOTE
                 if from_role else "Practitioner.telecom[%s] (fallback)" % system,
-                None,
-                _cap_medium("high" if from_role else "medium")))
+                None, "medium"))
 
     # investigator.license_number / license_state — state-board qualification
     # identifier; NPI structurally excluded. Medium at best.
@@ -483,7 +553,8 @@ def _extract_practitioner(bundle, proposals, never_extracted):
             proposals.append(_proposal(
                 "investigator.license_number", str(ident["value"]),
                 "Practitioner",
-                "Practitioner.qualification.identifier (state licensing board)",
+                "Practitioner.qualification.identifier (state licensing board; "
+                "first non-NPI qualification identifier — physician confirms)",
                 None, "medium"))
             issuer = (q.get("issuer") or {}).get("display")
             if issuer:
@@ -520,107 +591,133 @@ def _render_address(addr: Optional[Dict[str, Any]]) -> Optional[str]:
 
 # --- Drug + treatment section --------------------------------------------------
 
-_CLOSED_MR_STATUSES = ("completed", "stopped", "cancelled", "entered-in-error")
-
-
-def _candidate_drug_request(bundle) -> Optional[Dict[str, Any]]:
-    """The staged/proposed investigational-agent MedicationRequest, if any.
-
-    Prior therapies are completed/stopped; the expanded-access candidate is the
-    open request (intent proposal|plan|order|original-order, status not closed).
-    """
+# The expanded-access candidate is a STAGED order, not an active therapy. An
+# active home-med order (status=active, intent=order) is existing treatment and
+# must never be mistaken for the investigational agent (B2).
+def _candidate_drug_requests(bundle) -> List[Dict[str, Any]]:
+    out = []
     for mr in _of_type(bundle, "MedicationRequest"):
-        if mr.get("status") in _CLOSED_MR_STATUSES:
-            continue
-        if mr.get("intent") in ("proposal", "plan", "order", "original-order"):
-            return mr
-    return None
+        status = mr.get("status")
+        intent = mr.get("intent")
+        if status in ("draft", "on-hold") or intent in ("proposal", "plan"):
+            out.append(mr)
+    return out
 
 
 def _extract_drug(bundle, proposals) -> Optional[str]:
-    mr = _candidate_drug_request(bundle)
-    if mr is None:
+    candidates = _candidate_drug_requests(bundle)
+    if not candidates:
         return None
+    mr = candidates[0]
+    # More than one staged candidate -> the mapper cannot know which is the
+    # investigational agent; cap everything drug.* at medium and say so (§1.2).
+    cap = "high" if len(candidates) == 1 else "medium"
+    multi_note = ("" if len(candidates) == 1 else
+                  " (%d staged medication candidates in the chart — physician "
+                  "must confirm which is the investigational agent)" % len(candidates))
+
     med = mr.get("medicationCodeableConcept")
     rx = _coding_in(med, RXNORM)
     if rx and (rx.get("display") or rx.get("code")):
         drug_name = rx.get("display") or rx.get("code")
+        # drug.name is capped at MEDIUM regardless of coding: an RxNorm-coded
+        # candidate is, if anything, LESS likely to be the investigational
+        # agent, so a coded hit is not license to skip scrutiny (B2).
         proposals.append(_proposal(
             "drug.name", str(drug_name), "MedicationRequest",
-            "MedicationRequest.medicationCodeableConcept.coding (RxNorm)",
-            _coding_summary(med), "high"))
+            "MedicationRequest.medicationCodeableConcept.coding (RxNorm) — an "
+            "RxNorm-coded agent is usually a marketed drug, not an "
+            "investigational one; verify this is the EA candidate%s" % multi_note,
+            _coding_summary(med), "medium"))
     else:
-        drug_name = _cc_display(med)
+        drug_name, name_tainted = _cc_value(med)
         if drug_name:
             proposals.append(_proposal(
                 "drug.name", str(drug_name), "MedicationRequest",
                 "MedicationRequest.medicationCodeableConcept.text (no RxNorm "
-                "code — expected for investigational agents)", None, "medium"))
+                "code — expected for investigational agents)%s" % multi_note,
+                None, "medium", tainted=name_tainted))
     if not drug_name:
         return None
 
     di = (mr.get("dosageInstruction") or [{}])[0]
 
-    # drug.dose — structured doseQuantity, else dosage text. Medium always.
-    dose_value = None
+    # drug.dose — structured doseQuantity (clean), else dosage TEXT (tainted).
+    dose_value, dose_tainted = None, False
+    dose_resource_path = "MedicationRequest.dosageInstruction.doseAndRate.doseQuantity (UCUM)"
     for dr in di.get("doseAndRate", []) or []:
         dq = dr.get("doseQuantity")
         if isinstance(dq, dict) and dq.get("value") is not None:
             dose_value = ("%s %s" % (dq["value"], dq.get("unit") or dq.get("code") or "")).strip()
             break
-    dose_path = "MedicationRequest.dosageInstruction.doseAndRate.doseQuantity (UCUM)"
     if dose_value is None and di.get("text"):
-        dose_value, dose_path = str(di["text"]), "MedicationRequest.dosageInstruction.text"
+        dose_value, dose_tainted = str(di["text"]), True
+        dose_resource_path = "MedicationRequest.dosageInstruction.text (free text)"
     if dose_value:
         proposals.append(_proposal(
-            "drug.dose", dose_value, "MedicationRequest", dose_path,
-            "UCUM" if "doseQuantity" in dose_path else None, "medium"))
+            "drug.dose", dose_value, "MedicationRequest", dose_resource_path,
+            "UCUM" if "doseQuantity" in dose_resource_path else None,
+            "medium", tainted=dose_tainted))
 
-    # drug.route — SNOMED-coded = high; text = medium.
+    # drug.route — SNOMED-coded = high (capped by candidate ambiguity); text = medium.
     route_cc = di.get("route")
     snomed_route = _coding_in(route_cc, SNOMED)
     if snomed_route and snomed_route.get("display"):
         proposals.append(_proposal(
             "drug.route", snomed_route["display"], "MedicationRequest",
             "MedicationRequest.dosageInstruction.route.coding (SNOMED CT)",
-            _coding_summary(route_cc), "high"))
+            _coding_summary(route_cc), _cap("high", cap)))
     else:
-        route_text = _cc_display(route_cc)
+        route_text, route_tainted = _cc_value(route_cc)
         if route_text:
             proposals.append(_proposal(
                 "drug.route", route_text, "MedicationRequest",
-                "MedicationRequest.dosageInstruction.route.text", None, "medium"))
+                "MedicationRequest.dosageInstruction.route.text", None,
+                "medium", tainted=route_tainted))
 
-    # drug.duration — boundsDuration / expectedSupplyDuration. Medium always.
+    # drug.duration — boundsDuration, else dispenseRequest.expectedSupplyDuration.
+    # The provenance stamp names the element actually read (M6).
+    duration_path = ("MedicationRequest.dosageInstruction.timing.repeat."
+                     "boundsDuration (UCUM)")
     bounds = ((di.get("timing") or {}).get("repeat") or {}).get("boundsDuration")
     if not isinstance(bounds, dict):
         bounds = (mr.get("dispenseRequest") or {}).get("expectedSupplyDuration")
+        duration_path = "MedicationRequest.dispenseRequest.expectedSupplyDuration (UCUM)"
     if isinstance(bounds, dict) and bounds.get("value") is not None:
         duration = ("%s %s" % (bounds["value"], bounds.get("unit") or bounds.get("code") or "")).strip()
         proposals.append(_proposal(
-            "drug.duration", duration, "MedicationRequest",
-            "MedicationRequest.dosageInstruction.timing.repeat.boundsDuration "
-            "(UCUM)", "UCUM", "medium"))
+            "drug.duration", duration, "MedicationRequest", duration_path,
+            "UCUM", "medium"))
     return str(drug_name)
 
 
-def _extract_first_treatment(bundle, proposals, drug_name: Optional[str]):
-    """submission.first_treatment_date — emergency-path documentation only.
+def _norm_tokens(s: str) -> set:
+    return set(re.sub(r"[^a-z0-9]+", " ", s.lower()).split())
 
-    Fires only when a completed MedicationAdministration for the agent exists
-    (base FHIR R4; not a US Core profile). Absent = unattested = no proposal
-    (correct in the non-emergency path).
+
+def _extract_first_treatment(bundle, proposals, drug_name: Optional[str], emergency: bool):
+    """submission.first_treatment_date — EMERGENCY-path documentation only (M2).
+
+    Fires only when (a) the emergency route is selected, (b) a drug candidate
+    was identified, and (c) a completed MedicationAdministration matches that
+    agent by code or by a whole-word name match (not a first-token substring).
+    Absent = unattested = no proposal (correct on the non-emergency path).
     """
+    if not emergency or not drug_name:
+        return
+    drug_tokens = _norm_tokens(drug_name)
     for ma in _of_type(bundle, "MedicationAdministration"):
         if ma.get("status") != "completed":
             continue
         med = ma.get("medicationCodeableConcept")
         rx = _coding_in(med, RXNORM)
-        med_text = _cc_display(med) or ""
-        coded_match = bool(rx and drug_name and rx.get("display") == drug_name)
-        text_match = bool(drug_name and med_text
-                          and drug_name.split()[0].lower() in med_text.lower())
-        if drug_name and not (coded_match or text_match):
+        med_text = _coded_display(med) or ""
+        if med_text == "" and isinstance(med, dict):
+            med_text = str(med.get("text") or "")
+        coded_match = bool(rx and rx.get("display")
+                           and _norm_tokens(rx["display"]) & drug_tokens)
+        text_match = bool(drug_tokens and (drug_tokens & _norm_tokens(med_text)))
+        if not (coded_match or text_match):
             continue
         when = ma.get("effectiveDateTime") or (ma.get("effectivePeriod") or {}).get("start")
         if not when:
@@ -629,7 +726,7 @@ def _extract_first_treatment(bundle, proposals, drug_name: Optional[str]):
             "submission.first_treatment_date", str(when)[:10],
             "MedicationAdministration",
             "MedicationAdministration[status=completed].effectiveDateTime | "
-            "effectivePeriod.start (base FHIR R4)",
+            "effectivePeriod.start (base FHIR R4; emergency route only)",
             _coding_summary(med),
             "high" if coded_match else "medium"))
         return
@@ -661,8 +758,11 @@ def _derived_proposals(bundle, drug_name: Optional[str]) -> List[Dict[str, Any]]
 
     The pseudonym suffix comes from the bundle's SHA-256 (already the privacy
     log's identifier for the load event) — never from Patient.name/identifier.
+    An 8-hex suffix (~4.3e9 space) keeps cross-case collision negligible in an
+    EA registry (MIN1); it is per-import (a re-imported updated chart yields a
+    new suffix — the app persists one per case).
     """
-    suffix = bundle_sha256(bundle)[:3].upper()
+    suffix = bundle_sha256(bundle)[:8].upper()
     coded_id = "PT-3926-%s" % suffix
     out = [_proposal("patient.coded_id", coded_id, "(none)",
                      "generated locally (pseudonym; never from Patient.name/"
@@ -682,51 +782,125 @@ def _derived_proposals(bundle, drug_name: Optional[str]) -> List[Dict[str, Any]]
 
 
 # ---------------------------------------------------------------------------
-# Leak-guard: no proposal value may carry a patient identifier string (INV-8)
+# Leak-guard: no proposal value may carry a patient identifier string (INV-8).
+# Hardened (B1): case- and format-insensitive; harvests from every Patient
+# (incl. contained) and RelatedPerson; birthDate in several written forms;
+# and FAILS CLOSED on a tainted (free-text) value when there is no patient
+# basis to verify against.
 # ---------------------------------------------------------------------------
 
-def _patient_forbidden_strings(bundle) -> List[str]:
-    """High-risk identifier strings from Patient resources.
+def _iter_all_resources(node, depth=0):
+    """Yield every resource dict in the bundle, descending into contained."""
+    if depth > 8 or not isinstance(node, dict):
+        return
+    if node.get("resourceType"):
+        yield node
+    for contained in node.get("contained", []) or []:
+        yield from _iter_all_resources(contained, depth + 1)
 
-    City/state are deliberately not included (a practitioner org legitimately
-    shares the patient's town); names, identifier values, telecom values,
-    birthDate, and street lines are unambiguous leaks.
+
+def _date_variants(iso: str) -> List[str]:
+    """Written forms of a YYYY-MM-DD birthDate that a note might carry."""
+    try:
+        d = datetime.datetime.strptime(iso[:10], "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return [iso]
+    months = ["", "january", "february", "march", "april", "may", "june", "july",
+              "august", "september", "october", "november", "december"]
+    mon = months[d.month]
+    return [
+        "%04d %02d %02d" % (d.year, d.month, d.day),
+        "%d %d %d" % (d.month, d.day, d.year),
+        "%02d %02d %04d" % (d.month, d.day, d.year),
+        "%d %d %d" % (d.day, d.month, d.year),
+        "%s %d %d" % (mon, d.day, d.year),
+        "%d %s %d" % (d.day, mon, d.year),
+    ]
+
+
+def _forbidden_basis(bundle) -> Dict[str, Any]:
+    """Normalized patient-identifier strings to keep out of any value.
+
+    Returns {"subs": set(normalized distinctive substrings),
+             "words": set(normalized name word-tokens),
+             "has_basis": bool}. City/state are excluded (a practitioner org
+    legitimately shares the patient's town).
     """
-    forbidden: List[str] = []
-    for patient in _of_type(bundle, "Patient"):
-        for name in patient.get("name", []) or []:
-            if not isinstance(name, dict):
-                continue
-            for part in ([name.get("family"), name.get("text")]
-                         + list(name.get("given", []) or [])):
-                if part:
-                    forbidden.append(str(part))
-        for ident in patient.get("identifier", []) or []:
-            if isinstance(ident, dict) and ident.get("value"):
-                forbidden.append(str(ident["value"]))
-        for telecom in patient.get("telecom", []) or []:
-            if isinstance(telecom, dict) and telecom.get("value"):
-                forbidden.append(str(telecom["value"]))
-        if patient.get("birthDate"):
-            forbidden.append(str(patient["birthDate"]))
-        for addr in patient.get("address", []) or []:
-            if isinstance(addr, dict):
-                forbidden.extend(str(line) for line in addr.get("line", []) or [])
-    return [f for f in forbidden if len(f) >= 2]
+    subs, words = set(), set()
+
+    def add_name(name):
+        if not isinstance(name, dict):
+            return
+        parts = list(name.get("given", []) or [])
+        if name.get("family"):
+            parts.append(name["family"])
+        full = " ".join(p for p in parts if p)
+        if full:
+            subs.add(re.sub(r"[^a-z0-9]+", " ", full.lower()).strip())
+        if name.get("text"):
+            subs.add(re.sub(r"[^a-z0-9]+", " ", str(name["text"]).lower()).strip())
+        for p in parts + [name.get("text")]:
+            if p:
+                for tok in re.sub(r"[^a-z0-9]+", " ", str(p).lower()).split():
+                    if len(tok) >= 3:
+                        words.add(tok)
+
+    def norm_sub(s):
+        subs.add(re.sub(r"[^a-z0-9]+", " ", str(s).lower()).strip())
+
+    def harvest(res):
+        rtype = res.get("resourceType")
+        if rtype == "Patient":
+            for name in res.get("name", []) or []:
+                add_name(name)
+            for ident in res.get("identifier", []) or []:
+                if isinstance(ident, dict) and ident.get("value"):
+                    norm_sub(ident["value"])
+            for telecom in res.get("telecom", []) or []:
+                if isinstance(telecom, dict) and telecom.get("value"):
+                    norm_sub(telecom["value"])
+            if res.get("birthDate"):
+                for v in _date_variants(str(res["birthDate"])):
+                    subs.add(v.strip())
+            for addr in res.get("address", []) or []:
+                if isinstance(addr, dict):
+                    for line in addr.get("line", []) or []:
+                        norm_sub(line)
+        elif rtype == "RelatedPerson":
+            for name in res.get("name", []) or []:
+                add_name(name)
+
+    # Walk every entry resource AND its contained resources (a Patient held in
+    # Condition.contained still contributes to the forbidden basis — B1).
+    for _, top in _entries(bundle):
+        for res in _iter_all_resources(top):
+            harvest(res)
+
+    subs = {s for s in subs if len(s) >= 2}
+    words = {w for w in words if len(w) >= 3}
+    return {"subs": subs, "words": words, "has_basis": bool(subs or words)}
 
 
 def _apply_leak_guard(bundle, proposals, never_extracted):
-    forbidden = _patient_forbidden_strings(bundle)
-    if not forbidden:
-        return proposals
+    basis = _forbidden_basis(bundle)
     kept = []
     for p in proposals:
         value = str(p.get("value", ""))
-        if any(f in value for f in forbidden):
-            # Report the FIELD, never the value (INV-8).
+        norm = re.sub(r"[^a-z0-9]+", " ", value.lower())
+        padded = " %s " % norm
+        hit = any(s and s in norm for s in basis["subs"]) or \
+            any((" %s " % w) in padded for w in basis["words"])
+        # Fail closed: a free-text value we cannot verify against any patient
+        # basis (no Patient/RelatedPerson in the bundle) is dropped.
+        fail_closed = p.get(_TAINT) and not basis["has_basis"]
+        if hit or fail_closed:
+            reason = ("extracted value would carry a patient identifier"
+                      if hit else
+                      "free-text value could not be verified PHI-free — no "
+                      "Patient resource in the bundle to check against; enter "
+                      "this field manually")
             never_extracted.append(
-                "%s (proposal dropped by leak-guard: extracted value would "
-                "carry a patient identifier)" % p["field_id"])
+                "%s (proposal dropped by leak-guard: %s)" % (p["field_id"], reason))
             continue
         kept.append(p)
     return kept
@@ -740,12 +914,15 @@ def extract_proposals(bundle_dict: Dict[str, Any], route: Dict[str, Any],
                       as_of: Optional[datetime.date] = None) -> Dict[str, Any]:
     """Map a FHIR R4 Bundle dict to ExtractionProposals. Pure and local.
 
-    ``route`` is the selected Route-3926 variant (emergency vs non-emergency);
-    it scopes nothing destructive — the emergency-only conditional field simply
-    has no source resource in the non-emergency path. ``as_of`` anchors the age
+    ``route`` is the selected Route-3926 variant; its ``emergency`` flag gates
+    ``submission.first_treatment_date`` (M2). ``as_of`` anchors the age
     computation (the import-time date, supplied by the app layer — the engine
     itself never reads the wall clock, per the repo's time discipline). When
     ``as_of`` is None the age proposal is omitted rather than guessed.
+
+    A bundle carrying more than one ``Patient`` is REFUSED (M1): single-patient
+    expanded access requires a single-subject bundle, and mixing subjects on a
+    federal form is both a correctness and a privacy failure.
 
     Returns {"proposals": [...], "never_extracted": [...],
              "summary": {"auto": N, "manual": M}} and never mutates its input.
@@ -754,13 +931,21 @@ def extract_proposals(bundle_dict: Dict[str, Any], route: Dict[str, Any],
         raise BundleError("input is not a FHIR R4 Bundle (expected "
                           "resourceType 'Bundle')")
 
+    if len(_of_type(bundle_dict, "Patient")) > 1:
+        raise BundleError(
+            "bundle contains more than one Patient resource; single-patient "
+            "expanded access requires a single-subject bundle (refused to "
+            "prevent cross-patient contamination)")
+
+    emergency = bool(route.get("emergency")) if isinstance(route, dict) else False
+
     proposals: List[Dict[str, Any]] = []
     never_extracted: List[str] = []
 
     _extract_patient(bundle_dict, proposals, never_extracted, as_of)
     _extract_practitioner(bundle_dict, proposals, never_extracted)
     drug_name = _extract_drug(bundle_dict, proposals)
-    _extract_first_treatment(bundle_dict, proposals, drug_name)
+    _extract_first_treatment(bundle_dict, proposals, drug_name, emergency)
     _extract_site(bundle_dict, proposals)
     proposals.extend(_derived_proposals(bundle_dict, drug_name))
 
@@ -768,11 +953,13 @@ def extract_proposals(bundle_dict: Dict[str, Any], route: Dict[str, Any],
 
     # One proposal per field id (first wins — extractors already order by
     # preference); MANUAL fields are structurally absent (whitelist assert).
+    # The internal taint marker is stripped here — it never leaves the module.
     seen, unique = set(), []
     for p in proposals:
         if p["field_id"] in seen:
             continue
         seen.add(p["field_id"])
+        p.pop(_TAINT, None)
         unique.append(p)
 
     return {

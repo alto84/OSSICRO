@@ -92,7 +92,12 @@ CASES: dict = {}
 
 def _new_case() -> dict:
     return {"intake": {}, "route_id": "route-3926", "signoffs": [],
-            "intake_rev": 0, "generated_rev": None}
+            "intake_rev": 0, "generated_rev": None,
+            # Durable, named confirmation trail (review B3 / HC5): who confirmed
+            # which fields, when, and whether the value came from the chart. This
+            # persists in the case JSON, so a chart-confirmed value stays
+            # distinguishable from a hand-typed one across a page reload.
+            "confirmations": [], "field_provenance": {}}
 
 
 def _normalize_case(case: dict) -> dict:
@@ -627,6 +632,8 @@ class Handler(BaseHTTPRequestHandler):
                 "case_id": m.group(1),
                 "intake": case["intake"],
                 "signoffs": case.get("signoffs", []),
+                "confirmations": case.get("confirmations", []),
+                "field_provenance": case.get("field_provenance", {}),
                 "intake_rev": case["intake_rev"],
                 "generated_rev": case["generated_rev"],
                 "route_id": case.get("route_id"),
@@ -657,14 +664,37 @@ class Handler(BaseHTTPRequestHandler):
             payload = self._read_json()
             if payload is None or not isinstance(payload.get("fields"), dict):
                 return self._send_json({"error": "expected {fields:{...}}"}, 400)
+            actor = str(payload.get("actor", "")).strip()
+            provenance = payload.get("provenance")
+            provenance = provenance if isinstance(provenance, dict) else {}
             with _LOCK:
                 before = dict(case["intake"])
+                written = []
                 # Store only non-empty values; blanks stay honestly absent.
                 for key, value in payload["fields"].items():
                     if value is None or (isinstance(value, str) and value.strip() == ""):
                         case["intake"].pop(key, None)
+                        case.get("field_provenance", {}).pop(key, None)
                     else:
                         case["intake"][key] = value
+                        written.append(key)
+                        # Durable provenance: chart-confirmed vs hand-typed.
+                        src = provenance.get(key)
+                        case.setdefault("field_provenance", {})[key] = (
+                            src if src in ("chart-confirmed", "manual") else "manual")
+                # A named confirmation record — the input-of-record has a human
+                # attached (review B3 / HC5). Values are NOT copied here; they
+                # live in intake. Only recorded when an actor is named and a
+                # field actually changed.
+                if actor and written and case["intake"] != before:
+                    case.setdefault("confirmations", []).append({
+                        "actor": actor,
+                        "field_ids": sorted(written),
+                        "from_chart": sorted(k for k in written
+                                             if provenance.get(k) == "chart-confirmed"),
+                        "at": datetime.datetime.now(datetime.timezone.utc)
+                              .strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    })
                 if case["intake"] != before:
                     case["intake_rev"] += 1
                 _save_case(case_id)

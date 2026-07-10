@@ -22,5 +22,6 @@
 | 1 Explore (FHIR→intake mapping + privacy design) | done | `fhir-intake-mapping.md` (17 auto / 3 derived / 35 manual), `engine/fixtures/fhir_sample_bundle.json`, `privacy-state-machine.md` |
 | 2 Plan | folded into Explore spec | the mapping + privacy invariants are the build spec |
 | 3 Build (backend FHIR ingest + confirmation UI + polish) | done | `engine/ossicro/fhir_ingest.py` (+23 tests, 97 green), `app/server.py` (POST `/fhir/import`), `app/static/index.html` (import + confirmation UI + uplift). HTTP-verified: import returns 19 proposals, does NOT mutate intake, no patient PHI in proposals, planted-PHI bundle leaks nothing, confirm→`/intake` works. |
-| 4 Adversarial review (clinical-informatics + privacy skeptic) | in progress | `docs/ehr-integration/review.md` |
-| 5 Revise → 6 Re-review | pending | patches |
+| 4 Adversarial review (clinical-informatics + privacy skeptic) | done | `docs/ehr-integration/review.md` — 3 BLOCKER, 7 MAJOR, 4 MINOR + T1 test-gap; all reproduced by executing code |
+| 5 Revise (orchestrator, not builders) | done | fixes B1/B2/B3/M1-M7/MIN1-3 + hostile-bundle test battery (97→120 tests); doc-honesty pass on `privacy-state-machine.md`; per-charge reply in review.md |
+| 6 Re-review (fresh reviewer) | in progress | round-2 memo |

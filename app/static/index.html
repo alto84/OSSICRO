@@ -214,6 +214,10 @@
     flex-wrap:wrap;background:var(--surface);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));
     border-radius:12px;padding:11px 15px;box-shadow:var(--shadow);margin-top:14px;font-size:.87rem}
   .confirmbar b{color:var(--accent-deep)}
+  .confirmclin{display:flex;flex-direction:column;gap:2px;font-size:.72rem;font-weight:700;
+    letter-spacing:.02em;color:var(--muted)}
+  .confirmclin input{font-size:.86rem;font-weight:400;padding:6px 9px;border:1px solid var(--line);
+    border-radius:8px;background:var(--bg);color:var(--ink);min-width:150px}
   details.neverx{margin-top:14px;border:1px dashed var(--line);border-radius:10px;padding:9px 13px;
     font-size:.84rem;color:var(--muted)}
   details.neverx summary{cursor:pointer;font-weight:700;color:var(--ink);font-size:.84rem}
@@ -1055,7 +1059,7 @@ $("#loadExampleBtn").addEventListener("click", async () => {
    proposals are discarded, never persisted. Mapping authority:
    docs/ehr-integration/fhir-intake-mapping.md (17 auto, 3 derived, 35 manual). */
 const F = { proposals: null, neverExtracted: [], summary: null,
-            confirmed: new Set(), edited: {} };
+            confirmed: new Set(), edited: {}, clinician: "" };
 
 function schemaField(fid){ return (S.schema || []).find(f => f.id === fid); }
 
@@ -1115,11 +1119,13 @@ function updateConfirmBar(){
   if (el) el.innerHTML =
     `<b>${n}</b> of <b>${total}</b> chart field${total === 1 ? "" : "s"} confirmed · ` +
     `<b>${manualCount()}</b> field${manualCount() === 1 ? "" : "s"} still require manual entry`;
+  const hasClinician = !!(F.clinician && F.clinician.trim());
   const btn = $("#applyConfirmedBtn");
   if (btn){
-    btn.disabled = n === 0;
+    btn.disabled = n === 0 || !hasClinician;
     btn.textContent = n
-      ? `Apply ${n} confirmed value${n === 1 ? "" : "s"} to intake`
+      ? (hasClinician ? `Apply ${n} confirmed value${n === 1 ? "" : "s"} to intake`
+                      : "Enter the confirming clinician's name")
       : "Apply confirmed to intake";
   }
 }
@@ -1133,19 +1139,18 @@ function renderImportResult(){
     if (!bySec.has(sec)){ bySec.set(sec, []); secs.push(sec); }
     bySec.get(sec).push(p);
   }
-  const nHigh = F.proposals.filter(p => (p.confidence || "").toLowerCase() === "high").length;
   let html = `<hr class="sep">
     <div class="btnrow">
       <span class="pill green"><span class="dot"></span>${F.proposals.length} chart proposal${F.proposals.length === 1 ? "" : "s"}</span>
       <span class="pill amber"><span class="dot"></span>${manualCount()} manual-only</span>
       <span class="spacer"></span>
-      <button type="button" class="btn" id="confirmHighBtn" ${nHigh ? "" : "disabled"}>Confirm all high-confidence (${nHigh})</button>
       <button type="button" class="btn" id="clearImportBtn">Discard import</button>
     </div>
     <p class="muted small" style="margin-top:8px">
       Review each value against the chart, edit where needed, and confirm field-by-field.
       A high badge grants nothing — every value, high or medium, needs your explicit confirmation
-      before it enters the intake. Unconfirmed proposals are discarded, never written.</p>`;
+      before it enters the intake. There is deliberately no bulk-accept: the confirming clinician
+      reads each proposed value. Unconfirmed proposals are discarded, never written.</p>`;
   for (const sec of secs){
     html += `<div class="propsec">${esc(sec)}</div>`;
     html += bySec.get(sec).map(propRowHtml).join("");
@@ -1159,8 +1164,15 @@ function renderImportResult(){
   html += `<div class="confirmbar">
     <span id="confirmCount"></span>
     <span class="spacer"></span>
+    <label class="confirmclin">Confirming clinician
+      <input type="text" id="confirmClinician" placeholder="Your name" autocomplete="off"
+             value="${esc(F.clinician || "")}">
+    </label>
     <button type="button" class="btn primary" id="applyConfirmedBtn" disabled>Apply confirmed to intake</button>
-  </div>`;
+  </div>
+  <p class="muted small" style="margin-top:6px">The confirming clinician's name is recorded with the
+  confirmation (who attested which values, and that they came from the chart) — it is not a signature and
+  executes no gate.</p>`;
   box.innerHTML = html;
 
   $$("#importResult [data-confirm]").forEach(cb => cb.addEventListener("change", () => {
@@ -1173,11 +1185,10 @@ function renderImportResult(){
   $$("#importResult [data-pval]").forEach(el => el.addEventListener("input", () => {
     F.edited[el.dataset.pval] = el.value;
   }));
-  const highBtn = $("#confirmHighBtn");
-  if (highBtn) highBtn.addEventListener("click", () => {
-    for (const p of F.proposals)
-      if ((p.confidence || "").toLowerCase() === "high") F.confirmed.add(p.field_id);
-    renderImportResult();          // edits persist in F.edited across the re-render
+  const clinEl = $("#confirmClinician");
+  if (clinEl) clinEl.addEventListener("input", () => {
+    F.clinician = clinEl.value;    // persists across re-render; gates Apply
+    updateConfirmBar();
   });
   const clearBtn = $("#clearImportBtn");
   if (clearBtn) clearBtn.addEventListener("click", () => {
@@ -1223,6 +1234,8 @@ function markChartConfirmed(fid){
 }
 
 async function applyConfirmed(){
+  const clinician = (F.clinician || "").trim();
+  if (!clinician){ toast("Enter the confirming clinician's name first.", true); return; }
   const vals = {};
   for (const p of F.proposals || [])
     if (F.confirmed.has(p.field_id)) vals[p.field_id] = propValue(p);
@@ -1233,7 +1246,11 @@ async function applyConfirmed(){
   const applied = applySampleFields(vals);      // fills the intake form with type coercion
   ids.forEach(markChartConfirmed);
   updateMissing(); scheduleMirror();
-  const ok = await saveIntake();                // the existing input-of-record endpoint
+  // These specific ids are chart-confirmed by a named clinician; record that
+  // provenance durably (server persists who confirmed what, and its origin).
+  const provenance = {};
+  ids.forEach(id => { provenance[id] = "chart-confirmed"; });
+  const ok = await saveIntake({ actor: clinician, provenance });
   if (ok) toast(`${applied} confirmed chart value${applied === 1 ? "" : "s"} saved to the intake — ` +
                 `unconfirmed proposals were not written.`);
   updateConfirmBar();                           // restores the apply button's label/state
@@ -1327,13 +1344,16 @@ function collectIntake(){
   return fields;
 }
 
-async function saveIntake(){
+async function saveIntake(opts){
   const fields = collectIntake();
+  const body = { fields };
+  if (opts && opts.actor) body.actor = opts.actor;         // named confirmation (B3/HC5)
+  if (opts && opts.provenance) body.provenance = opts.provenance;
   $("#intakeStatus").innerHTML = '<span class="spin"></span>Saving…';
   try {
     const res = await api(`/api/case/${S.caseId}/intake`, {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ fields })
+      body: JSON.stringify(body)
     });
     S.intakeSaved = true;
     if (res && res.intake_rev != null) S.intakeRev = res.intake_rev;

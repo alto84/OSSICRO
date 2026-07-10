@@ -163,7 +163,8 @@ class TestSampleBundleProposals(unittest.TestCase):
     def test_derived_fields_local_no_chart_value(self):
         by = self.by_id
         coded = by["patient.coded_id"]["value"]
-        self.assertRegex(coded, r"^PT-3926-[0-9A-F]{3}$")
+        # 8-hex suffix (MIN1): collision space widened from 4096 to ~4.3e9.
+        self.assertRegex(coded, r"^PT-3926-[0-9A-F]{8}$")
         self.assertEqual(by["treatment.plan_id"]["value"],
                          "TP-CYTORAVIR-%s" % coded)
         self.assertEqual(by["treatment.plan_version"]["value"], "v1.0")
@@ -434,6 +435,327 @@ class TestImportEndpoint(unittest.TestCase):
         status, _ = self._post("/api/case/nope-nope/fhir/import",
                                {"use_sample": True})
         self.assertEqual(status, 404)
+
+
+# ---------------------------------------------------------------------------
+# Hostile-bundle battery (Phase-13 adversarial review, findings B1/B2/M1-M7).
+# Each test would PASS on a broken build before the revision — they exist so a
+# regression that reopens a hole fails CI. The pre-revision suite had none of
+# these: deleting the leak-guard left all tests green (review finding T1).
+# ---------------------------------------------------------------------------
+
+RXNORM = fhir_ingest.RXNORM
+SNOMED = fhir_ingest.SNOMED
+LOINC = fhir_ingest.LOINC
+CLIN = fhir_ingest.CLINICAL_STATUS_SYS
+VER = fhir_ingest.VERIFICATION_STATUS_SYS
+
+
+def _bundle(*resources):
+    return {"resourceType": "Bundle", "type": "collection",
+            "entry": [{"resource": r} for r in resources]}
+
+
+def _patient(**kw):
+    r = {"resourceType": "Patient"}
+    r.update(kw)
+    return r
+
+
+def _active_condition(code):
+    return {"resourceType": "Condition",
+            "clinicalStatus": {"coding": [{"system": CLIN, "code": "active"}]},
+            "code": code}
+
+
+def _ids(result):
+    return {p["field_id"]: p for p in result["proposals"]}
+
+
+class TestLeakGuardHostile(unittest.TestCase):
+    """B1/T1: the hardened leak-guard must actually FIRE on free-text PHI.
+
+    Every never-extract test elsewhere plants identifiers only in structured
+    Patient fields the extractors already skip. These put a patient identifier
+    into FREE TEXT that reaches a proposal value — the case the guard exists
+    for. Delete ``_apply_leak_guard`` and every test here fails.
+    """
+
+    def test_patient_name_in_condition_text_is_dropped(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Quimby", "given": ["Harriet"]}],
+                     gender="female", birthDate="1968-03-14"),
+            _active_condition({"text": "Metastatic cholangiocarcinoma - pt "
+                                       "Harriet Quimby, MRN 88-1234"}),
+        )
+        result = _extract(bundle)
+        self.assertNotIn("patient.diagnosis", _ids(result))
+        self.assertNotIn("Quimby", json.dumps(result))
+        self.assertTrue(any("leak-guard" in n and "patient.diagnosis" in n
+                            for n in result["never_extracted"]))
+
+    def test_case_mismatch_name_still_caught(self):
+        # EHR stores QUIMBY/HARRIET upper-case; the note says 'Harriet Quimby'.
+        bundle = _bundle(
+            _patient(name=[{"family": "QUIMBY", "given": ["HARRIET"]}],
+                     gender="female"),
+            _active_condition({"text": "cholangiocarcinoma, patient Harriet Quimby"}),
+        )
+        self.assertNotIn("patient.diagnosis", _ids(_extract(bundle)))
+
+    def test_birthdate_written_form_in_text_is_caught(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="male",
+                     birthDate="1968-03-14"),
+            _active_condition({"text": "cholangiocarcinoma, dob 3/14/1968"}),
+        )
+        self.assertNotIn("patient.diagnosis", _ids(_extract(bundle)))
+
+    def test_no_patient_resource_text_value_fails_closed(self):
+        # A draft med whose dose/name are only free text, and NO Patient to
+        # check against -> the tainted values are dropped (fail closed).
+        bundle = _bundle({
+            "resourceType": "MedicationRequest", "status": "draft",
+            "intent": "proposal",
+            "medicationCodeableConcept": {"text": "Investigational agent XYZ"},
+            "dosageInstruction": [{"text": "240 mg BID; counseled patient at home"}],
+        })
+        result = _extract(bundle)
+        by = _ids(result)
+        self.assertNotIn("drug.dose", by)
+        self.assertNotIn("drug.name", by)
+        self.assertTrue(any("no Patient resource" in n
+                            for n in result["never_extracted"]))
+
+    def test_relatedperson_name_harvested_into_basis(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            {"resourceType": "RelatedPerson",
+             "name": [{"family": "Grimsby", "given": ["Ronan"]}]},
+            _active_condition({"text": "cholangiocarcinoma; daughter Ronan "
+                                       "Grimsby at bedside"}),
+        )
+        self.assertNotIn("patient.diagnosis", _ids(_extract(bundle)))
+
+    def test_contained_patient_name_harvested(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            {"resourceType": "Condition",
+             "clinicalStatus": {"coding": [{"system": CLIN, "code": "active"}]},
+             "contained": [{"resourceType": "Patient",
+                            "name": [{"family": "Hiddenname"}]}],
+             "code": {"text": "cholangiocarcinoma per Hiddenname chart"}},
+        )
+        self.assertNotIn("patient.diagnosis", _ids(_extract(bundle)))
+
+    def test_clean_coded_diagnosis_survives(self):
+        # A coding.display (controlled terminology, no free text) is NOT tainted
+        # and must pass even when the patient's name is present structurally.
+        bundle = _bundle(
+            _patient(name=[{"family": "Quimby"}], gender="female"),
+            _active_condition({"coding": [{"system": SNOMED, "code": "70179006",
+                                           "display": "Cholangiocarcinoma"}]}),
+        )
+        by = _ids(_extract(bundle))
+        self.assertIn("patient.diagnosis", by)
+        self.assertIn("Cholangiocarcinoma", by["patient.diagnosis"]["value"])
+
+
+class TestMultiPatientRefusal(unittest.TestCase):
+    """M1: a multi-subject bundle is refused, not silently chimera-mapped."""
+
+    def test_two_patients_refused(self):
+        bundle = _bundle(_patient(name=[{"family": "A"}], gender="male"),
+                         _patient(name=[{"family": "B"}], gender="female"))
+        with self.assertRaises(BundleError):
+            _extract(bundle)
+
+
+class TestDrugCandidateSafety(unittest.TestCase):
+    """B2: an active home-med order must never become the investigational agent."""
+
+    def _draft(self, name, rx=None, route_code=None):
+        med = ({"coding": [{"system": RXNORM, "code": rx, "display": name}]}
+               if rx else {"text": name})
+        di = ({"route": {"coding": [{"system": SNOMED, "code": route_code,
+                                     "display": "Oral route"}]}}
+              if route_code else {})
+        return {"resourceType": "MedicationRequest", "status": "draft",
+                "intent": "proposal", "medicationCodeableConcept": med,
+                "dosageInstruction": [di] if di else []}
+
+    def test_active_order_not_proposed_as_drug(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            {"resourceType": "MedicationRequest", "status": "active",
+             "intent": "order",
+             "medicationCodeableConcept": {"coding": [
+                 {"system": RXNORM, "code": "29046", "display": "lisinopril"}]},
+             "dosageInstruction": [{"text": "10 mg daily"}]},
+            self._draft("Investigational-XYZ"),
+        )
+        by = _ids(_extract(bundle))
+        self.assertIn("drug.name", by)
+        self.assertIn("Investigational-XYZ", by["drug.name"]["value"])
+        self.assertNotIn("lisinopril", json.dumps(by["drug.name"]))
+
+    def test_only_active_order_yields_no_drug(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            {"resourceType": "MedicationRequest", "status": "active",
+             "intent": "order",
+             "medicationCodeableConcept": {"coding": [
+                 {"system": RXNORM, "code": "29046", "display": "lisinopril"}]}},
+        )
+        self.assertNotIn("drug.name", _ids(_extract(bundle)))
+
+    def test_rxnorm_candidate_capped_medium(self):
+        bundle = _bundle(_patient(name=[{"family": "Zorp"}], gender="female"),
+                         self._draft("morphine", rx="7052"))
+        self.assertEqual(_ids(_extract(bundle))["drug.name"]["confidence"], "medium")
+
+    def test_multiple_candidates_cap_route_and_flag(self):
+        bundle = _bundle(_patient(name=[{"family": "Zorp"}], gender="female"),
+                         self._draft("Agent-A", route_code="26643006"),
+                         self._draft("Agent-B", route_code="26643006"))
+        by = _ids(_extract(bundle))
+        self.assertEqual(by["drug.route"]["confidence"], "medium")  # capped
+        self.assertIn("candidate", by["drug.name"]["source"]["path"])
+
+
+class TestFirstTreatmentGating(unittest.TestCase):
+    """M2: first_treatment_date is emergency-only, drug-scoped, whole-word."""
+
+    def _ma(self, text):
+        return {"resourceType": "MedicationAdministration", "status": "completed",
+                "medicationCodeableConcept": {"text": text},
+                "effectiveDateTime": "2026-06-15T09:00:00Z"}
+
+    def _draft(self, text):
+        return {"resourceType": "MedicationRequest", "status": "draft",
+                "intent": "proposal", "medicationCodeableConcept": {"text": text}}
+
+    def test_non_emergency_route_no_first_treatment(self):
+        bundle = _bundle(_patient(name=[{"family": "Zorp"}], gender="female"),
+                         self._draft("Cytoravir"), self._ma("Cytoravir"))
+        self.assertNotIn("submission.first_treatment_date",
+                         _ids(_extract(bundle, emergency=False)))
+
+    def test_emergency_no_drug_no_first_treatment(self):
+        bundle = _bundle(_patient(name=[{"family": "Zorp"}], gender="female"),
+                         self._ma("Morphine"))  # no drug candidate at all
+        self.assertNotIn("submission.first_treatment_date",
+                         _ids(_extract(bundle, emergency=True)))
+
+    def test_emergency_unrelated_admin_no_match(self):
+        bundle = _bundle(_patient(name=[{"family": "Zorp"}], gender="female"),
+                         self._draft("Cytoravir"), self._ma("Morphine sulfate"))
+        self.assertNotIn("submission.first_treatment_date",
+                         _ids(_extract(bundle, emergency=True)))
+
+
+class TestObservationRecency(unittest.TestCase):
+    """M3: performance status reflects the most recent observation, not order."""
+
+    def _ecog(self, text, when):
+        return {"resourceType": "Observation", "status": "final",
+                "code": {"coding": [{"system": LOINC, "code": "89247-1"}]},
+                "valueCodeableConcept": {"coding": [
+                    {"system": SNOMED, "code": "x", "display": text}]},
+                "effectiveDateTime": when}
+
+    def test_latest_ecog_wins(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            _active_condition({"coding": [{"system": SNOMED, "code": "1",
+                                           "display": "Cholangiocarcinoma"}]}),
+            self._ecog("ECOG 0", "2024-01-01"),   # stale, listed first
+            self._ecog("ECOG 3", "2026-06-01"),   # current
+        )
+        dx = _ids(_extract(bundle))["patient.diagnosis"]["value"]
+        self.assertIn("ECOG 3", dx)
+        self.assertIn("2026-06-01", dx)
+        self.assertNotIn("ECOG 0", dx)
+
+
+class TestConditionStatusFiltering(unittest.TestCase):
+    """M4: refuted / entered-in-error / inactive diagnoses are not proposed."""
+
+    def test_entered_in_error_not_proposed(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            {"resourceType": "Condition",
+             "verificationStatus": {"coding": [
+                 {"system": VER, "code": "entered-in-error"}]},
+             "code": {"coding": [{"system": SNOMED, "code": "1",
+                                  "display": "Cholangiocarcinoma"}]}},
+        )
+        self.assertNotIn("patient.diagnosis", _ids(_extract(bundle)))
+
+    def test_inactive_condition_not_proposed(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            {"resourceType": "Condition",
+             "clinicalStatus": {"coding": [{"system": CLIN, "code": "inactive"}]},
+             "code": {"coding": [{"system": SNOMED, "code": "1", "display": "X"}]}},
+        )
+        self.assertNotIn("patient.diagnosis", _ids(_extract(bundle)))
+
+
+class TestProvenanceAccuracy(unittest.TestCase):
+    """M6/HC4: the source stamp names the element the value was read from."""
+
+    def test_duration_from_supply_names_supply(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            {"resourceType": "MedicationRequest", "status": "draft",
+             "intent": "proposal",
+             "medicationCodeableConcept": {"text": "Agent-Q"},
+             "dispenseRequest": {"expectedSupplyDuration": {"value": 90, "unit": "d"}}},
+        )
+        by = _ids(_extract(bundle))
+        self.assertIn("expectedSupplyDuration", by["drug.duration"]["source"]["path"])
+        self.assertNotIn("boundsDuration", by["drug.duration"]["source"]["path"])
+
+    def test_address_fallback_names_practitioner(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            {"resourceType": "Practitioner", "name": [{"family": "Rivera"}],
+             "address": [{"line": ["1 Clinic Rd"], "city": "Town"}]},
+        )
+        addr = _ids(_extract(bundle))["investigator.address"]["source"]
+        self.assertEqual(addr["resource"], "Practitioner")
+        self.assertIn("fallback", addr["path"])
+
+
+class TestSexUnattested(unittest.TestCase):
+    """MIN3: gender 'unknown' is absence-of-fact, never a high-confidence value."""
+
+    def test_sex_unknown_unattested(self):
+        bundle = _bundle(_patient(name=[{"family": "Zorp"}], gender="unknown"))
+        self.assertNotIn("patient.sex", _ids(_extract(bundle)))
+
+
+class TestEngineEgressBoundary(unittest.TestCase):
+    """M7/INV-4: the ingestion path egresses nothing; ``review_claude`` is the
+    single sanctioned egress (the Anthropic API) and never sees chart data."""
+
+    def test_no_outbound_client_in_engine_except_reviewer(self):
+        forbidden = re.compile(
+            r"^\s*(?:import|from)\s+(urllib\.request|socket|requests|httpx|"
+            r"httplib2|aiohttp|http\.client)\b", re.MULTILINE)
+        offenders = []
+        for path in sorted((ENGINE_ROOT / "ossicro").glob("*.py")):
+            if path.name == "review_claude.py":
+                continue  # the one sanctioned egress (never imports the PHI path)
+            if forbidden.search(path.read_text(encoding="utf-8")):
+                offenders.append(path.name)
+        self.assertEqual(offenders, [])
+
+    def test_egress_module_never_imports_phi_path(self):
+        src = (ENGINE_ROOT / "ossicro" / "review_claude.py").read_text(
+            encoding="utf-8")
+        self.assertNotIn("fhir_ingest", src)
 
 
 if __name__ == "__main__":
