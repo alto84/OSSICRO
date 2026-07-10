@@ -15,6 +15,9 @@ SHARED API CONTRACT:
     POST /api/case/{id}/generate        -> {route_id, documents, generated_rev, intake_rev}
     GET  /api/case/{id}/check           -> ledger (questions as {text,field_id}), clocks, stale, ...
     POST /api/case/{id}/signoff         -> record a human gate act (role must match the gate)
+    POST /api/case/{id}/fhir/import     -> {proposals, never_extracted, summary}
+                                           ({bundle:{...}} or {use_sample:true};
+                                           MAPS ONLY — never writes intake)
     GET  /api/case/{id}/package         -> manifest over ALL route documents + package digest
 
 The backend imports the engine (models / generate / pipeline / gates / routes /
@@ -51,6 +54,11 @@ from ossicro.ea_generators import (                              # noqa: E402
     compute_clocks,
     generate_route_documents,
 )
+from ossicro.fhir_ingest import (                                # noqa: E402
+    BundleError,
+    bundle_sha256,
+    extract_proposals,
+)
 from ossicro.gates import record_signoff as gates_record_signoff  # noqa: E402
 from ossicro.models import GateViolation                     # noqa: E402
 from ossicro.pipeline import run_check                       # noqa: E402
@@ -60,6 +68,7 @@ from ossicro.review_port import DeterministicStubReviewer    # noqa: E402
 STATIC_DIR = os.path.join(APP_DIR, "static")
 FIXTURES_DIR = os.path.join(ENGINE_DIR, "fixtures")
 SAMPLE_CASE_PATH = os.path.join(FIXTURES_DIR, "ea_sample_case.json")
+SAMPLE_BUNDLE_PATH = os.path.join(FIXTURES_DIR, "fhir_sample_bundle.json")
 CASES_DIR = os.path.join(APP_DIR, "data", "cases")
 HOST, PORT = "127.0.0.1", 8765
 
@@ -488,6 +497,52 @@ _CASE_GENERATE = re.compile(r"^/api/case/([^/]+)/generate$")
 _CASE_CHECK = re.compile(r"^/api/case/([^/]+)/check$")
 _CASE_PACKAGE = re.compile(r"^/api/case/([^/]+)/package$")
 _CASE_SIGNOFF = re.compile(r"^/api/case/([^/]+)/signoff$")
+_CASE_FHIR_IMPORT = re.compile(r"^/api/case/([^/]+)/fhir/import$")
+
+
+# ---------------------------------------------------------------------------
+# FHIR import (privacy-state-machine.md): BUNDLE_LOADED -> MAPPED, proposals
+# only. This endpoint NEVER writes case intake — the physician-confirmed
+# subset goes through the existing POST /api/case/{id}/intake (INV-2 / HC1).
+# The privacy log records case_id, source kind, and the bundle SHA-256 —
+# never bundle content (INV-8).
+# ---------------------------------------------------------------------------
+
+def _fhir_import(case: dict, case_id: str, payload: dict):
+    """Map a bundle to proposals. Returns (body, err, status). Intake untouched."""
+    if payload.get("use_sample"):
+        with open(SAMPLE_BUNDLE_PATH, encoding="utf-8") as f:
+            bundle = json.load(f)
+        source_kind = "sample-fixture"
+    elif isinstance(payload.get("bundle"), dict):
+        bundle = payload["bundle"]
+        source_kind = "upload"
+    else:
+        return None, "expected {bundle:{...FHIR Bundle...}} or {use_sample:true}", 400
+
+    route = _route_for(case)
+    try:
+        # as_of = the import-time date for the age computation (mapping spec
+        # §2); the wall clock lives at the app boundary, never in the engine.
+        result = extract_proposals(bundle, route, as_of=datetime.date.today())
+    except BundleError as exc:  # structured error; message carries no chart values
+        return None, str(exc), 400
+
+    # Privacy-state note: a bundle was loaded and mapped in PREPARATORY_REVIEW
+    # mode. Hash + metadata only — the bundle itself is not retained (INV-8).
+    with _LOCK:
+        case.setdefault("privacy_log", []).append({
+            "event": "fhir_bundle_loaded",
+            "state": "MAPPED",
+            "mode": "PREPARATORY_REVIEW",
+            "source_kind": source_kind,
+            "bundle_sha256": bundle_sha256(bundle),
+            "proposals": result["summary"]["auto"],
+            "at": datetime.datetime.now(datetime.timezone.utc)
+                  .strftime("%Y-%m-%dT%H:%M:%SZ"),
+        })
+        _save_case(case_id)
+    return result, None, 200
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -631,6 +686,23 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json({"error": str(exc), "field_id": exc.field_id}, 400)
             except Exception as exc:
                 return self._send_json({"error": type(exc).__name__, "detail": str(exc)}, 500)
+
+        m = _CASE_FHIR_IMPORT.match(path)
+        if m:
+            case_id = m.group(1)
+            case = self._case(case_id)
+            if case is None:
+                return self._send_json({"error": "unknown case"}, 404)
+            payload = self._read_json()
+            if payload is None or not isinstance(payload, dict):
+                return self._send_json({"error": "expected a JSON object"}, 400)
+            try:
+                result, err, status = _fhir_import(case, case_id, payload)
+            except Exception as exc:  # no chart content in error payloads
+                return self._send_json({"error": type(exc).__name__}, 500)
+            if err is not None:
+                return self._send_json({"error": err}, status)
+            return self._send_json(result)
 
         m = _CASE_SIGNOFF.match(path)
         if m:

@@ -21,6 +21,6 @@
 | 0 Frame | done | this file |
 | 1 Explore (FHIR→intake mapping + privacy design) | done | `fhir-intake-mapping.md` (17 auto / 3 derived / 35 manual), `engine/fixtures/fhir_sample_bundle.json`, `privacy-state-machine.md` |
 | 2 Plan | folded into Explore spec | the mapping + privacy invariants are the build spec |
-| 3 Build (backend FHIR ingest + confirmation UI + polish) | in progress | code |
-| 4 Adversarial review (clinical-informatics + privacy skeptic) | pending | `docs/ehr-integration/review.md` |
+| 3 Build (backend FHIR ingest + confirmation UI + polish) | done | `engine/ossicro/fhir_ingest.py` (+23 tests, 97 green), `app/server.py` (POST `/fhir/import`), `app/static/index.html` (import + confirmation UI + uplift). HTTP-verified: import returns 19 proposals, does NOT mutate intake, no patient PHI in proposals, planted-PHI bundle leaks nothing, confirm→`/intake` works. |
+| 4 Adversarial review (clinical-informatics + privacy skeptic) | in progress | `docs/ehr-integration/review.md` |
 | 5 Revise → 6 Re-review | pending | patches |

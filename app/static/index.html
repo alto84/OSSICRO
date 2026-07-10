@@ -62,6 +62,7 @@
   /* ---------- header ---------- */
   header{position:sticky;top:0;z-index:30;border-bottom:1px solid var(--line);
     background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px) saturate(1.3)}
+  .topline{height:3px;background:linear-gradient(90deg,var(--brand),var(--accent) 55%,var(--brand-deep))}
   .nav{display:flex;align-items:center;gap:14px;height:58px}
   .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;font-size:1.02rem}
   .brand .mark{width:24px;height:24px;border-radius:6px;flex:0 0 auto;
@@ -82,18 +83,25 @@
   .draftbar b{color:var(--amber)}
 
   /* ---------- stepper ---------- */
-  .stepper{display:flex;gap:6px;margin:22px 0 18px;flex-wrap:wrap}
-  .step{display:flex;align-items:center;gap:9px;padding:9px 15px;border-radius:10px;
+  .stepper{display:flex;gap:8px;margin:24px 0 20px;flex-wrap:wrap;align-items:stretch}
+  .step{display:flex;align-items:center;gap:11px;padding:10px 16px;border-radius:11px;
     border:1px solid var(--line);background:var(--surface);color:var(--muted);
-    font-weight:600;font-size:.87rem;transition:all .15s}
+    font-weight:600;font-size:.87rem;transition:all .15s;flex:1;min-width:185px;text-align:left;
+    position:relative}
   .step:not([disabled]){cursor:pointer}
   .step:not([disabled]):hover{border-color:var(--brand)}
   .step[disabled]{opacity:.45;cursor:not-allowed}
-  .step.active{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-deep)}
+  .step.active{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-deep);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 14%,transparent)}
+  .step.done{border-color:color-mix(in srgb,var(--green) 45%,var(--line))}
   .step.done .n{background:var(--green);color:#fff;border-color:var(--green)}
-  .step .n{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  .step .n{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
     font-size:.75rem;font-weight:800;background:var(--surface2);border:1px solid var(--line);flex:0 0 auto}
   .step.active .n{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .steplbl{display:flex;flex-direction:column;line-height:1.3;min-width:0}
+  .steplbl small{font-weight:600;font-size:.69rem;color:var(--muted);letter-spacing:.02em;text-transform:none}
+  .step.active .steplbl small{color:color-mix(in srgb,var(--brand-deep) 65%,var(--muted))}
+  @media(max-width:720px){.step{min-width:calc(50% - 8px)}.steplbl small{display:none}}
 
   /* ---------- cards / layout ---------- */
   .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
@@ -117,7 +125,9 @@
 
   /* ---------- intake form ---------- */
   .sectionhead{display:flex;align-items:baseline;gap:10px;margin:26px 0 10px}
-  .sectionhead h3{margin:0}
+  .sectionhead h3{margin:0;position:relative;padding-left:13px}
+  .sectionhead h3::before{content:"";position:absolute;left:0;top:.18em;bottom:.14em;width:4px;
+    border-radius:2px;background:linear-gradient(180deg,var(--brand),var(--accent))}
   .sectionhead .count{font-size:.78rem;color:var(--muted)}
   .fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
   @media(max-width:820px){.fieldgrid{grid-template-columns:1fr}}
@@ -145,6 +155,74 @@
   .segmented button.sel-yes{background:var(--green-soft);color:var(--green)}
   .segmented button.sel-no{background:var(--red-soft);color:var(--red)}
   .segmented button.sel-un{background:var(--surface2);color:var(--ink)}
+
+  /* ---------- chart import (SMART on FHIR) ---------- */
+  .importcard{border-color:color-mix(in srgb,var(--accent) 35%,var(--line));
+    background:linear-gradient(180deg,color-mix(in srgb,var(--accent-soft) 45%,var(--surface)),var(--surface) 130px)}
+  .importgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch;margin-top:12px}
+  @media(max-width:820px){.importgrid{grid-template-columns:1fr}}
+  .dropzone{border:2px dashed color-mix(in srgb,var(--accent) 45%,var(--line));border-radius:12px;
+    padding:26px 18px;text-align:center;color:var(--muted);font-size:.9rem;cursor:pointer;
+    transition:all .15s;background:var(--surface);display:flex;flex-direction:column;gap:6px;
+    align-items:center;justify-content:center}
+  .dropzone:hover,.dropzone:focus-visible,.dropzone.drag{border-color:var(--accent);
+    background:var(--accent-soft);color:var(--ink)}
+  .dropzone b{color:var(--accent-deep)}
+  .pastebox{display:flex;flex-direction:column;gap:8px}
+  .pastebox textarea{flex:1;min-height:96px;resize:vertical;background:var(--surface);
+    border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:9px 12px;
+    font-family:var(--mono);font-size:.78rem;width:100%}
+  .pastebox textarea:focus{outline:2px solid color-mix(in srgb,var(--accent) 45%,transparent);
+    outline-offset:1px;border-color:var(--accent)}
+  .privacynote{margin-top:10px;padding:9px 13px;border-radius:9px;font-size:.83rem;
+    background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+  .privacynote b{color:var(--accent-deep)}
+
+  /* ---------- proposal review rows ---------- */
+  .propsec{margin:18px 0 6px;font-size:.72rem;font-weight:800;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--accent-deep);display:flex;align-items:center;gap:10px}
+  .propsec::after{content:"";flex:1;height:1px;background:var(--line)}
+  .prop{border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin:8px 0;
+    background:var(--surface);transition:border-color .15s,background .15s}
+  .prop.confirmed{border-color:color-mix(in srgb,var(--green) 55%,var(--line));
+    background:color-mix(in srgb,var(--green-soft) 38%,var(--surface))}
+  .prophead{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:7px}
+  .proplabel{font-weight:700;font-size:.88rem;flex:1;min-width:170px}
+  .proplabel code{font-size:.68rem;color:var(--muted);background:transparent;padding:0}
+  .conf{font-size:.66rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+    padding:2px 9px;border-radius:999px;border:1px solid transparent}
+  .conf.high{background:var(--green-soft);color:var(--green)}
+  .conf.medium{background:var(--amber-soft);color:var(--amber)}
+  .conf.low{background:var(--red-soft);color:var(--red)}
+  .conf.unattested,.conf.unknown{background:var(--surface2);color:var(--muted);border-color:var(--line)}
+  .ptoggle{display:inline-flex;align-items:center;gap:7px;font-size:.79rem;font-weight:700;
+    cursor:pointer;user-select:none;border:1px solid var(--line);border-radius:999px;
+    padding:4px 13px;background:var(--surface2);color:var(--muted);transition:all .12s}
+  .ptoggle:hover{border-color:var(--green)}
+  .prop.confirmed .ptoggle{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+  .propval input,.propval textarea{background:var(--surface);border:1px solid var(--line);
+    color:var(--ink);border-radius:9px;padding:8px 11px;font:inherit;font-size:.9rem;width:100%}
+  .propval textarea{min-height:76px;resize:vertical}
+  .propval input:focus,.propval textarea:focus{outline:2px solid color-mix(in srgb,var(--brand) 45%,transparent);
+    outline-offset:1px;border-color:var(--brand)}
+  .propsrc{margin-top:7px;font-family:var(--mono);font-size:.71rem;color:var(--muted);
+    display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .propsrc .srck{font-family:inherit;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .propsrc .srcchip{background:var(--surface2);border:1px solid var(--line);border-radius:6px;
+    padding:1px 8px;word-break:break-all}
+  .confirmbar{position:sticky;bottom:10px;z-index:20;display:flex;gap:10px;align-items:center;
+    flex-wrap:wrap;background:var(--surface);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));
+    border-radius:12px;padding:11px 15px;box-shadow:var(--shadow);margin-top:14px;font-size:.87rem}
+  .confirmbar b{color:var(--accent-deep)}
+  details.neverx{margin-top:14px;border:1px dashed var(--line);border-radius:10px;padding:9px 13px;
+    font-size:.84rem;color:var(--muted)}
+  details.neverx summary{cursor:pointer;font-weight:700;color:var(--ink);font-size:.84rem}
+  .manualtag{display:inline-block;font-size:.67rem;font-weight:700;letter-spacing:.03em;
+    color:var(--muted);background:var(--surface2);border:1px dashed var(--line);
+    border-radius:999px;padding:1px 8px;width:max-content;max-width:100%}
+  .charttag{display:inline-block;font-size:.67rem;font-weight:800;letter-spacing:.03em;
+    color:var(--green);background:var(--green-soft);border:1px solid color-mix(in srgb,var(--green) 30%,transparent);
+    border-radius:999px;padding:1px 8px;width:max-content;max-width:100%}
 
   /* ---------- status pills / ledger ---------- */
   .pill{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;font-weight:800;
@@ -302,6 +380,7 @@
 <body>
 
 <header>
+  <div class="topline"></div>
   <div class="wrap nav">
     <span class="brand"><span class="mark"></span>OSSICRO</span>
     <span class="routechip">Route-3926 · 21 CFR 312.310</span>
@@ -322,10 +401,14 @@
 <div class="wrap">
 
   <nav class="stepper" id="stepper">
-    <button class="step active" data-screen="start"><span class="n">1</span>Start a case</button>
-    <button class="step" data-screen="intake" disabled><span class="n">2</span>Physician intake</button>
-    <button class="step" data-screen="check" disabled><span class="n">3</span>Generate &amp; ledger</button>
-    <button class="step" data-screen="package" disabled><span class="n">4</span>Package review</button>
+    <button class="step active" data-screen="start"><span class="n">1</span>
+      <span class="steplbl">Start a case<small>draft workspace · no PHI</small></span></button>
+    <button class="step" data-screen="intake" disabled><span class="n">2</span>
+      <span class="steplbl">Physician intake<small>chart import · field-by-field confirm</small></span></button>
+    <button class="step" data-screen="check" disabled><span class="n">3</span>
+      <span class="steplbl">Generate &amp; ledger<small>drafts · clocks · gates</small></span></button>
+    <button class="step" data-screen="package" disabled><span class="n">4</span>
+      <span class="steplbl">Package review<small>FDA + manufacturer views</small></span></button>
   </nav>
 
   <!-- ================= SCREEN 1 : START ================= -->
@@ -373,6 +456,40 @@
         <span class="muted small">Fills every field with a clearly fictional synthetic patient — demo only, no real PHI.</span>
       </div>
     </div>
+
+    <!-- ---- optional accelerator: chart import + field-by-field confirmation ---- -->
+    <div class="card importcard" id="importCard">
+      <div class="eyebrow">Optional accelerator</div>
+      <h3 style="margin-bottom:2px">Import from chart (SMART on FHIR)</h3>
+      <p class="muted small" style="margin-top:0;max-width:80ch">
+        Pull the clinical fields from a FHIR R4 bundle instead of retyping them. Only fields with a real
+        chart source are ever proposed; regulatory, attestation, and process fields have no chart source
+        and stay manual by design. Identifying details (name, MRN, address, birth date) are on a hard
+        never-extract list.
+      </p>
+      <div class="privacynote"><b>Local, preparatory review only.</b>
+        Your chart data is parsed locally and never leaves this machine; nothing here becomes part of
+        the submission until you confirm it — field by field, below.</div>
+      <div class="importgrid">
+        <div class="dropzone" id="dropZone" tabindex="0" role="button"
+             aria-label="Drop or choose a FHIR Bundle JSON file">
+          <span><b>Drop a FHIR Bundle (.json)</b> here</span>
+          <span class="small">or click to browse for a file</span>
+          <input type="file" id="bundleFile" accept=".json,application/json" hidden>
+        </div>
+        <div class="pastebox">
+          <textarea id="bundlePaste" spellcheck="false"
+            placeholder='…or paste a FHIR Bundle JSON here ({"resourceType":"Bundle", "entry":[…]})'></textarea>
+          <div class="btnrow">
+            <button type="button" class="btn accent" id="parsePasteBtn">Map pasted bundle</button>
+            <button type="button" class="btn" id="sampleChartBtn">Load synthetic chart</button>
+            <span class="muted small">Synthetic chart exercises every auto-mapped field — demo only.</span>
+          </div>
+        </div>
+      </div>
+      <div id="importResult"></div>
+    </div>
+
     <form id="intakeForm" novalidate>
       <div id="intakeFields"><p class="muted"><span class="spin"></span>Loading Route-3926 field schema…</p></div>
       <div class="card tight savecard">
@@ -559,7 +676,8 @@
    OSSICRO Route-3926 frontend — consumes the shared API contract:
      GET  /api/route/3926/schema
      POST /api/case
-     POST /api/case/{id}/intake
+     POST /api/case/{id}/fhir/import   (maps a FHIR bundle -> PROPOSALS ONLY; never writes intake)
+     POST /api/case/{id}/intake        (input-of-record — only physician-confirmed values arrive here)
      POST /api/case/{id}/generate
      GET  /api/case/{id}/check
      GET  /api/case/{id}/package
@@ -636,7 +754,11 @@ function enableStep(screen){
 }
 function markDone(screen){
   const b = $$("#stepper .step").find(x => x.dataset.screen === screen);
-  if (b) b.classList.add("done");
+  if (b){
+    b.classList.add("done");
+    const n = b.querySelector(".n");
+    if (n) n.textContent = "✓";
+  }
 }
 $$("#stepper .step").forEach(b =>
   b.addEventListener("click", () => { if (!b.disabled) show(b.dataset.screen); }));
@@ -921,6 +1043,272 @@ $("#loadExampleBtn").addEventListener("click", async () => {
     btn.disabled = false;
     btn.textContent = "Load example case";
   }
+});
+
+/* ---------------- chart import (SMART on FHIR) ----------------
+   POST /api/case/{id}/fhir/import maps a FHIR R4 bundle to PROPOSALS ONLY —
+   the endpoint never writes the case intake. Each proposal carries its
+   provenance (resource + FHIRPath + coding) and a confidence badge; the
+   physician reviews, edits, and confirms field-by-field. Only the confirmed
+   subset is written into the intake form and POSTed to /api/case/{id}/intake
+   — the same input-of-record path as hand-typed values. Unconfirmed
+   proposals are discarded, never persisted. Mapping authority:
+   docs/ehr-integration/fhir-intake-mapping.md (17 auto, 3 derived, 35 manual). */
+const F = { proposals: null, neverExtracted: [], summary: null,
+            confirmed: new Set(), edited: {} };
+
+function schemaField(fid){ return (S.schema || []).find(f => f.id === fid); }
+
+function codingText(c){
+  if (c == null) return "";
+  if (typeof c === "string") return c;
+  if (Array.isArray(c)) return c.map(codingText).filter(Boolean).join(" · ");
+  if (typeof c === "object"){
+    const sys = [c.system, c.code].filter(Boolean).join(" ");
+    return (sys + (c.display ? ` "${c.display}"` : "")).trim() || JSON.stringify(c);
+  }
+  return String(c);
+}
+
+function propValue(p){
+  return F.edited[p.field_id] !== undefined ? F.edited[p.field_id] : p.value;
+}
+
+function propRowHtml(p){
+  const fid = p.field_id;
+  const conf = (p.confidence || "unknown").toLowerCase();
+  const confirmed = F.confirmed.has(fid);
+  const sf = schemaField(fid);
+  const val = propValue(p);
+  const valStr = val == null ? "" : (typeof val === "object" ? JSON.stringify(val) : String(val));
+  const long = (sf && WIDE_TYPES.has((sf.type || "").toLowerCase())) || valStr.length > 90;
+  const ctl = long
+    ? `<textarea data-pval="${esc(fid)}" aria-label="Extracted value — edit before confirming">${esc(valStr)}</textarea>`
+    : `<input type="text" data-pval="${esc(fid)}" value="${esc(valStr)}" aria-label="Extracted value — edit before confirming">`;
+  const src = p.source || {};
+  const noSrc = !src.resource && !src.path && !src.coding;
+  return `<div class="prop${confirmed ? " confirmed" : ""}" data-prop="${esc(fid)}">
+    <div class="prophead">
+      <span class="proplabel">${esc(p.label || (sf && sf.label) || fid)} <code>${esc(fid)}</code></span>
+      <span class="conf ${esc(conf)}" title="Confidence is display metadata for the confirming physician — it grants nothing">${esc(conf)}</span>
+      <label class="ptoggle"><input type="checkbox" data-confirm="${esc(fid)}"${confirmed ? " checked" : ""}>Confirm</label>
+    </div>
+    <div class="propval">${ctl}</div>
+    <div class="propsrc"><span class="srck">Source</span>
+      ${src.resource ? `<span class="srcchip" title="FHIR resource">${esc(src.resource)}</span>` : ""}
+      ${src.path ? `<span class="srcchip" title="FHIRPath">${esc(src.path)}</span>` : ""}
+      ${src.coding ? `<span class="srcchip" title="Coding">${esc(codingText(src.coding))}</span>` : ""}
+      ${noSrc ? `<span class="srcchip">generated locally — no chart value copied</span>` : ""}
+    </div>
+  </div>`;
+}
+
+function manualCount(){
+  if (F.summary && F.summary.manual != null) return F.summary.manual;
+  const pids = new Set((F.proposals || []).map(p => p.field_id));
+  return (S.schema || []).filter(f => !pids.has(f.id)).length;
+}
+
+function updateConfirmBar(){
+  const n = F.confirmed.size, total = (F.proposals || []).length;
+  const el = $("#confirmCount");
+  if (el) el.innerHTML =
+    `<b>${n}</b> of <b>${total}</b> chart field${total === 1 ? "" : "s"} confirmed · ` +
+    `<b>${manualCount()}</b> field${manualCount() === 1 ? "" : "s"} still require manual entry`;
+  const btn = $("#applyConfirmedBtn");
+  if (btn){
+    btn.disabled = n === 0;
+    btn.textContent = n
+      ? `Apply ${n} confirmed value${n === 1 ? "" : "s"} to intake`
+      : "Apply confirmed to intake";
+  }
+}
+
+function renderImportResult(){
+  const box = $("#importResult");
+  if (!F.proposals){ box.innerHTML = ""; return; }
+  const secs = [], bySec = new Map();
+  for (const p of F.proposals){
+    const sec = p.section || "General";
+    if (!bySec.has(sec)){ bySec.set(sec, []); secs.push(sec); }
+    bySec.get(sec).push(p);
+  }
+  const nHigh = F.proposals.filter(p => (p.confidence || "").toLowerCase() === "high").length;
+  let html = `<hr class="sep">
+    <div class="btnrow">
+      <span class="pill green"><span class="dot"></span>${F.proposals.length} chart proposal${F.proposals.length === 1 ? "" : "s"}</span>
+      <span class="pill amber"><span class="dot"></span>${manualCount()} manual-only</span>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="confirmHighBtn" ${nHigh ? "" : "disabled"}>Confirm all high-confidence (${nHigh})</button>
+      <button type="button" class="btn" id="clearImportBtn">Discard import</button>
+    </div>
+    <p class="muted small" style="margin-top:8px">
+      Review each value against the chart, edit where needed, and confirm field-by-field.
+      A high badge grants nothing — every value, high or medium, needs your explicit confirmation
+      before it enters the intake. Unconfirmed proposals are discarded, never written.</p>`;
+  for (const sec of secs){
+    html += `<div class="propsec">${esc(sec)}</div>`;
+    html += bySec.get(sec).map(propRowHtml).join("");
+  }
+  if ((F.neverExtracted || []).length){
+    html += `<details class="neverx">
+      <summary>Deliberately never extracted — privacy hard-exclusions (${F.neverExtracted.length})</summary>
+      <ul class="qlist">${F.neverExtracted.map(x => `<li class="mono small">${esc(asText(x))}</li>`).join("")}</ul>
+    </details>`;
+  }
+  html += `<div class="confirmbar">
+    <span id="confirmCount"></span>
+    <span class="spacer"></span>
+    <button type="button" class="btn primary" id="applyConfirmedBtn" disabled>Apply confirmed to intake</button>
+  </div>`;
+  box.innerHTML = html;
+
+  $$("#importResult [data-confirm]").forEach(cb => cb.addEventListener("change", () => {
+    const fid = cb.dataset.confirm;
+    if (cb.checked) F.confirmed.add(fid); else F.confirmed.delete(fid);
+    const row = box.querySelector(`[data-prop="${CSS.escape(fid)}"]`);
+    if (row) row.classList.toggle("confirmed", cb.checked);
+    updateConfirmBar();
+  }));
+  $$("#importResult [data-pval]").forEach(el => el.addEventListener("input", () => {
+    F.edited[el.dataset.pval] = el.value;
+  }));
+  const highBtn = $("#confirmHighBtn");
+  if (highBtn) highBtn.addEventListener("click", () => {
+    for (const p of F.proposals)
+      if ((p.confidence || "").toLowerCase() === "high") F.confirmed.add(p.field_id);
+    renderImportResult();          // edits persist in F.edited across the re-render
+  });
+  const clearBtn = $("#clearImportBtn");
+  if (clearBtn) clearBtn.addEventListener("click", () => {
+    F.proposals = null; F.confirmed = new Set(); F.edited = {};
+    F.neverExtracted = []; F.summary = null;
+    box.innerHTML = "";
+    $$("#intakeFields .manualtag").forEach(t => t.remove());
+    toast("Import discarded — nothing was written to the intake.");
+  });
+  const applyBtn = $("#applyConfirmedBtn");
+  if (applyBtn) applyBtn.addEventListener("click", applyConfirmed);
+  updateConfirmBar();
+}
+
+/* flag fields with no chart source inside the intake form itself */
+function flagManualFields(){
+  $$("#intakeFields .manualtag").forEach(t => t.remove());
+  const pids = new Set((F.proposals || []).map(p => p.field_id));
+  for (const f of S.schema || []){
+    if (pids.has(f.id)) continue;
+    const wrap = document.getElementById("fld-" + f.id);
+    if (!wrap) continue;
+    const tag = document.createElement("span");
+    tag.className = "manualtag";
+    tag.textContent = "not in the chart — enter manually";
+    const label = wrap.querySelector("label");
+    if (label) label.insertAdjacentElement("afterend", tag);
+    else wrap.insertAdjacentElement("afterbegin", tag);
+  }
+}
+
+function markChartConfirmed(fid){
+  const wrap = document.getElementById("fld-" + fid);
+  if (!wrap || wrap.querySelector(".charttag")) return;
+  const tag = document.createElement("span");
+  tag.className = "charttag";
+  tag.textContent = "from chart — physician-confirmed";
+  const manual = wrap.querySelector(".manualtag");
+  if (manual) manual.remove();
+  const label = wrap.querySelector("label");
+  if (label) label.insertAdjacentElement("afterend", tag);
+  else wrap.insertAdjacentElement("afterbegin", tag);
+}
+
+async function applyConfirmed(){
+  const vals = {};
+  for (const p of F.proposals || [])
+    if (F.confirmed.has(p.field_id)) vals[p.field_id] = propValue(p);
+  const ids = Object.keys(vals);
+  if (!ids.length){ toast("Confirm at least one proposal first.", true); return; }
+  const btn = $("#applyConfirmedBtn");
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Writing to intake…';
+  const applied = applySampleFields(vals);      // fills the intake form with type coercion
+  ids.forEach(markChartConfirmed);
+  updateMissing(); scheduleMirror();
+  const ok = await saveIntake();                // the existing input-of-record endpoint
+  if (ok) toast(`${applied} confirmed chart value${applied === 1 ? "" : "s"} saved to the intake — ` +
+                `unconfirmed proposals were not written.`);
+  updateConfirmBar();                           // restores the apply button's label/state
+}
+
+async function runImport(payload, btn, busy){
+  if (!S.caseId){ toast("Start a case first — the import maps into an open case.", true); return; }
+  const orig = btn ? btn.textContent : "";
+  if (btn){ btn.disabled = true; btn.innerHTML = `<span class="spin"></span>${busy || "Mapping chart…"}`; }
+  try {
+    const res = await api(`/api/case/${S.caseId}/fhir/import`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    F.proposals = res.proposals || [];
+    F.neverExtracted = res.never_extracted || [];
+    F.summary = res.summary || null;
+    F.confirmed = new Set(); F.edited = {};
+    renderImportResult();
+    flagManualFields();
+    toast(F.proposals.length
+      ? `Chart mapped locally — ${F.proposals.length} proposal(s) await your review. Nothing has been written to the intake.`
+      : "Bundle parsed — no mappable fields found; everything stays manual.");
+    setTimeout(() => {
+      const r = $("#importResult");
+      if (r && r.firstChild) r.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = orig; }
+  }
+}
+
+/* wiring: synthetic chart, pasted bundle, file drop */
+$("#sampleChartBtn").addEventListener("click", () =>
+  runImport({ use_sample: true }, $("#sampleChartBtn"), "Loading synthetic chart…"));
+
+$("#parsePasteBtn").addEventListener("click", () => {
+  const raw = $("#bundlePaste").value.trim();
+  if (!raw){ toast("Paste a FHIR Bundle JSON first.", true); return; }
+  let bundle;
+  try { bundle = JSON.parse(raw); }
+  catch { toast("That is not valid JSON — check the pasted bundle.", true); return; }
+  runImport({ bundle }, $("#parsePasteBtn"), "Mapping bundle…");
+});
+
+const dropZone = $("#dropZone");
+function importBundleFile(file){
+  if (!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    let bundle;
+    try { bundle = JSON.parse(String(rd.result)); }
+    catch { toast(`${file.name} is not valid JSON.`, true); return; }
+    runImport({ bundle }, null);
+  };
+  rd.onerror = () => toast("Could not read " + file.name, true);
+  rd.readAsText(file);
+}
+dropZone.addEventListener("click", () => $("#bundleFile").click());
+dropZone.addEventListener("keydown", ev => {
+  if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); $("#bundleFile").click(); }
+});
+$("#bundleFile").addEventListener("change", ev => {
+  importBundleFile(ev.target.files && ev.target.files[0]);
+  ev.target.value = "";
+});
+["dragover", "dragenter"].forEach(t =>
+  dropZone.addEventListener(t, ev => { ev.preventDefault(); dropZone.classList.add("drag"); }));
+["dragleave", "dragend"].forEach(t =>
+  dropZone.addEventListener(t, () => dropZone.classList.remove("drag")));
+dropZone.addEventListener("drop", ev => {
+  ev.preventDefault(); dropZone.classList.remove("drag");
+  importBundleFile(ev.dataTransfer.files && ev.dataTransfer.files[0]);
 });
 
 function collectIntake(){
