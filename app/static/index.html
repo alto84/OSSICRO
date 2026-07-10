@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OSSICRO — Route-3926 Single-Patient Expanded Access</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b5cad'/%3E%3Cpath d='M8 22V10h4a6 6 0 0 1 0 12z' fill='%2312a594'/%3E%3Ccircle cx='22' cy='16' r='5' fill='none' stroke='%23fff' stroke-width='2.5'/%3E%3C/svg%3E">
+<style>
+  /* ---------- theme ---------- */
+  :root{
+    --bg:#f6f8fa; --surface:#ffffff; --surface2:#f0f4f7; --ink:#0f2233; --muted:#5a6b7b;
+    --line:#dfe6ec; --brand:#0b5cad; --brand-deep:#083a6e; --brand-soft:#e7f0f9;
+    --accent:#12a594; --accent-deep:#0c7d70; --accent-soft:#e4f5f2;
+    --green:#1f9d57; --green-soft:#e6f5ec; --amber:#b57a0a; --amber-soft:#fcf2dd;
+    --red:#c0392b; --red-soft:#fbe9e6;
+    --shadow:0 1px 2px rgba(8,32,58,.06),0 8px 24px rgba(8,32,58,.07);
+    --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,Menlo,monospace;
+    --maxw:1160px;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0b141d; --surface:#111d29; --surface2:#0e1822; --ink:#e8eef4; --muted:#9fb1c1;
+    --line:#20303f; --brand:#4d9fe6; --brand-deep:#8fc2f2; --brand-soft:#12283c;
+    --accent:#3fd0bd; --accent-deep:#7ee3d6; --accent-soft:#0e2a27;
+    --green:#3fc47a; --green-soft:#0f2b1c; --amber:#e0a43a; --amber-soft:#2e2410;
+    --red:#e57363; --red-soft:#32160f;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0b141d; --surface:#111d29; --surface2:#0e1822; --ink:#e8eef4; --muted:#9fb1c1;
+    --line:#20303f; --brand:#4d9fe6; --brand-deep:#8fc2f2; --brand-soft:#12283c;
+    --accent:#3fd0bd; --accent-deep:#7ee3d6; --accent-soft:#0e2a27;
+    --green:#3fc47a; --green-soft:#0f2b1c; --amber:#e0a43a; --amber-soft:#2e2410;
+    --red:#e57363; --red-soft:#32160f;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f8fa; --surface:#ffffff; --surface2:#f0f4f7; --ink:#0f2233; --muted:#5a6b7b;
+    --line:#dfe6ec; --brand:#0b5cad; --brand-deep:#083a6e; --brand-soft:#e7f0f9;
+    --accent:#12a594; --accent-deep:#0c7d70; --accent-soft:#e4f5f2;
+    --green:#1f9d57; --green-soft:#e6f5ec; --amber:#b57a0a; --amber-soft:#fcf2dd;
+    --red:#c0392b; --red-soft:#fbe9e6;
+    --shadow:0 1px 2px rgba(8,32,58,.06),0 8px 24px rgba(8,32,58,.07);
+  }
+
+  /* ---------- base ---------- */
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+  h1,h2,h3,h4{line-height:1.25;letter-spacing:-.01em;margin:0 0 .45em}
+  h2{font-size:1.35rem} h3{font-size:1.05rem} h4{font-size:.95rem}
+  p{margin:.35em 0}
+  a{color:var(--brand)}
+  button{font:inherit;cursor:pointer}
+  .muted{color:var(--muted)}
+  .small{font-size:.83rem}
+  .mono{font-family:var(--mono)}
+  code{font-family:var(--mono);font-size:.85em;background:var(--surface2);padding:1px 5px;border-radius:4px}
+
+  /* ---------- header ---------- */
+  header{position:sticky;top:0;z-index:30;border-bottom:1px solid var(--line);
+    background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px) saturate(1.3)}
+  .nav{display:flex;align-items:center;gap:14px;height:58px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;font-size:1.02rem}
+  .brand .mark{width:24px;height:24px;border-radius:6px;flex:0 0 auto;
+    background:linear-gradient(135deg,var(--brand),var(--accent))}
+  .routechip{font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--brand);background:var(--brand-soft);border:1px solid color-mix(in srgb,var(--brand) 30%,transparent);
+    padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .casechip{font-family:var(--mono);font-size:.78rem;color:var(--muted);background:var(--surface2);
+    border:1px solid var(--line);padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .spacer{flex:1}
+  .iconbtn{background:var(--surface2);border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:5px 10px;font-size:.82rem;font-weight:600}
+  .iconbtn:hover{border-color:var(--brand)}
+
+  /* ---------- draft banner ---------- */
+  .draftbar{background:var(--amber-soft);border-bottom:1px solid color-mix(in srgb,var(--amber) 35%,transparent);
+    color:var(--ink);font-size:.83rem;padding:7px 0}
+  .draftbar b{color:var(--amber)}
+
+  /* ---------- stepper ---------- */
+  .stepper{display:flex;gap:6px;margin:22px 0 18px;flex-wrap:wrap}
+  .step{display:flex;align-items:center;gap:9px;padding:9px 15px;border-radius:10px;
+    border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    font-weight:600;font-size:.87rem;transition:all .15s}
+  .step:not([disabled]){cursor:pointer}
+  .step:not([disabled]):hover{border-color:var(--brand)}
+  .step[disabled]{opacity:.45;cursor:not-allowed}
+  .step.active{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-deep)}
+  .step.done .n{background:var(--green);color:#fff;border-color:var(--green)}
+  .step .n{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+    font-size:.75rem;font-weight:800;background:var(--surface2);border:1px solid var(--line);flex:0 0 auto}
+  .step.active .n{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+  /* ---------- cards / layout ---------- */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);padding:22px;margin-bottom:18px}
+  .card.tight{padding:16px 18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}}
+  .eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:.7rem;font-weight:800;color:var(--accent-deep)}
+  hr.sep{border:0;border-top:1px solid var(--line);margin:18px 0}
+
+  /* ---------- buttons ---------- */
+  .btn{border:1px solid var(--line);background:var(--surface2);color:var(--ink);
+    border-radius:10px;padding:9px 18px;font-weight:700;font-size:.9rem;transition:all .12s}
+  .btn:hover:not([disabled]){border-color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover:not([disabled]){background:var(--brand-deep);border-color:var(--brand-deep)}
+  .btn.accent{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.accent:hover:not([disabled]){background:var(--accent-deep);border-color:var(--accent-deep)}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+  /* ---------- intake form ---------- */
+  .sectionhead{display:flex;align-items:baseline;gap:10px;margin:26px 0 10px}
+  .sectionhead h3{margin:0}
+  .sectionhead .count{font-size:.78rem;color:var(--muted)}
+  .fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+  @media(max-width:820px){.fieldgrid{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field.wide{grid-column:1 / -1}
+  .field label{font-weight:700;font-size:.87rem}
+  .field label .req{color:var(--red);margin-left:3px}
+  .field .help{font-size:.8rem;color:var(--muted);margin:0}
+  .cite{display:inline-block;font-family:var(--mono);font-size:.7rem;color:var(--brand);
+    background:var(--brand-soft);border:1px solid color-mix(in srgb,var(--brand) 25%,transparent);
+    padding:1px 7px;border-radius:999px;width:max-content;max-width:100%}
+  .field input[type=text],.field input[type=number],.field input[type=date],
+  .field input[type=datetime-local],.field input[type=email],.field input[type=tel],
+  .field select,.field textarea{
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    border-radius:9px;padding:9px 12px;font:inherit;font-size:.92rem;width:100%}
+  .field textarea{min-height:84px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{
+    outline:2px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px;border-color:var(--brand)}
+  .field .unattested{font-size:.72rem;color:var(--muted);font-style:italic}
+  .segmented{display:flex;gap:0;border:1px solid var(--line);border-radius:9px;overflow:hidden;width:max-content}
+  .segmented button{border:0;background:var(--surface);color:var(--muted);padding:7px 16px;
+    font-weight:700;font-size:.85rem;border-right:1px solid var(--line)}
+  .segmented button:last-child{border-right:0}
+  .segmented button.sel-yes{background:var(--green-soft);color:var(--green)}
+  .segmented button.sel-no{background:var(--red-soft);color:var(--red)}
+  .segmented button.sel-un{background:var(--surface2);color:var(--ink)}
+
+  /* ---------- status pills / ledger ---------- */
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;font-weight:800;
+    letter-spacing:.04em;text-transform:uppercase;padding:3px 11px;border-radius:999px;white-space:nowrap}
+  .pill .dot{width:8px;height:8px;border-radius:50%}
+  .pill.green{background:var(--green-soft);color:var(--green)} .pill.green .dot{background:var(--green)}
+  .pill.amber{background:var(--amber-soft);color:var(--amber)} .pill.amber .dot{background:var(--amber)}
+  .pill.red{background:var(--red-soft);color:var(--red)} .pill.red .dot{background:var(--red)}
+  .totals{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0 20px}
+  @media(max-width:640px){.totals{grid-template-columns:1fr}}
+  .tot{border:1px solid var(--line);border-radius:12px;padding:14px 18px;background:var(--surface)}
+  .tot .num{font-size:1.9rem;font-weight:800;line-height:1.1}
+  .tot .lbl{font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  .tot.green{border-color:color-mix(in srgb,var(--green) 40%,var(--line))} .tot.green .num,.tot.green .lbl{color:var(--green)}
+  .tot.amber{border-color:color-mix(in srgb,var(--amber) 40%,var(--line))} .tot.amber .num,.tot.amber .lbl{color:var(--amber)}
+  .tot.red{border-color:color-mix(in srgb,var(--red) 40%,var(--line))} .tot.red .num,.tot.red .lbl{color:var(--red)}
+
+  .ledgeritem{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:var(--surface)}
+  .ledgeritem .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .ledgeritem .title{font-weight:700;flex:1;min-width:200px}
+  .ledgeritem .docid{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+  .ledgeritem.amber{border-left:4px solid var(--amber)}
+  .ledgeritem.red{border-left:4px solid var(--red)}
+  .ledgeritem.green{border-left:4px solid var(--green)}
+  .qlist{margin:8px 0 0;padding-left:20px}
+  .qlist li{margin:3px 0;font-size:.88rem}
+  .gatecall{margin-top:9px;padding:8px 12px;border-radius:8px;background:var(--amber-soft);
+    border:1px solid color-mix(in srgb,var(--amber) 30%,transparent);font-size:.85rem}
+  .gatecall b{color:var(--amber)}
+  .rolechip{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.05em;
+    text-transform:uppercase;background:var(--surface2);border:1px solid var(--line);
+    padding:2px 8px;border-radius:999px;color:var(--ink)}
+
+  /* ---------- tables ---------- */
+  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:520px}
+  th{background:var(--surface2);text-align:left;font-size:.72rem;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);padding:9px 14px;border-bottom:1px solid var(--line)}
+  td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+
+  /* ---------- documents / pre ---------- */
+  details.doc{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:var(--surface);overflow:hidden}
+  details.doc summary{cursor:pointer;padding:12px 16px;font-weight:700;font-size:.92rem;
+    display:flex;align-items:center;gap:10px;list-style:none}
+  details.doc summary::-webkit-details-marker{display:none}
+  details.doc summary .chev{transition:transform .15s;color:var(--muted);font-size:.8rem}
+  details.doc[open] summary .chev{transform:rotate(90deg)}
+  .draftstamp{font-size:.68rem;font-weight:800;letter-spacing:.09em;color:var(--amber);
+    border:1.5px solid var(--amber);border-radius:5px;padding:1px 7px;transform:rotate(-2deg)}
+  pre.render{margin:0;padding:16px 18px;border-top:1px solid var(--line);background:var(--surface2);
+    font-family:var(--mono);font-size:.8rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;
+    max-height:480px;overflow:auto}
+  pre.render.open{border-top:0;border:1px solid var(--line);border-radius:12px}
+
+  /* ---------- tabs ---------- */
+  .tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:18px}
+  .tab{border:0;background:transparent;color:var(--muted);font-weight:700;font-size:.92rem;
+    padding:10px 18px;border-bottom:3px solid transparent;margin-bottom:-2px}
+  .tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+  .tab:hover{color:var(--ink)}
+
+  /* ---------- ready banner ---------- */
+  .ready{border-radius:12px;padding:14px 18px;margin-bottom:16px;font-size:.93rem;border:1px solid}
+  .ready.yes{background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 40%,transparent);color:var(--ink)}
+  .ready.yes b{color:var(--green)}
+  .ready.no{background:var(--red-soft);border-color:color-mix(in srgb,var(--red) 40%,transparent);color:var(--ink)}
+  .ready.no b{color:var(--red)}
+  .ready ul{margin:8px 0 0;padding-left:20px}
+
+  /* ---------- misc ---------- */
+  .hardline{border:1px dashed color-mix(in srgb,var(--brand) 45%,var(--line));border-radius:12px;
+    background:var(--brand-soft);padding:14px 18px;font-size:.88rem}
+  .hardline b{color:var(--brand-deep)}
+  .fourparty{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px}
+  .party{border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:var(--surface);font-size:.83rem}
+  .party b{display:block;margin-bottom:2px}
+  .party .owns{color:var(--muted)}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:99;
+    background:var(--ink);color:var(--bg);padding:10px 20px;border-radius:10px;font-size:.88rem;
+    font-weight:600;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s;max-width:80vw}
+  #toast.show{opacity:1}
+  #toast.err{background:var(--red);color:#fff}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;
+    border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:7px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .screen{display:none}
+  .screen.active{display:block}
+  footer{padding:34px 0 46px;color:var(--muted);font-size:.8rem;border-top:1px solid var(--line);margin-top:30px}
+  .sha{font-family:var(--mono);font-size:.72rem;cursor:pointer;color:var(--muted)}
+  .sha:hover{color:var(--brand)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <span class="brand"><span class="mark"></span>OSSICRO</span>
+    <span class="routechip">Route-3926 · 21 CFR 312.310</span>
+    <span class="casechip" id="caseChip">no case open</span>
+    <span class="spacer"></span>
+    <button class="iconbtn" id="themeBtn" title="Toggle light/dark">Theme</button>
+  </div>
+</header>
+
+<div class="draftbar">
+  <div class="wrap">
+    <b>DRAFTING AID.</b> Every artifact on this page is a <b>draft</b> for qualified human review.
+    OSSICRO never obtains consent, never approves for an IRB, never determines causality, never signs,
+    and never submits to FDA. Those acts belong to the named humans — the gates below fail closed.
+  </div>
+</div>
+
+<div class="wrap">
+
+  <nav class="stepper" id="stepper">
+    <button class="step active" data-screen="start"><span class="n">1</span>Start a case</button>
+    <button class="step" data-screen="intake" disabled><span class="n">2</span>Physician intake</button>
+    <button class="step" data-screen="check" disabled><span class="n">3</span>Generate &amp; ledger</button>
+    <button class="step" data-screen="package" disabled><span class="n">4</span>Package review</button>
+  </nav>
+
+  <!-- ================= SCREEN 1 : START ================= -->
+  <section class="screen active" id="screen-start">
+    <div class="card">
+      <div class="eyebrow">Single-patient expanded access</div>
+      <h2>Individual-patient expanded-access request — Form FDA 3926</h2>
+      <p class="muted" style="max-width:70ch">
+        Treatment, not research (21 CFR 312.305(a)): one named patient, a serious or immediately
+        life-threatening disease, no comparable or satisfactory alternative therapy. OSSICRO drafts the
+        complete package the <b>FDA reviewer receives</b> and the request the <b>manufacturer acts on</b>;
+        four independent parties own the four decisions, and OSSICRO owns none of them.
+      </p>
+
+      <div class="hardline">
+        <b>The hard line.</b> Authorization requires four independent concurrences. OSSICRO drafts,
+        computes clocks, and assembles — it never decides.
+        <div class="fourparty">
+          <div class="party"><b>Treating physician</b><span class="owns">Risk determination · submits · consents — 21 CFR 312.310(a)</span></div>
+          <div class="party"><b>Manufacturer</b><span class="owns">Whether to supply · LOA signature — FDCA §561A</span></div>
+          <div class="party"><b>FDA review division</b><span class="owns">Allow-to-proceed or clinical hold — 21 CFR 312.305/.310/.42</span></div>
+          <div class="party"><b>IRB</b><span class="owns">Approval or §56.105 chair concurrence — 21 CFR Part 56</span></div>
+        </div>
+      </div>
+
+      <hr class="sep">
+      <div class="btnrow">
+        <button class="btn primary" id="startBtn">Start a case</button>
+        <span class="muted small">Creates an in-memory draft case. No real PHI — use coded identifiers only.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SCREEN 2 : INTAKE ================= -->
+  <section class="screen" id="screen-intake">
+    <div class="card tight">
+      <h2 style="margin-bottom:2px">Physician intake</h2>
+      <p class="muted small" style="margin-top:0">
+        Each field is labeled with its governing citation and feeds specific documents in the package.
+        Leave anything unknown blank — an empty field is recorded as <i>honestly unattested</i>, never fabricated.
+        Attestation booleans are never defaulted or pre-checked by OSSICRO; they are the physician's to set.
+      </p>
+    </div>
+    <form id="intakeForm" novalidate>
+      <div id="intakeFields"><p class="muted"><span class="spin"></span>Loading Route-3926 field schema…</p></div>
+      <div class="card tight">
+        <div class="btnrow">
+          <button type="submit" class="btn primary" id="saveIntakeBtn">Save intake</button>
+          <button type="button" class="btn accent" id="saveGenBtn">Save &amp; generate documents</button>
+          <span class="muted small" id="intakeStatus"></span>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- ================= SCREEN 3 : GENERATE + LEDGER ================= -->
+  <section class="screen" id="screen-check">
+    <div class="card tight">
+      <div class="btnrow">
+        <button class="btn primary" id="genBtn">Generate documents</button>
+        <button class="btn" id="checkBtn" disabled>Re-run completeness check</button>
+        <span class="muted small" id="genStatus"></span>
+      </div>
+    </div>
+
+    <div id="ledgerArea" style="display:none">
+      <h2>Completeness ledger</h2>
+      <p class="muted small" style="margin-top:-4px">
+        Green = complete. Amber = drafted but awaiting a named human act (the gate shown). Red = missing
+        or invalid. A clean concept review never promotes amber to green — only the responsible human's
+        recorded sign-off does.
+      </p>
+      <div class="totals" id="totals"></div>
+      <div id="ledgerList"></div>
+
+      <div class="card" id="consistencyCard" style="display:none">
+        <h3>Cross-document consistency findings</h3>
+        <ul class="qlist" id="consistencyList"></ul>
+      </div>
+
+      <div class="card" id="gatePacketCard" style="display:none">
+        <h3>Who must act — gate packet</h3>
+        <p class="muted small" style="margin-top:-4px">
+          Each gate is a non-delegable human act. OSSICRO routes the draft to the named role and stops;
+          nothing advances to <code>final</code> without the recorded sign-off (GateViolation otherwise).
+        </p>
+        <div class="tblwrap"><table id="gateTable">
+          <thead><tr><th>Gate</th><th>Responsible human</th><th>Document</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+
+      <div class="card" id="docsCard" style="display:none">
+        <h3>Generated documents <span class="muted small">(drafts — unsigned, unsubmitted)</span></h3>
+        <div id="docsList"></div>
+      </div>
+
+      <div class="card tight">
+        <div class="btnrow">
+          <button class="btn primary" id="toPackageBtn" disabled>Assemble package →</button>
+          <span class="muted small">Assembly builds the FDA-reviewer view and the manufacturer packet. It does not submit anything.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SCREEN 4 : PACKAGE ================= -->
+  <section class="screen" id="screen-package">
+    <div id="pkgLoading" class="card tight"><p class="muted" style="margin:0"><span class="spin"></span>Assembling package…</p></div>
+
+    <div id="pkgArea" style="display:none">
+      <div id="readyBanner"></div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="regulator">Regulator view — what FDA receives</button>
+        <button class="tab" data-tab="manufacturer">Manufacturer view — what the manufacturer acts on</button>
+      </div>
+
+      <!-- regulator -->
+      <div class="tabpane" id="tab-regulator">
+        <div class="card">
+          <div class="eyebrow">eCTD module map</div>
+          <h3>Where each artifact lands</h3>
+          <p class="muted small" style="margin-top:-2px">
+            eCTD is not mandatory for an individual-patient 3926 — FDA accepts a paper/PDF package.
+            This map governs electronic filing or a serial amendment to an existing eCTD IND.
+            CMC (M3), nonclinical (M4), and the IB are cross-references to the manufacturer's IND via
+            the LOA — never physician-authored.
+          </p>
+          <div class="tblwrap"><table id="ectdTable">
+            <thead><tr><th>Module</th><th>Section / content</th><th>Documents</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+
+        <div class="card">
+          <div class="eyebrow">Cover letter</div>
+          <h3>Draft cover letter <span class="draftstamp">DRAFT</span></h3>
+          <p class="muted small" style="margin-top:-2px">Signed and filed by the physician — the <code>submission-to-fda</code> gate. OSSICRO never files.</p>
+          <pre class="render open" id="coverLetter"></pre>
+        </div>
+
+        <div class="card">
+          <div class="eyebrow">Assembled package</div>
+          <h3>Document manifest</h3>
+          <p class="muted small" style="margin-top:-2px">SHA-256 fingerprints anchor each draft's exact content. Click a hash to copy.</p>
+          <div class="tblwrap"><table id="manifestTable">
+            <thead><tr><th>#</th><th>Document</th><th>Registry id</th><th>SHA-256</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- manufacturer -->
+      <div class="tabpane" id="tab-manufacturer" style="display:none">
+        <div class="card">
+          <div class="eyebrow">Letter-of-Authorization request</div>
+          <h3>LOA request to the manufacturer <span class="draftstamp">DRAFT</span></h3>
+          <p class="muted small" style="margin-top:-2px">
+            The physician sends this — OSSICRO never auto-sends. It asks the manufacturer to (1) supply
+            the drug for single-patient treatment use and (2) issue an LOA cross-referencing its IND/DMF
+            to FDA (21 CFR 312.305(b)(1), 312.23(b)). FDA authorization does <b>not</b> obligate supply;
+            the decision and the LOA signature are the manufacturer's alone (FDCA §561A).
+          </p>
+          <pre class="render open" id="loaRequest"></pre>
+        </div>
+        <div class="card">
+          <div class="eyebrow">Transmittal cover</div>
+          <h3>Cover note to manufacturer intake <span class="draftstamp">DRAFT</span></h3>
+          <pre class="render open" id="mfrCover"></pre>
+        </div>
+      </div>
+
+      <div class="card tight">
+        <div class="btnrow">
+          <button class="btn accent" id="exportJsonBtn">Download package JSON</button>
+          <button class="btn" id="printBtn">Printable view</button>
+          <button class="btn" id="refreshPkgBtn">Re-assemble</button>
+          <span class="muted small">Export produces the review copy. Submission to FDA remains the physician's act.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    OSSICRO — Open Source Sponsor-Investigator CRO · Route-3926 MVP ·
+    Governed by the OSSICRO Constitution: complete documentation drafted for qualified human review;
+    non-delegable acts (consent, IRB approval, causality, signatures, submission) are never performed by software.
+  </footer>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   OSSICRO Route-3926 frontend — consumes the shared API contract:
+     GET  /api/route/3926/schema
+     POST /api/case
+     POST /api/case/{id}/intake
+     POST /api/case/{id}/generate
+     GET  /api/case/{id}/check
+     GET  /api/case/{id}/package
+   ============================================================ */
+
+const S = {           // client state
+  caseId: null,
+  schema: null,       // [{id,label,citation,type,required,help,section}]
+  intakeSaved: false,
+  documents: null,    // [{doc_id,title,rendered}]
+  check: null,        // {ledger,totals,consistency,gate_packet}
+  pkg: null           // package payload
+};
+
+/* ---------------- utilities ---------------- */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[c]);
+}
+function asText(x){
+  if (x == null) return "";
+  if (typeof x === "string") return x;
+  if (typeof x === "object")
+    return x.message || x.question || x.detail || x.text || x.finding || JSON.stringify(x, null, 2);
+  return String(x);
+}
+let toastTimer = null;
+function toast(msg, isErr){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.className = "show" + (isErr ? " err" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = "", isErr ? 6000 : 3200);
+}
+async function api(path, opts){
+  let res;
+  try { res = await fetch(path, opts); }
+  catch (e) { throw new Error("Backend unreachable at " + path + " — is the OSSICRO server running?"); }
+  let body = null;
+  const txt = await res.text();
+  try { body = txt ? JSON.parse(txt) : null; } catch { body = { raw: txt }; }
+  if (!res.ok){
+    const msg = (body && (body.error || body.detail || body.message)) || (res.status + " " + res.statusText);
+    throw new Error(msg);
+  }
+  return body;
+}
+
+/* ---------------- theme ---------------- */
+$("#themeBtn").addEventListener("click", () => {
+  const r = document.documentElement;
+  const cur = r.dataset.theme ||
+    (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  r.dataset.theme = cur === "dark" ? "light" : "dark";
+});
+
+/* ---------------- stepper / screens ---------------- */
+const STEPS = ["start","intake","check","package"];
+function show(screen){
+  $$(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-"+screen));
+  $$("#stepper .step").forEach(b => b.classList.toggle("active", b.dataset.screen === screen));
+  window.scrollTo({top:0, behavior:"smooth"});
+  if (screen === "package") loadPackage();
+}
+function enableStep(screen){
+  const b = $$("#stepper .step").find(x => x.dataset.screen === screen);
+  if (b) b.disabled = false;
+}
+function markDone(screen){
+  const b = $$("#stepper .step").find(x => x.dataset.screen === screen);
+  if (b) b.classList.add("done");
+}
+$$("#stepper .step").forEach(b =>
+  b.addEventListener("click", () => { if (!b.disabled) show(b.dataset.screen); }));
+
+/* ---------------- screen 1: start a case ---------------- */
+$("#startBtn").addEventListener("click", async () => {
+  const btn = $("#startBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Creating case…';
+  try {
+    const [caseRes, schemaRes] = await Promise.all([
+      api("/api/case", { method:"POST", headers:{"Content-Type":"application/json"}, body:"{}" }),
+      api("/api/route/3926/schema")
+    ]);
+    S.caseId = caseRes.case_id;
+    S.schema = schemaRes.fields || [];
+    $("#caseChip").textContent = "case " + S.caseId;
+    renderIntake();
+    markDone("start"); enableStep("intake");
+    show("intake");
+    toast("Case " + S.caseId + " opened — draft workspace, no real PHI.");
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Start a case";
+  }
+});
+
+/* ---------------- screen 2: intake ---------------- */
+const WIDE_TYPES = new Set(["textarea","longtext","narrative"]);
+function fieldControl(f){
+  const t = (f.type || "text").toLowerCase();
+  const name = esc(f.id);
+  if (WIDE_TYPES.has(t))
+    return `<textarea name="${name}" ${f.required ? "data-required" : ""}></textarea>`;
+  if (t === "boolean" || t === "checkbox" || t === "bool"){
+    // Tri-state: unattested / yes / no. Never defaulted — the physician sets it.
+    return `<input type="hidden" name="${name}" value="" ${f.required ? "data-required" : ""}>
+      <div class="segmented" data-bool="${name}">
+        <button type="button" data-v="" class="sel-un">Unattested</button>
+        <button type="button" data-v="true">Yes</button>
+        <button type="button" data-v="false">No</button>
+      </div>
+      <span class="unattested">Attestation is the physician's — OSSICRO never pre-checks it.</span>`;
+  }
+  if (t === "select" || t === "enum" || t === "choice"){
+    const opts = (f.options || f.choices || []).map(o => {
+      const v = typeof o === "object" ? (o.value ?? o.id) : o;
+      const l = typeof o === "object" ? (o.label ?? v) : o;
+      return `<option value="${esc(v)}">${esc(l)}</option>`;
+    }).join("");
+    return `<select name="${name}" ${f.required ? "data-required" : ""}>
+      <option value="">— unattested —</option>${opts}</select>`;
+  }
+  if (t === "date") return `<input type="date" name="${name}" ${f.required ? "data-required" : ""}>`;
+  if (t === "datetime" || t === "datetime-local")
+    return `<input type="datetime-local" name="${name}" ${f.required ? "data-required" : ""}>`;
+  if (t === "number" || t === "integer")
+    return `<input type="number" name="${name}" ${f.required ? "data-required" : ""}>`;
+  if (t === "email") return `<input type="email" name="${name}" ${f.required ? "data-required" : ""}>`;
+  if (t === "phone" || t === "tel") return `<input type="tel" name="${name}" ${f.required ? "data-required" : ""}>`;
+  return `<input type="text" name="${name}" ${f.required ? "data-required" : ""}>`;
+}
+
+function renderIntake(){
+  // group by section, preserving first-appearance order
+  const sections = [];
+  const bySection = new Map();
+  for (const f of S.schema){
+    const sec = f.section || "General";
+    if (!bySection.has(sec)){ bySection.set(sec, []); sections.push(sec); }
+    bySection.get(sec).push(f);
+  }
+  let html = "";
+  for (const sec of sections){
+    const fields = bySection.get(sec);
+    html += `<div class="card">
+      <div class="sectionhead"><h3>${esc(sec)}</h3>
+        <span class="count">${fields.length} field${fields.length===1?"":"s"}</span></div>
+      <div class="fieldgrid">`;
+    for (const f of fields){
+      const t = (f.type || "text").toLowerCase();
+      const wide = WIDE_TYPES.has(t);
+      html += `<div class="field${wide ? " wide" : ""}">
+        <label for="fld-${esc(f.id)}">${esc(f.label)}${f.required ? '<span class="req" title="Required for a complete package">*</span>' : ""}</label>
+        ${f.help ? `<p class="help">${esc(f.help)}</p>` : ""}
+        ${fieldControl(f)}
+        <span class="cite" title="Governing citation">${esc(f.citation || "")}</span>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+  $("#intakeFields").innerHTML = html || "<p class='muted'>No fields in schema.</p>";
+
+  // wire tri-state boolean segmented controls
+  $$("#intakeFields .segmented").forEach(seg => {
+    const hidden = seg.parentElement.querySelector(`input[type=hidden][name="${seg.dataset.bool}"]`);
+    seg.addEventListener("click", ev => {
+      const btn = ev.target.closest("button"); if (!btn) return;
+      hidden.value = btn.dataset.v;
+      seg.querySelectorAll("button").forEach(b => b.className = "");
+      btn.className = btn.dataset.v === "true" ? "sel-yes" : btn.dataset.v === "false" ? "sel-no" : "sel-un";
+    });
+  });
+}
+
+function collectIntake(){
+  const fields = {};
+  const form = $("#intakeForm");
+  for (const f of S.schema){
+    const el = form.querySelector(`[name="${CSS.escape(f.id)}"]`);
+    if (!el) continue;
+    const raw = el.value;
+    if (raw === "" || raw == null) continue;          // honestly unattested — omit, never fabricate
+    const t = (f.type || "text").toLowerCase();
+    if (t === "boolean" || t === "checkbox" || t === "bool") fields[f.id] = (raw === "true");
+    else if (t === "number" || t === "integer") fields[f.id] = Number(raw);
+    else fields[f.id] = raw;
+  }
+  return fields;
+}
+
+async function saveIntake(){
+  const fields = collectIntake();
+  $("#intakeStatus").innerHTML = '<span class="spin"></span>Saving…';
+  try {
+    await api(`/api/case/${S.caseId}/intake`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ fields })
+    });
+    S.intakeSaved = true;
+    const n = Object.keys(fields).length, total = S.schema.length;
+    $("#intakeStatus").textContent =
+      `Saved ${n} of ${total} fields — ${total - n} left honestly unattested.`;
+    markDone("intake"); enableStep("check");
+    toast("Intake saved with provenance.");
+    return true;
+  } catch (e) {
+    $("#intakeStatus").textContent = "";
+    toast(e.message, true);
+    return false;
+  }
+}
+
+$("#intakeForm").addEventListener("submit", async ev => { ev.preventDefault(); await saveIntake(); });
+$("#saveGenBtn").addEventListener("click", async () => {
+  if (await saveIntake()){ show("check"); await generateDocs(); }
+});
+
+/* ---------------- screen 3: generate + check ---------------- */
+async function generateDocs(){
+  const btn = $("#genBtn");
+  btn.disabled = true;
+  $("#genStatus").innerHTML = '<span class="spin"></span>Generating drafts from the engine…';
+  try {
+    const gen = await api(`/api/case/${S.caseId}/generate`, { method:"POST" });
+    S.documents = gen.documents || [];
+    renderDocs();
+    $("#genStatus").textContent = `${S.documents.length} document draft(s) generated. Running completeness check…`;
+    await runCheck();
+    $("#genStatus").textContent = `${S.documents.length} draft(s) generated and checked. All remain unsigned and unsubmitted.`;
+    $("#checkBtn").disabled = false;
+  } catch (e) {
+    $("#genStatus").textContent = "";
+    toast(e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+$("#genBtn").addEventListener("click", generateDocs);
+$("#checkBtn").addEventListener("click", async () => {
+  $("#genStatus").innerHTML = '<span class="spin"></span>Re-running completeness check…';
+  try { await runCheck(); $("#genStatus").textContent = "Check refreshed."; }
+  catch (e) { $("#genStatus").textContent = ""; toast(e.message, true); }
+});
+
+async function runCheck(){
+  S.check = await api(`/api/case/${S.caseId}/check`);
+  renderLedger();
+  markDone("check"); enableStep("package");
+  $("#toPackageBtn").disabled = false;
+}
+
+function gateInfo(gateId){
+  const g = (S.check && S.check.gate_packet || []).find(x => x.gate_id === gateId);
+  return g || null;
+}
+
+function renderLedger(){
+  const c = S.check;
+  $("#ledgerArea").style.display = "block";
+
+  const tt = c.totals || {green:0, amber:0, red:0};
+  $("#totals").innerHTML = `
+    <div class="tot green"><div class="num">${tt.green ?? 0}</div><div class="lbl">Green — complete</div></div>
+    <div class="tot amber"><div class="num">${tt.amber ?? 0}</div><div class="lbl">Amber — awaiting human act</div></div>
+    <div class="tot red"><div class="num">${tt.red ?? 0}</div><div class="lbl">Red — missing / invalid</div></div>`;
+
+  const order = {red:0, amber:1, green:2};
+  const items = (c.ledger || []).slice()
+    .sort((a,b) => (order[a.status] ?? 3) - (order[b.status] ?? 3));
+  $("#ledgerList").innerHTML = items.map(item => {
+    const st = (item.status || "").toLowerCase();
+    const qs = (item.questions || []).map(q => `<li>${esc(asText(q))}</li>`).join("");
+    let gateHtml = "";
+    if (item.gate_id){
+      const g = gateInfo(item.gate_id);
+      const gname = g ? g.name : item.gate_id;
+      const role = g ? g.responsible_role : "";
+      gateHtml = `<div class="gatecall"><b>Awaiting human act:</b> ${esc(gname)}
+        ${role ? ` — <span class="rolechip">${esc(role)}</span> must act` : ""}
+        <span class="muted small"> · gate <code>${esc(item.gate_id)}</code> fails closed; OSSICRO cannot perform this step.</span></div>`;
+    }
+    return `<div class="ledgeritem ${esc(st)}">
+      <div class="top">
+        <span class="pill ${esc(st)}"><span class="dot"></span>${esc(st || "?")}</span>
+        <span class="title">${esc(item.title || item.doc_id)}</span>
+        <span class="docid">${esc(item.doc_id || "")}</span>
+      </div>
+      ${qs ? `<ul class="qlist">${qs}</ul>` : ""}
+      ${gateHtml}
+    </div>`;
+  }).join("") || "<p class='muted'>Ledger is empty.</p>";
+
+  const cons = c.consistency || [];
+  $("#consistencyCard").style.display = cons.length ? "block" : "none";
+  $("#consistencyList").innerHTML = cons.map(x => `<li>${esc(asText(x))}</li>`).join("");
+
+  const gp = c.gate_packet || [];
+  $("#gatePacketCard").style.display = gp.length ? "block" : "none";
+  $("#gateTable tbody").innerHTML = gp.map(g => `<tr>
+    <td><b>${esc(g.name || g.gate_id)}</b><br><code>${esc(g.gate_id)}</code></td>
+    <td><span class="rolechip">${esc(g.responsible_role || "")}</span></td>
+    <td class="mono small">${esc(g.doc_id || "")}</td>
+  </tr>`).join("");
+}
+
+function renderDocs(){
+  const docs = S.documents || [];
+  $("#docsCard").style.display = docs.length ? "block" : "none";
+  $("#docsList").innerHTML = docs.map(d => `
+    <details class="doc">
+      <summary><span class="chev">▶</span>${esc(d.title || d.doc_id)}
+        <span class="docid mono small">${esc(d.doc_id)}</span>
+        <span class="spacer"></span><span class="draftstamp">DRAFT</span></summary>
+      <pre class="render">${esc(d.rendered || "")}</pre>
+    </details>`).join("");
+}
+
+$("#toPackageBtn").addEventListener("click", () => show("package"));
+
+/* ---------------- screen 4: package ---------------- */
+async function loadPackage(){
+  $("#pkgLoading").style.display = "block";
+  $("#pkgArea").style.display = "none";
+  try {
+    S.pkg = await api(`/api/case/${S.caseId}/package`);
+    renderPackage();
+    markDone("package");
+  } catch (e) {
+    $("#pkgLoading").innerHTML = `<p class="muted" style="margin:0">Could not assemble package: ${esc(e.message)}</p>`;
+    return;
+  }
+  $("#pkgLoading").style.display = "none";
+  $("#pkgArea").style.display = "block";
+}
+$("#refreshPkgBtn").addEventListener("click", loadPackage);
+
+function renderPackage(){
+  const p = S.pkg;
+
+  // readiness banner
+  const blocking = p.blocking || [];
+  if (p.submission_ready){
+    $("#readyBanner").innerHTML = `<div class="ready yes">
+      <b>Package assembly complete.</b> Every draft is validated and internally consistent.
+      What remains is exactly what must remain: the physician's review, signatures, and the physician's
+      own act of submission to FDA. OSSICRO does not file.</div>`;
+  } else {
+    $("#readyBanner").innerHTML = `<div class="ready no">
+      <b>Not submission-ready.</b> The following items block assembly — each names the human or fact required:
+      <ul>${blocking.map(b => `<li>${esc(asText(b))}</li>`).join("") || "<li>(unspecified)</li>"}</ul></div>`;
+  }
+
+  // eCTD map
+  $("#ectdTable tbody").innerHTML = (p.ectd_map || []).map(m => `<tr>
+    <td><b>${esc(m.module)}</b></td>
+    <td>${esc(m.title || "")}</td>
+    <td class="mono small">${(m.doc_ids || []).map(esc).join("<br>") || "<span class='muted'>cross-reference via LOA</span>"}</td>
+  </tr>`).join("");
+
+  // cover letter
+  $("#coverLetter").textContent = asText(p.cover_letter) || "(cover letter not yet drafted)";
+
+  // manifest
+  $("#manifestTable tbody").innerHTML = (p.manifest || []).map((m, i) => `<tr>
+    <td>${i+1}</td>
+    <td>${esc(m.title || "")}</td>
+    <td class="mono small">${esc(m.doc_id || "")}</td>
+    <td><span class="sha" data-sha="${esc(m.sha256 || "")}" title="Click to copy full hash">${esc((m.sha256 || "").slice(0,16))}…</span></td>
+  </tr>`).join("");
+  $$("#manifestTable .sha").forEach(el => el.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(el.dataset.sha); toast("SHA-256 copied."); }
+    catch { toast(el.dataset.sha); }
+  }));
+
+  // manufacturer packet
+  const mp = p.manufacturer_packet || {};
+  $("#loaRequest").textContent = asText(mp.loa_request) || "(LOA request not yet drafted)";
+  $("#mfrCover").textContent = asText(mp.cover) || "(manufacturer cover not yet drafted)";
+}
+
+/* tabs */
+$$(".tab").forEach(t => t.addEventListener("click", () => {
+  $$(".tab").forEach(x => x.classList.toggle("active", x === t));
+  $$(".tabpane").forEach(p => p.style.display = (p.id === "tab-" + t.dataset.tab) ? "block" : "none");
+}));
+
+/* ---------------- export ---------------- */
+$("#exportJsonBtn").addEventListener("click", () => {
+  if (!S.pkg){ toast("Assemble the package first.", true); return; }
+  const payload = {
+    _notice: "OSSICRO DRAFT PACKAGE — for qualified human review. Not signed. Not submitted to FDA.",
+    case_id: S.caseId,
+    exported_at: new Date().toISOString(),
+    package: S.pkg,
+    documents: S.documents,
+    check: S.check
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `ossicro-route3926-${S.caseId}-draft-package.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast("Draft package JSON downloaded.");
+});
+
+$("#printBtn").addEventListener("click", () => {
+  if (!S.pkg){ toast("Assemble the package first.", true); return; }
+  const p = S.pkg;
+  const docs = S.documents || [];
+  const pre = t => `<pre>${esc(asText(t))}</pre>`;
+  const w = window.open("", "_blank");
+  if (!w){ toast("Popup blocked — allow popups to print.", true); return; }
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8">
+    <title>OSSICRO Route-3926 draft package — case ${esc(S.caseId)}</title>
+    <style>
+      body{font:12.5px/1.5 Georgia,"Times New Roman",serif;color:#111;margin:40px;max-width:820px}
+      h1{font-size:19px;border-bottom:2px solid #111;padding-bottom:6px}
+      h2{font-size:15px;margin-top:28px;border-bottom:1px solid #999;padding-bottom:3px}
+      pre{font:11px/1.45 Consolas,Menlo,monospace;white-space:pre-wrap;word-break:break-word;
+        background:#f5f5f5;border:1px solid #ddd;padding:12px;border-radius:4px}
+      table{border-collapse:collapse;width:100%;font-size:11.5px}
+      th,td{border:1px solid #bbb;padding:5px 8px;text-align:left;vertical-align:top}
+      th{background:#eee}
+      .stamp{position:fixed;top:35%;left:8%;font-size:110px;color:rgba(180,60,40,.10);
+        transform:rotate(-28deg);font-weight:bold;letter-spacing:12px;pointer-events:none;z-index:0}
+      .notice{border:2px solid #b43c28;color:#b43c28;padding:10px 14px;font-weight:bold;margin:14px 0}
+      @media print{.stamp{position:fixed}}
+    </style></head><body>
+    <div class="stamp">DRAFT</div>
+    <h1>OSSICRO — Route-3926 Individual-Patient Expanded Access · Case ${esc(S.caseId)}</h1>
+    <div class="notice">DRAFT FOR QUALIFIED HUMAN REVIEW — unsigned, unsubmitted. Consent, IRB
+      concurrence, causality, signatures, and submission to FDA are non-delegable human acts.</div>
+    <h2>Cover letter (draft — physician signs and files)</h2>${pre(p.cover_letter)}
+    <h2>eCTD module map</h2>
+    <table><tr><th>Module</th><th>Content</th><th>Documents</th></tr>
+    ${(p.ectd_map||[]).map(m=>`<tr><td>${esc(m.module)}</td><td>${esc(m.title||"")}</td><td>${(m.doc_ids||[]).map(esc).join(", ")||"cross-reference via LOA"}</td></tr>`).join("")}
+    </table>
+    <h2>Document manifest (SHA-256)</h2>
+    <table><tr><th>#</th><th>Title</th><th>Registry id</th><th>SHA-256</th></tr>
+    ${(p.manifest||[]).map((m,i)=>`<tr><td>${i+1}</td><td>${esc(m.title||"")}</td><td>${esc(m.doc_id||"")}</td><td style="font-family:monospace;font-size:9px">${esc(m.sha256||"")}</td></tr>`).join("")}
+    </table>
+    ${docs.map(d=>`<h2>${esc(d.title||d.doc_id)} <small>(${esc(d.doc_id)}) — DRAFT</small></h2>${pre(d.rendered)}`).join("")}
+    <h2>Manufacturer packet — LOA request (physician sends; never auto-sent)</h2>
+    ${pre((p.manufacturer_packet||{}).loa_request)}
+    <h2>Manufacturer packet — transmittal cover</h2>
+    ${pre((p.manufacturer_packet||{}).cover)}
+    <script>window.onload=()=>window.print()<\/script>
+    </body></html>`);
+  w.document.close();
+});
+</script>
+</body>
+</html>

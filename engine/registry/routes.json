@@ -1,0 +1,139 @@
+{
+  "_comment": "Route-3926 single-patient expanded access. Derived from docs/route-3926-submission-spec.md. Intake fields are shared; the two routes differ by pathway (emergency vs non-emergency) and the clocks they arm. Nothing here authorizes a reserved act; gates fail closed in engine/registry/gates.json.",
+  "intake_fields": [
+    {"id": "patient.coded_id", "label": "Coded patient identifier / initials", "citation": "21 CFR 312.310", "type": "text", "required": true, "section": "Patient (coded — no PHI)", "help": "A code or initials only. Never a name, MRN, DOB, or other direct identifier (Constitution HC2 / privacy)."},
+    {"id": "patient.age", "label": "Age", "citation": "21 CFR 312.305(a)", "type": "text", "required": false, "section": "Patient (coded — no PHI)", "help": "As clinically needed."},
+    {"id": "patient.sex", "label": "Sex", "citation": "21 CFR 312.305(a)", "type": "text", "required": false, "section": "Patient (coded — no PHI)", "help": "As clinically needed."},
+    {"id": "patient.diagnosis", "label": "Diagnosis (serious / immediately life-threatening)", "citation": "21 CFR 312.305(a)(1)", "type": "textarea", "required": true, "section": "Patient (coded — no PHI)", "help": "State stage/severity concisely. The condition must be serious or immediately life-threatening."},
+    {"id": "patient.no_alternative_basis", "label": "No comparable / satisfactory alternative therapy — basis", "citation": "21 CFR 312.305(a)(1)", "type": "textarea", "required": true, "section": "Patient (coded — no PHI)", "help": "Why approved therapies are exhausted, contraindicated, or unavailable for this patient."},
+    {"id": "patient.prior_therapies", "label": "Prior therapies tried / failed", "citation": "21 CFR 312.310(a)", "type": "textarea", "required": false, "section": "Patient (coded — no PHI)", "help": "Agents, dates, and outcomes."},
+
+    {"id": "investigator.name", "label": "Physician name", "citation": "21 CFR 312.310(a)", "type": "text", "required": true, "section": "Physician (becomes sponsor-investigator)", "help": "The requesting physician who becomes the sponsor-investigator of the single-patient IND."},
+    {"id": "investigator.degrees", "label": "Degrees", "citation": "21 CFR 312.310(a)", "type": "text", "required": false, "section": "Physician (becomes sponsor-investigator)", "help": "e.g. MD, DO."},
+    {"id": "investigator.address", "label": "Address", "citation": "Form FDA 3926", "type": "textarea", "required": true, "section": "Physician (becomes sponsor-investigator)", "help": "Mailing address for the sponsor-investigator contact block."},
+    {"id": "investigator.phone", "label": "Phone", "citation": "Form FDA 3926", "type": "text", "required": false, "section": "Physician (becomes sponsor-investigator)", "help": ""},
+    {"id": "investigator.email", "label": "Email", "citation": "Form FDA 3926", "type": "text", "required": false, "section": "Physician (becomes sponsor-investigator)", "help": ""},
+    {"id": "investigator.license_number", "label": "Medical license number", "citation": "21 CFR 312.310(a)", "type": "text", "required": true, "section": "Physician (becomes sponsor-investigator)", "help": "For the physician qualification statement."},
+    {"id": "investigator.license_state", "label": "License state", "citation": "21 CFR 312.310(a)", "type": "text", "required": false, "section": "Physician (becomes sponsor-investigator)", "help": ""},
+    {"id": "investigator.risk_determination", "label": "§312.310(a) determination (probable risk from drug ≤ probable risk from disease)", "citation": "21 CFR 312.310(a)", "type": "textarea", "required": true, "section": "Physician (becomes sponsor-investigator)", "help": "The physician's attestation. OSSICRO records this determination; it never makes it."},
+
+    {"id": "drug.name", "label": "Investigational drug name", "citation": "21 CFR 312.305(b)", "type": "text", "required": true, "section": "Drug + treatment plan", "help": ""},
+    {"id": "drug.dose", "label": "Dose", "citation": "21 CFR 312.305(b)(2)(iii)", "type": "text", "required": true, "section": "Drug + treatment plan", "help": "Dose and formulation."},
+    {"id": "drug.route", "label": "Route of administration", "citation": "21 CFR 312.305(b)(2)(iii)", "type": "text", "required": true, "section": "Drug + treatment plan", "help": ""},
+    {"id": "drug.duration", "label": "Planned duration of treatment", "citation": "21 CFR 312.305(b)(2)(iii)", "type": "text", "required": false, "section": "Drug + treatment plan", "help": ""},
+    {"id": "treatment.monitoring_plan", "label": "Treatment + monitoring plan", "citation": "21 CFR 312.305(b)(2)(vii)", "type": "textarea", "required": true, "section": "Drug + treatment plan", "help": "Baseline and on-treatment assessments, toxicity grading, response assessment, follow-up."},
+    {"id": "treatment.benefit_risk", "label": "Benefit-justifies-risk rationale", "citation": "21 CFR 312.305(a)(2)", "type": "textarea", "required": true, "section": "Drug + treatment plan", "help": "Evidence (mechanism, trial data, case experience) that potential benefit justifies potential risk in this disease."},
+    {"id": "treatment.non_interference", "label": "Non-interference-with-investigations basis", "citation": "21 CFR 312.305(a)(3)", "type": "textarea", "required": false, "section": "Drug + treatment plan", "help": "Why supplying the drug will not interfere with clinical investigations supporting approval."},
+    {"id": "request.clinical_rationale", "label": "Clinical rationale (the §312.305(a) core narrative)", "citation": "21 CFR 312.305(a); 312.310(a)", "type": "textarea", "required": true, "section": "Drug + treatment plan", "help": "The substantive core: seriousness, absence of alternative, and benefit-justifies-risk, in the physician's words."},
+    {"id": "treatment.plan_id", "label": "Treatment-plan identifier (for the consent form)", "citation": "ICH E6(R3) 4 (documentation)", "type": "text", "required": false, "section": "Drug + treatment plan", "help": "A local identifier for this single-patient treatment plan (there is no trial protocol number in expanded access). Feeds the consent form's protocol-identifier field."},
+    {"id": "treatment.plan_version", "label": "Treatment-plan version", "citation": "ICH E6(R3) 4 (documentation)", "type": "text", "required": false, "section": "Drug + treatment plan", "help": "e.g. v1.0. Feeds the consent form's version field so amendments are traceable."},
+
+    {"id": "manufacturer.name", "label": "Manufacturer name", "citation": "FDCA 561A", "type": "text", "required": true, "section": "Manufacturer", "help": "The IND/DMF holder who must decide whether to supply and grant an LOA."},
+    {"id": "manufacturer.address", "label": "Manufacturer address", "citation": "21 CFR 312.23(b)", "type": "textarea", "required": false, "section": "Manufacturer", "help": "For the LOA letterhead block."},
+    {"id": "manufacturer.ind_dmf_reference", "label": "IND / DMF number to cross-reference", "citation": "21 CFR 312.305(b)(1), 312.23(b)", "type": "text", "required": false, "section": "Manufacturer", "help": "The application number the LOA lets FDA cross-reference for CMC / nonclinical data."},
+    {"id": "manufacturer.ind_on_file", "label": "Manufacturer has an IND on file?", "citation": "21 CFR 312.305(b)(1)", "type": "bool", "required": false, "section": "Manufacturer", "help": "If NO, the physician must contact the FDA division to determine required supporting information in lieu of an LOA."},
+    {"id": "manufacturer.fda_division_contact", "label": "FDA-division contact (if no IND on file)", "citation": "21 CFR 312.305(b)(1)", "type": "textarea", "required": false, "section": "Manufacturer", "help": "Documented contact with the review division about the supporting information FDA needs. Required only when no IND is on file."},
+    {"id": "manufacturer.supply_committed", "label": "Supply commitment received?", "citation": "FDCA 561A", "type": "bool", "required": false, "section": "Manufacturer", "help": "OSSICRO records this fact; it never assumes or compels supply."},
+
+    {"id": "irb.name", "label": "IRB of record — name", "citation": "21 CFR 56.104/.105", "type": "text", "required": true, "section": "IRB", "help": ""},
+    {"id": "irb.address", "label": "IRB of record — address", "citation": "21 CFR 56.104/.105", "type": "textarea", "required": false, "section": "IRB", "help": ""},
+    {"id": "irb.phone", "label": "IRB phone", "citation": "21 CFR 50.25(a)(7)", "type": "text", "required": false, "section": "IRB", "help": "For the consent form 'whom to contact' element."},
+    {"id": "irb.chair_concurrence", "label": "§56.105 chair-concurrence pathway elected?", "citation": "21 CFR 56.105", "type": "bool", "required": false, "section": "IRB", "help": "Requests IRB-chair (or designated member) concurrence in lieu of a convened full board (Form 3926 Field 10.b)."},
+
+    {"id": "submission.emergency", "label": "Emergency request?", "citation": "21 CFR 312.310(d)", "type": "bool", "required": false, "section": "Submission control", "help": "If the patient must be treated before a written submission can be made. Selects the emergency pathway and its clocks."},
+    {"id": "submission.emergency_auth_datetime", "label": "FDA telephone-authorization date (emergency)", "citation": "21 CFR 312.310(d)", "type": "date", "required": false, "section": "Submission control", "help": "Arms the 15-working-day written-3926 clock."},
+    {"id": "submission.first_treatment_date", "label": "First-treatment date (emergency)", "citation": "21 CFR 56.104(c)", "type": "date", "required": false, "section": "Submission control", "help": "Arms the 5-working-day IRB-notification clock."},
+    {"id": "submission.fda_receipt_date", "label": "FDA receipt date of the 3926 (non-emergency)", "citation": "21 CFR 312.40(b)(1)", "type": "date", "required": false, "section": "Submission control", "help": "Arms the 30-calendar-day IND-effective clock. Defaults to the submission date if left blank."},
+    {"id": "submission.initial_or_followup", "label": "Initial or follow-up", "citation": "Form FDA 3926", "type": "select", "options": ["initial", "followup"], "required": false, "section": "Submission control", "help": "Form 3926 Field 2."},
+    {"id": "submission.target", "label": "Target: new IND vs existing IND", "citation": "21 CFR 312.31", "type": "select", "options": ["new_ind", "existing_ind"], "required": false, "section": "Submission control", "help": "New assigns a fresh IND number; existing files as a serial amendment."},
+    {"id": "submission.ind_number", "label": "Existing IND number (if follow-up / existing IND)", "citation": "Form FDA 3926", "type": "text", "required": false, "section": "Submission control", "help": "Leave blank for a new individual-patient IND (FDA assigns the number)."},
+    {"id": "submission.fda_division", "label": "FDA review division (cover-letter addressee)", "citation": "21 CFR 312.310(d)", "type": "text", "required": true, "section": "Submission control", "help": "The division holding the manufacturer's IND, or CDER/CBER central receipt if unknown."},
+    {"id": "waiver_10a", "label": "Waiver 10.a (§312.10 — waive 1571/1572 requirements)", "citation": "21 CFR 312.10", "type": "bool", "required": false, "section": "Submission control", "help": "Physician attestation. Never defaulted or auto-checked by OSSICRO."},
+    {"id": "waiver_10b", "label": "Waiver 10.b (§56.105 — chair concurrence in lieu of convened IRB)", "citation": "21 CFR 56.105", "type": "bool", "required": false, "section": "Submission control", "help": "Physician attestation. Never defaulted or auto-checked by OSSICRO."},
+
+    {"id": "consent.purpose", "label": "Consent: research statement / purpose", "citation": "21 CFR 50.25(a)(1)", "type": "textarea", "required": false, "section": "Informed consent (feeds ICF draft)", "help": "Feeds the drafted ICF. The consent EVENT is non-delegable."},
+    {"id": "consent.duration", "label": "Consent: expected duration of participation", "citation": "21 CFR 50.25(a)(1)", "type": "text", "required": false, "section": "Informed consent (feeds ICF draft)", "help": ""},
+    {"id": "consent.procedures", "label": "Consent: procedures (experimental identified)", "citation": "21 CFR 50.25(a)(1)", "type": "textarea", "required": false, "section": "Informed consent (feeds ICF draft)", "help": ""},
+    {"id": "consent.risks", "label": "Consent: reasonably foreseeable risks", "citation": "21 CFR 50.25(a)(2)", "type": "textarea", "required": false, "section": "Informed consent (feeds ICF draft)", "help": ""},
+    {"id": "consent.benefits", "label": "Consent: reasonably expected benefits", "citation": "21 CFR 50.25(a)(3)", "type": "textarea", "required": false, "section": "Informed consent (feeds ICF draft)", "help": ""},
+    {"id": "consent.alternatives", "label": "Consent: appropriate alternative procedures", "citation": "21 CFR 50.25(a)(4)", "type": "textarea", "required": false, "section": "Informed consent (feeds ICF draft)", "help": ""},
+    {"id": "consent.confidentiality_statement", "label": "Consent: confidentiality of records", "citation": "21 CFR 50.25(a)(5)", "type": "textarea", "required": false, "section": "Informed consent (feeds ICF draft)", "help": ""},
+    {"id": "contacts.injury_contact_name", "label": "Consent: injury contact name", "citation": "21 CFR 50.25(a)(6)", "type": "text", "required": false, "section": "Informed consent (feeds ICF draft)", "help": ""},
+    {"id": "contacts.injury_contact_phone", "label": "Consent: injury contact phone", "citation": "21 CFR 50.25(a)(6)", "type": "text", "required": false, "section": "Informed consent (feeds ICF draft)", "help": ""},
+    {"id": "contacts.research_contact", "label": "Consent: research contact", "citation": "21 CFR 50.25(a)(7)", "type": "text", "required": false, "section": "Informed consent (feeds ICF draft)", "help": ""},
+    {"id": "site.name", "label": "Treatment facility / site name", "citation": "21 CFR 312.305(b)(2)(iv)", "type": "text", "required": false, "section": "Informed consent (feeds ICF draft)", "help": "Where treatment is administered."}
+  ],
+  "routes": {
+    "route-3926": {
+      "route_id": "route-3926",
+      "title": "Single-Patient Expanded Access (non-emergency) — Form FDA 3926",
+      "emergency": false,
+      "citation": "21 CFR 312.310",
+      "documents": [
+        "expanded-access-cover-letter",
+        "form-fda-3926-individual-patient-expanded-access",
+        "expanded-access-treatment-plan",
+        "manufacturer-letter-of-authorization",
+        "irb-concurrence-request",
+        "informed-consent-form-part50",
+        "manufacturer-loa-request",
+        "drug-accountability-log"
+      ],
+      "fda_package": [
+        "expanded-access-cover-letter",
+        "form-fda-3926-individual-patient-expanded-access",
+        "expanded-access-treatment-plan",
+        "manufacturer-letter-of-authorization",
+        "irb-concurrence-request",
+        "informed-consent-form-part50"
+      ],
+      "ectd_map": [
+        {"module": "Module 1", "title": "Regional administrative (US): cover letter, Form 3926, LOA", "doc_ids": ["expanded-access-cover-letter", "form-fda-3926-individual-patient-expanded-access", "manufacturer-letter-of-authorization"]},
+        {"module": "Module 2", "title": "Summaries — not required for single-patient EA", "doc_ids": []},
+        {"module": "Module 3", "title": "Quality (CMC) — cross-referenced from the manufacturer IND/DMF via the LOA", "doc_ids": ["manufacturer-letter-of-authorization"]},
+        {"module": "Module 4", "title": "Nonclinical — cross-referenced from the manufacturer IND via the LOA", "doc_ids": ["manufacturer-letter-of-authorization"]},
+        {"module": "Module 5", "title": "Clinical: treatment plan, IRB concurrence, informed consent", "doc_ids": ["expanded-access-treatment-plan", "irb-concurrence-request", "informed-consent-form-part50"]}
+      ],
+      "clocks": [
+        {"id": "ind-effective-30-day", "label": "IND effective (non-emergency)", "trigger_field": "submission.fda_receipt_date", "calendar": "calendar", "days": 30, "basis": "21 CFR 312.40(b)(1)", "owner": "FDA", "note": "IND goes into effect when FDA notifies the physician it may proceed, or absent notification 30 calendar days after FDA receives the completed 3926."}
+      ],
+      "gates": ["submission-to-fda", "informed-consent", "irb-approval", "sae-causality"]
+    },
+    "route-3926-emergency": {
+      "route_id": "route-3926-emergency",
+      "title": "Single-Patient Expanded Access (EMERGENCY) — Form FDA 3926",
+      "emergency": true,
+      "citation": "21 CFR 312.310(d)",
+      "documents": [
+        "expanded-access-cover-letter",
+        "form-fda-3926-individual-patient-expanded-access",
+        "expanded-access-treatment-plan",
+        "manufacturer-letter-of-authorization",
+        "irb-concurrence-request",
+        "informed-consent-form-part50",
+        "manufacturer-loa-request",
+        "drug-accountability-log"
+      ],
+      "fda_package": [
+        "expanded-access-cover-letter",
+        "form-fda-3926-individual-patient-expanded-access",
+        "expanded-access-treatment-plan",
+        "manufacturer-letter-of-authorization",
+        "irb-concurrence-request",
+        "informed-consent-form-part50"
+      ],
+      "ectd_map": [
+        {"module": "Module 1", "title": "Regional administrative (US): cover letter, Form 3926, LOA", "doc_ids": ["expanded-access-cover-letter", "form-fda-3926-individual-patient-expanded-access", "manufacturer-letter-of-authorization"]},
+        {"module": "Module 2", "title": "Summaries — not required for single-patient EA", "doc_ids": []},
+        {"module": "Module 3", "title": "Quality (CMC) — cross-referenced from the manufacturer IND/DMF via the LOA", "doc_ids": ["manufacturer-letter-of-authorization"]},
+        {"module": "Module 4", "title": "Nonclinical — cross-referenced from the manufacturer IND via the LOA", "doc_ids": ["manufacturer-letter-of-authorization"]},
+        {"module": "Module 5", "title": "Clinical: treatment plan, IRB concurrence, informed consent", "doc_ids": ["expanded-access-treatment-plan", "irb-concurrence-request", "informed-consent-form-part50"]}
+      ],
+      "clocks": [
+        {"id": "written-3926-15-working-day", "label": "Written 3926 after emergency phone authorization", "trigger_field": "submission.emergency_auth_datetime", "calendar": "working", "days": 15, "basis": "21 CFR 312.310(d)", "owner": "Physician", "note": "The physician must submit the written Form 3926 within 15 working days of the FDA telephone authorization."},
+        {"id": "irb-notify-5-working-day", "label": "IRB notification after emergency treatment", "trigger_field": "submission.first_treatment_date", "calendar": "working", "days": 5, "basis": "21 CFR 56.104(c)", "owner": "Physician", "note": "For emergency use, treatment may proceed before IRB review provided the IRB is notified within 5 working days of the treatment."}
+      ],
+      "gates": ["submission-to-fda", "informed-consent", "irb-approval", "sae-causality"]
+    }
+  }
+}

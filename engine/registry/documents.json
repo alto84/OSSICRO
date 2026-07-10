@@ -658,5 +658,38 @@
     "receiver": "fda",
     "required_fields": ["treatment_rationale", "dosing_plan", "monitoring_plan"],
     "gate": null
+  },
+  {
+    "id": "expanded-access-cover-letter",
+    "title": "Expanded Access Cover Letter (Form FDA 3926 submission)",
+    "category": "expanded-access",
+    "lifecycle_phase": "startup",
+    "governing_citations": ["21 CFR 312.23(a)(1)", "21 CFR 312.310"],
+    "owner": "sponsor-investigator",
+    "receiver": "fda",
+    "required_fields": ["fda_division", "investigator_name", "drug_name", "diagnosis"],
+    "gate": "submission-to-fda"
+  },
+  {
+    "id": "manufacturer-loa-request",
+    "title": "Manufacturer Letter-of-Authorization Request (physician to manufacturer)",
+    "category": "expanded-access",
+    "lifecycle_phase": "startup",
+    "governing_citations": ["FDCA 561A", "21 CFR 312.23(b)", "21 CFR 312.305(b)(1)"],
+    "owner": "investigator",
+    "receiver": "sponsor",
+    "required_fields": ["manufacturer_name", "investigator_name", "drug_name", "diagnosis"],
+    "gate": null
+  },
+  {
+    "id": "irb-concurrence-request",
+    "title": "IRB Concurrence Request (21 CFR 56.105 chair pathway)",
+    "category": "expanded-access",
+    "lifecycle_phase": "startup",
+    "governing_citations": ["21 CFR 56.104(c)", "21 CFR 56.105", "21 CFR 312.66"],
+    "owner": "investigator",
+    "receiver": "irb",
+    "required_fields": ["irb_name", "investigator_name", "drug_name", "patient_initials_coded"],
+    "gate": "irb-approval"
   }
 ]
