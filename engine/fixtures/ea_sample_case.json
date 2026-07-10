@@ -1,0 +1,69 @@
+{
+  "_comment": "Synthetic, clearly-fictional single-patient expanded-access case for Route-3926. NO real PHI. Designed so that POSTing these fields to intake yields a mostly-green ledger with submission_ready true; the remaining ambers are the non-delegable human gates (FDA submission signature, informed consent, IRB concurrence) that OSSICRO never clears.",
+  "fields": {
+    "patient.coded_id": "PT-3926-014",
+    "patient.age": "58",
+    "patient.sex": "Female",
+    "patient.diagnosis": "Refractory metastatic intrahepatic cholangiocarcinoma, progressing after gemcitabine-cisplatin and FOLFOX; ECOG performance status 1.",
+    "patient.no_alternative_basis": "All standard systemic therapies have been exhausted: first-line gemcitabine-cisplatin and second-line FOLFOX both failed with radiographic progression, and the tumor lacks FGFR2 fusions and IDH1 mutations, so no approved targeted option is available. The patient does not meet the prior-therapy and organ-function eligibility criteria for open trials at accessible centers.",
+    "patient.prior_therapies": "Gemcitabine-cisplatin (2025-01 to 2025-06, progression); FOLFOX (2025-07 to 2025-11, progression); best supportive care since 2025-12.",
+
+    "investigator.name": "Jordan A. Rivera, MD",
+    "investigator.degrees": "MD",
+    "investigator.address": "Fictional Oncology Associates, 4120 Cedar Parkway, Suite 300, Rivertown, IL 60000",
+    "investigator.phone": "(312) 555-0148",
+    "investigator.email": "j.rivera@example-oncology.org",
+    "investigator.license_number": "036-114520",
+    "investigator.license_state": "IL",
+    "investigator.risk_determination": "The probable risk to this patient from the investigational agent is not greater than the probable risk from progressive metastatic cholangiocarcinoma, which is expected to be fatal within months absent effective treatment.",
+
+    "drug.name": "Cytoravir",
+    "drug.dose": "240 mg orally twice daily",
+    "drug.route": "Oral",
+    "drug.duration": "Continuous 28-day cycles until progression or unacceptable toxicity",
+    "drug.lot_numbers": "CYTO-2026-0417",
+    "drug.dispensing_entries": "2026-07-16: 56 tablets dispensed to PT-3926-014 for cycle 1; running balance recorded in the site accountability log per 21 CFR 312.62(a).",
+
+    "treatment.monitoring_plan": "Baseline history, physical examination, CBC, comprehensive metabolic panel, and contrast CT of the chest, abdomen, and pelvis. On treatment: CBC and metabolic panel every two weeks during cycle 1, then monthly; CT restaging every 8 weeks by RECIST 1.1; adverse events graded by CTCAE v5.0; ECG at baseline and cycle 1 day 15.",
+    "treatment.benefit_risk": "In a first-in-human study of 41 patients, Cytoravir produced partial responses in biliary-tract tumors with a safety profile limited mainly to grade 1-2 nausea and reversible transaminase elevation. For a patient with no remaining approved options and a life expectancy of months, this evidence supports a reasonable expectation that the potential benefit justifies the potential risk.",
+    "treatment.non_interference": "Providing the drug for one patient will not interfere with the sponsor's ongoing phase 2 program, which continues to enroll at target and has adequate drug supply.",
+    "treatment.plan_id": "TP-CYTO-3926-014",
+    "treatment.plan_version": "v1.0",
+
+    "request.clinical_rationale": "This 58-year-old patient has refractory metastatic cholangiocarcinoma that has progressed through all standard systemic therapy and carries no actionable molecular target. The condition is serious and life-threatening, no comparable or satisfactory alternative therapy remains, and early-phase data for Cytoravir show antitumor activity with acceptable toxicity, so the potential benefit justifies the potential risk under 21 CFR 312.305(a).",
+
+    "manufacturer.name": "Helix Therapeutics, Inc.",
+    "manufacturer.address": "One Discovery Way, Cambridge, MA 02100",
+    "manufacturer.ind_dmf_reference": "IND 178452",
+    "manufacturer.ind_on_file": "true",
+    "manufacturer.supply_committed": "true",
+
+    "irb.name": "Midwest Regional IRB",
+    "irb.address": "2200 Commerce Boulevard, Suite 500, Rivertown, IL 60000",
+    "irb.phone": "(312) 555-0190",
+    "irb.chair_concurrence": "true",
+
+    "submission.emergency": "false",
+    "submission.initial_or_followup": "initial",
+    "submission.target": "new_ind",
+    "submission.fda_division": "Division of Oncology 1, Office of Oncologic Diseases, CDER",
+    "submission.fda_receipt_date": "2026-06-15",
+
+    "waiver_10a": "true",
+    "waiver_10b": "true",
+
+    "consent.purpose": "to provide treatment with the investigational drug Cytoravir for metastatic cholangiocarcinoma that has not responded to approved therapy",
+    "consent.duration": "Treatment continues in 28-day cycles for as long as it benefits you, with follow-up for at least 30 days after the last dose.",
+    "consent.procedures": "You will take Cytoravir by mouth twice daily. Study visits include blood draws, CT scans every 8 weeks, and electrocardiograms. The use of Cytoravir for your condition is experimental.",
+    "consent.risks": "Reported side effects include nausea, tiredness, and reversible increases in liver blood tests. Less common serious risks and unknown risks are possible. Your doctor will monitor you and adjust or stop treatment if needed.",
+    "consent.benefits": "The treatment may slow or shrink your cancer, but this cannot be promised. Information learned may help future patients.",
+    "consent.alternatives": "Alternatives include supportive (comfort) care, hospice care, or participation in another clinical trial if one becomes available. You may choose not to receive this treatment.",
+    "consent.confidentiality_statement": "Your medical records will be kept confidential to the extent permitted by law and will be stored securely with access limited to the care and research team.",
+
+    "contacts.injury_contact_name": "Jordan A. Rivera, MD",
+    "contacts.injury_contact_phone": "(312) 555-0148",
+    "contacts.research_contact": "Jordan A. Rivera, MD, (312) 555-0148",
+
+    "site.name": "Fictional Oncology Associates, Rivertown, IL"
+  }
+}

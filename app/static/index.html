@@ -178,6 +178,27 @@
     text-transform:uppercase;background:var(--surface2);border:1px solid var(--line);
     padding:2px 8px;border-radius:999px;color:var(--ink)}
 
+  /* ---------- voice review (concept findings — advisory, never a gate) ---------- */
+  .voice{margin-top:11px;border-top:1px dashed var(--line);padding-top:9px}
+  .voicehead{font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent-deep);margin-bottom:6px}
+  .voicehead .muted{text-transform:none;letter-spacing:0;font-weight:500}
+  .vfind{border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin:6px 0;
+    font-size:.86rem;background:var(--surface2)}
+  .vfind.deficient{border-left:4px solid var(--red);
+    background:color-mix(in srgb,var(--red-soft) 55%,var(--surface))}
+  .vfind.advisory{opacity:.78}
+  .vhead{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:3px}
+  .vsev{font-size:.68rem;font-weight:800;letter-spacing:.07em;padding:1px 8px;border-radius:999px}
+  .vfind.deficient .vsev{background:var(--red-soft);color:var(--red)}
+  .vfind.advisory .vsev{background:var(--surface);color:var(--muted);border:1px solid var(--line)}
+  .vprin{font-size:.74rem}
+  .vspan{margin:6px 0;padding:3px 10px;border-left:3px solid color-mix(in srgb,var(--ink) 25%,transparent);
+    font-family:var(--mono);font-size:.79rem;color:var(--muted);font-style:italic;
+    white-space:pre-wrap;word-break:break-word}
+  .vsug{margin-top:4px;font-size:.83rem}
+  .vsug b{color:var(--accent-deep)}
+
   /* ---------- tables ---------- */
   .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
   table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:520px}
@@ -307,6 +328,10 @@
         Leave anything unknown blank — an empty field is recorded as <i>honestly unattested</i>, never fabricated.
         Attestation booleans are never defaulted or pre-checked by OSSICRO; they are the physician's to set.
       </p>
+      <div class="btnrow" style="margin-top:10px">
+        <button type="button" class="btn" id="loadExampleBtn">Load example case</button>
+        <span class="muted small">Fills every field with a clearly fictional synthetic patient — demo only, no real PHI.</span>
+      </div>
     </div>
     <form id="intakeForm" novalidate>
       <div id="intakeFields"><p class="muted"><span class="spin"></span>Loading Route-3926 field schema…</p></div>
@@ -441,10 +466,17 @@
       <div class="card tight">
         <div class="btnrow">
           <button class="btn accent" id="exportJsonBtn">Download package JSON</button>
+          <button class="btn primary" id="verifyPkgBtn">Verify this package</button>
           <button class="btn" id="printBtn">Printable view</button>
           <button class="btn" id="refreshPkgBtn">Re-assemble</button>
           <span class="muted small">Export produces the review copy. Submission to FDA remains the physician's act.</span>
         </div>
+        <p class="muted small" style="margin:10px 0 0">
+          <b>Independent verification:</b> the exported package bundles every rendered document alongside its
+          SHA-256 manifest, so a reviewer can confirm integrity without trusting OSSICRO or any server.
+          Open the <a href="/static/verify.html" target="_blank" rel="noopener">standalone verifier</a>
+          (works offline — save it locally if you like) and drop the package JSON in.
+        </p>
       </div>
     </div>
   </section>
@@ -647,6 +679,60 @@ function renderIntake(){
   });
 }
 
+/* -- load example case (synthetic, clearly fictional — demo only) -- */
+function setBoolControl(hidden, v){
+  // v: "true" | "false" | "" (unattested)
+  hidden.value = v;
+  const seg = hidden.parentElement.querySelector(".segmented");
+  if (!seg) return;
+  seg.querySelectorAll("button").forEach(b => {
+    b.className = (b.dataset.v === v)
+      ? (v === "true" ? "sel-yes" : v === "false" ? "sel-no" : "sel-un")
+      : "";
+  });
+}
+function applySampleFields(sample){
+  const form = $("#intakeForm");
+  let applied = 0;
+  for (const f of S.schema){
+    if (!(f.id in sample)) continue;
+    const el = form.querySelector(`[name="${CSS.escape(f.id)}"]`);
+    if (!el) continue;
+    const v = sample[f.id];
+    const t = (f.type || "text").toLowerCase();
+    if (t === "boolean" || t === "checkbox" || t === "bool"){
+      const sv = (v === true || v === "true") ? "true"
+               : (v === false || v === "false") ? "false" : "";
+      setBoolControl(el, sv);
+    } else if (v == null || v === ""){
+      continue;                                   // sample leaves it unattested — so do we
+    } else if (el.type === "datetime-local"){
+      el.value = String(v).replace(" ", "T").replace(/Z$/, "").slice(0, 16);
+    } else if (el.type === "date"){
+      el.value = String(v).slice(0, 10);
+    } else {
+      el.value = String(v);
+    }
+    applied++;
+  }
+  return applied;
+}
+$("#loadExampleBtn").addEventListener("click", async () => {
+  const btn = $("#loadExampleBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Loading example…';
+  try {
+    const res = await api("/api/route/3926/sample");
+    const n = applySampleFields(res.fields || {});
+    toast(`Example case loaded — ${n} fields populated (synthetic, no real PHI). Review, then save.`);
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Load example case";
+  }
+});
+
 function collectIntake(){
   const fields = {};
   const form = $("#intakeForm");
@@ -729,6 +815,42 @@ function gateInfo(gateId){
   return g || null;
 }
 
+/* Concept-review findings for one document. Tolerates either a bare findings
+   array or a serialized ReviewReport {model, reviewed_at, findings:[...]}.
+   These are ADVISORY input to the human reviewer — escalate-only in the
+   pipeline; a clean voice review never clears a gate. */
+function conceptReview(docId){
+  const cbd = (S.check && S.check.concept_by_doc) || {};
+  const entry = cbd[docId];
+  if (!entry) return { findings: [], model: "" };
+  if (Array.isArray(entry)) return { findings: entry, model: "" };
+  return { findings: entry.findings || [], model: entry.model || "" };
+}
+
+function voiceReviewHtml(docId){
+  const cv = conceptReview(docId);
+  if (!cv.findings.length) return "";
+  const sevRank = f => ((f.severity || "").toLowerCase() === "deficient" ? 0 : 1);
+  const rows = cv.findings.slice().sort((a,b) => sevRank(a) - sevRank(b)).map(f => {
+    const def = (f.severity || "").toLowerCase() === "deficient";
+    return `<div class="vfind ${def ? "deficient" : "advisory"}">
+      <div class="vhead">
+        <span class="vsev">${def ? "Deficient" : "Advisory"}</span>
+        <code class="vprin">${esc(f.principle_id || "")}</code>
+      </div>
+      ${f.span ? `<div class="vspan">&ldquo;${esc(f.span)}&rdquo;</div>` : ""}
+      <div>${esc(asText(f.message))}</div>
+      ${f.suggestion ? `<div class="vsug"><b>Suggestion:</b> ${esc(f.suggestion)}</div>` : ""}
+    </div>`;
+  }).join("");
+  return `<div class="voice">
+    <div class="voicehead">Voice review
+      <span class="muted">— advisory input to the human reviewer${cv.model ? ` · reviewer <code>${esc(cv.model)}</code>` : ""};
+      findings escalate only and never clear a gate</span></div>
+    ${rows}
+  </div>`;
+}
+
 function renderLedger(){
   const c = S.check;
   $("#ledgerArea").style.display = "block";
@@ -762,6 +884,7 @@ function renderLedger(){
       </div>
       ${qs ? `<ul class="qlist">${qs}</ul>` : ""}
       ${gateHtml}
+      ${voiceReviewHtml(item.doc_id)}
     </div>`;
   }).join("") || "<p class='muted'>Ledger is empty.</p>";
 
@@ -877,6 +1000,22 @@ $("#exportJsonBtn").addEventListener("click", () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   toast("Draft package JSON downloaded.");
+});
+
+/* Verify: download the SELF-VERIFIABLE package (the /package payload bundles
+   documents:[{doc_id,title,rendered}] and manifest:[{doc_id,title,sha256}])
+   and open the standalone verifier, which recomputes each SHA-256 with no
+   server and no OSSICRO trust. */
+$("#verifyPkgBtn").addEventListener("click", () => {
+  if (!S.pkg){ toast("Assemble the package first.", true); return; }
+  const blob = new Blob([JSON.stringify(S.pkg, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `ossicro-route3926-${S.caseId}-package.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  window.open("/static/verify.html", "_blank", "noopener");
+  toast("Package downloaded — drop it into the verifier tab that just opened.");
 });
 
 $("#printBtn").addEventListener("click", () => {

@@ -23,6 +23,12 @@ import re
 from typing import Callable, Dict, List, Optional, Tuple
 
 from . import generate as builtin_generate
+from .clocks import (
+    add_working_days,
+    expanded_access_emergency_deadlines,
+    federal_holidays,
+    ind_30_day_deadline,
+)
 from .models import Document, ProvenanceRecord, Study
 
 _PLACEHOLDER = re.compile(r"\{\{([A-Za-z0-9_]+)\}\}")
@@ -77,39 +83,28 @@ def build_study(intake_flat: Dict[str, object], route: Dict[str, object]) -> Stu
 
 
 # ---------------------------------------------------------------------------
-# Deterministic clock engine (HC3): working-day vs calendar-day calendars
+# Deterministic clock engine (HC3): working-day vs calendar-day calendars.
+#
+# The calendar arithmetic itself is the canonical engine in ossicro.clocks
+# (weekend + observed-federal-holiday rules, verified against a fixed table).
+# This module owns only the intake-facing plumbing: parsing a human-entered
+# trigger string and mapping the route's working/calendar selector onto the
+# canonical functions. ``add_working_days``, ``federal_holidays``,
+# ``expanded_access_emergency_deadlines`` and ``ind_30_day_deadline`` are
+# re-exported from clocks so callers (and tests) reach one source of truth.
 # ---------------------------------------------------------------------------
 
-def _nth_weekday(year: int, month: int, weekday: int, n: int) -> datetime.date:
-    d = datetime.date(year, month, 1)
-    offset = (weekday - d.weekday()) % 7
-    return d + datetime.timedelta(days=offset + 7 * (n - 1))
-
-
-def _last_weekday(year: int, month: int, weekday: int) -> datetime.date:
-    if month == 12:
-        nxt = datetime.date(year + 1, 1, 1)
-    else:
-        nxt = datetime.date(year, month + 1, 1)
-    d = nxt - datetime.timedelta(days=1)
-    return d - datetime.timedelta(days=(d.weekday() - weekday) % 7)
-
-
-def us_federal_holidays(year: int) -> set:
-    """The observed US federal holidays for a year (weekends excluded separately)."""
-    return {
-        datetime.date(year, 1, 1),                 # New Year's Day
-        _nth_weekday(year, 1, 0, 3),               # MLK Jr. (3rd Mon)
-        _nth_weekday(year, 2, 0, 3),               # Washington's Birthday (3rd Mon)
-        _last_weekday(year, 5, 0),                 # Memorial Day (last Mon)
-        datetime.date(year, 6, 19),                # Juneteenth
-        datetime.date(year, 7, 4),                 # Independence Day
-        _nth_weekday(year, 9, 0, 1),               # Labor Day (1st Mon)
-        _nth_weekday(year, 10, 0, 2),              # Columbus Day (2nd Mon)
-        datetime.date(year, 11, 11),               # Veterans Day
-        _nth_weekday(year, 11, 3, 4),              # Thanksgiving (4th Thu)
-        datetime.date(year, 12, 25),               # Christmas Day
-    }
+__all__ = [
+    "add_working_days",
+    "federal_holidays",
+    "expanded_access_emergency_deadlines",
+    "ind_30_day_deadline",
+    "compute_deadline",
+    "compute_clocks",
+    "build_study",
+    "unflatten",
+    "generate_route_documents",
+]
 
 
 def _parse_date(text: Optional[str]) -> Optional[datetime.date]:
@@ -122,32 +117,18 @@ def _parse_date(text: Optional[str]) -> Optional[datetime.date]:
         return None
 
 
-def add_working_days(start: datetime.date, n: int) -> datetime.date:
-    """Add ``n`` working days (skip weekends + federal holidays) after ``start``."""
-    d = start
-    counted = 0
-    while counted < n:
-        d = d + datetime.timedelta(days=1)
-        if d.weekday() >= 5:
-            continue
-        if d in us_federal_holidays(d.year):
-            continue
-        counted += 1
-    return d
-
-
-def add_calendar_days(start: datetime.date, n: int) -> datetime.date:
-    return start + datetime.timedelta(days=n)
-
-
 def compute_deadline(trigger: Optional[str], days: int, calendar: str) -> Optional[str]:
-    """Return the ISO deadline for a trigger date, or None if no trigger given."""
+    """Return the ISO deadline for a trigger date, or None if no trigger given.
+
+    ``working`` days route through the canonical ossicro.clocks engine (weekends
+    + observed federal holidays); ``calendar`` days are a plain span.
+    """
     start = _parse_date(trigger)
     if start is None:
         return None
     if calendar == "working":
         return add_working_days(start, days).isoformat()
-    return add_calendar_days(start, days).isoformat()
+    return (start + datetime.timedelta(days=days)).isoformat()
 
 
 def compute_clocks(study: Study, route: Dict[str, object]) -> List[Dict[str, object]]:
@@ -327,12 +308,15 @@ def gen_cover_letter(study: Study, doc_registry: Dict[str, dict]) -> Document:
 
     if emergency:
         auth = study.resolve("submission.emergency_auth_datetime")
-        deadline = compute_deadline(auth, 15, "working")
-        if deadline:
+        auth_date = _parse_date(auth)
+        if auth_date is not None:
+            # The 15-working-day written-3926 clock is the canonical emergency
+            # deadline pair's first entry (21 CFR 312.310(d)(2)).
+            written = expanded_access_emergency_deadlines(auth_date)[0]
             clock_statement = (
                 "This written submission is filed within 15 WORKING DAYS of the FDA "
                 "telephone authorization dated %s; that deadline is %s (21 CFR "
-                "312.310(d))." % (auth, deadline)
+                "312.310(d))." % (auth, written.due.isoformat())
             )
         else:
             clock_statement = (
@@ -341,12 +325,14 @@ def gen_cover_letter(study: Study, doc_registry: Dict[str, dict]) -> Document:
             )
         clock_cite = "21 CFR 312.310(d)"
     else:
-        receipt = study.resolve("submission.fda_receipt_date") or "FDA receipt"
-        deadline = compute_deadline(study.resolve("submission.fda_receipt_date") or datetime.date.today().isoformat(), 30, "calendar")
+        receipt = study.resolve("submission.fda_receipt_date")
+        receipt_date = _parse_date(receipt) or datetime.date.today()
+        deadline = ind_30_day_deadline(receipt_date).due.isoformat()
         clock_statement = (
             "For a non-emergency request, treatment may not begin until FDA notifies "
             "the physician it may proceed, or — absent notification — 30 CALENDAR DAYS "
-            "after FDA receipt (%s), i.e. %s (21 CFR 312.40(b)(1))." % (receipt, deadline)
+            "after FDA receipt (%s), i.e. %s (21 CFR 312.40(b)(1))."
+            % (receipt or "FDA receipt", deadline)
         )
         clock_cite = "21 CFR 312.40(b)(1)"
 

@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OSSICRO Package Verifier — independent SHA-256 check</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b5cad'/%3E%3Cpath d='M9 16.5l5 5 9-11' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  /* Self-contained on purpose: no external CSS, no CDN, no fetch. Save this
+     file locally and it still works from file:// with no server at all. */
+  :root{
+    --bg:#f6f8fa; --surface:#ffffff; --surface2:#f0f4f7; --ink:#0f2233; --muted:#5a6b7b;
+    --line:#dfe6ec; --brand:#0b5cad; --brand-deep:#083a6e; --brand-soft:#e7f0f9;
+    --accent:#12a594; --accent-deep:#0c7d70;
+    --green:#1f9d57; --green-soft:#e6f5ec; --amber:#b57a0a; --amber-soft:#fcf2dd;
+    --red:#c0392b; --red-soft:#fbe9e6;
+    --shadow:0 1px 2px rgba(8,32,58,.06),0 8px 24px rgba(8,32,58,.07);
+    --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0b141d; --surface:#111d29; --surface2:#0e1822; --ink:#e8eef4; --muted:#9fb1c1;
+    --line:#20303f; --brand:#4d9fe6; --brand-deep:#8fc2f2; --brand-soft:#12283c;
+    --accent:#3fd0bd; --accent-deep:#7ee3d6;
+    --green:#3fc47a; --green-soft:#0f2b1c; --amber:#e0a43a; --amber-soft:#2e2410;
+    --red:#e57363; --red-soft:#32160f;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px}
+  h1{font-size:1.35rem;letter-spacing:-.01em;margin:0 0 .35em}
+  h2{font-size:1.02rem;margin:0 0 .45em}
+  a{color:var(--brand)}
+  .muted{color:var(--muted)} .small{font-size:.83rem} .mono{font-family:var(--mono)}
+  code{font-family:var(--mono);font-size:.85em;background:var(--surface2);padding:1px 5px;border-radius:4px}
+  header{border-bottom:1px solid var(--line);background:var(--surface)}
+  .nav{display:flex;align-items:center;gap:12px;height:58px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;font-size:1.02rem}
+  .brand .mark{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--brand),var(--accent))}
+  .chip{font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--brand);background:var(--brand-soft);border:1px solid var(--line);
+    padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);padding:22px;margin:18px 0}
+  .btn{border:1px solid var(--line);background:var(--surface2);color:var(--ink);
+    border-radius:10px;padding:9px 18px;font:inherit;font-weight:700;font-size:.9rem;cursor:pointer}
+  .btn:hover{border-color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:var(--brand-deep);border-color:var(--brand-deep)}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .drop{border:2px dashed var(--line);border-radius:12px;padding:26px 20px;text-align:center;
+    color:var(--muted);background:var(--surface2);transition:all .15s;cursor:pointer}
+  .drop.hover{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-deep)}
+  .drop b{color:var(--ink)}
+  textarea{width:100%;min-height:150px;resize:vertical;background:var(--surface);color:var(--ink);
+    border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+    font-family:var(--mono);font-size:.8rem;line-height:1.45;margin-top:12px}
+  textarea:focus{outline:2px solid color-mix(in srgb,var(--brand) 45%,transparent);border-color:var(--brand)}
+  .verdict{border-radius:12px;padding:16px 20px;margin:0 0 16px;border:1px solid;font-size:1rem}
+  .verdict .big{font-size:1.25rem;font-weight:800;letter-spacing:.02em}
+  .verdict.ok{background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 45%,transparent)}
+  .verdict.ok .big{color:var(--green)}
+  .verdict.bad{background:var(--red-soft);border-color:color-mix(in srgb,var(--red) 45%,transparent)}
+  .verdict.bad .big{color:var(--red)}
+  .verdict.warn{background:var(--amber-soft);border-color:color-mix(in srgb,var(--amber) 45%,transparent)}
+  .verdict.warn .big{color:var(--amber)}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;
+    letter-spacing:.05em;text-transform:uppercase;padding:2px 10px;border-radius:999px;white-space:nowrap}
+  .pill.green{background:var(--green-soft);color:var(--green)}
+  .pill.red{background:var(--red-soft);color:var(--red)}
+  .pill.amber{background:var(--amber-soft);color:var(--amber)}
+  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:collapse;width:100%;font-size:.86rem;min-width:640px}
+  th{background:var(--surface2);text-align:left;font-size:.72rem;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);padding:9px 14px;border-bottom:1px solid var(--line)}
+  td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  .hash{font-family:var(--mono);font-size:.72rem;word-break:break-all}
+  .hash.mismatch{color:var(--red)}
+  .err{color:var(--red);font-weight:600;margin-top:10px}
+  footer{padding:30px 0 44px;color:var(--muted);font-size:.8rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <span class="brand"><span class="mark"></span>OSSICRO</span>
+    <span class="chip">Standalone package verifier</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <h1>Verify an exported Route-3926 draft package</h1>
+    <p class="muted" style="max-width:75ch">
+      An OSSICRO package export bundles every <b>rendered document</b> together with a
+      <b>SHA-256 manifest</b>. This page recomputes SHA-256 over each document's rendered
+      text (UTF-8) — entirely in your browser — and compares it to the manifest. Nothing is
+      uploaded; no server is contacted; you do not have to trust OSSICRO or the machine that
+      produced the export. That is the point.
+    </p>
+    <p class="muted small" style="max-width:75ch">
+      A <b>VERIFIED</b> result proves only that the document text is byte-identical to what was
+      hashed at assembly. It does not make a draft anything other than a draft: signatures, consent,
+      IRB concurrence, and submission to FDA remain non-delegable human acts.
+    </p>
+
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose or drop a package JSON file">
+      <b>Drop the package JSON here</b> — or click to choose a file
+      <div class="small" style="margin-top:4px">e.g. <code>ossicro-route3926-&lt;case&gt;-package.json</code> or the full “Download package JSON” export</div>
+    </div>
+    <input type="file" id="fileInput" accept=".json,application/json" style="display:none">
+
+    <textarea id="pasteBox" spellcheck="false" placeholder='…or paste the package JSON here, then press Verify.'></textarea>
+    <div class="btnrow">
+      <button class="btn primary" id="verifyBtn">Verify</button>
+      <button class="btn" id="clearBtn">Clear</button>
+      <span class="muted small" id="status"></span>
+    </div>
+    <div class="err" id="error" style="display:none"></div>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <div class="verdict" id="verdict"></div>
+    <h2>Per-document results</h2>
+    <div class="tblwrap"><table id="resultTable">
+      <thead><tr>
+        <th>#</th><th>Document</th><th>Registry id</th>
+        <th>Manifest SHA-256</th><th>Recomputed SHA-256</th><th>Status</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="muted small" style="margin-top:12px" id="caseNote"></p>
+  </div>
+
+  <footer>
+    OSSICRO — Open Source Sponsor-Investigator CRO · Independent integrity verifier ·
+    Self-contained (no network requests, no external code). Verification proves content integrity,
+    never regulatory status.
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ---------------- utilities ---------------- */
+const $ = s => document.querySelector(s);
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[c]);
+}
+
+/* ---------------- SHA-256 ----------------
+   Primary: Web Crypto SubtleCrypto. Fallback: a pure-JS implementation for
+   contexts where crypto.subtle is unavailable (some file:// / non-secure
+   setups). Both hash the UTF-8 encoding of the rendered text — exactly what
+   the OSSICRO manifest hashes. */
+const SHA256_K = [
+  0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+  0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+  0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+  0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+  0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+  0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+  0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+  0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+
+function sha256Sync(bytes){
+  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const l = bytes.length;
+  const padded = new Uint8Array((((l + 8) >> 6) + 1) << 6);
+  padded.set(bytes);
+  padded[l] = 0x80;
+  const dv = new DataView(padded.buffer);
+  dv.setUint32(padded.length - 8, Math.floor(l / 0x20000000));   // bit length high word
+  dv.setUint32(padded.length - 4, (l << 3) >>> 0);               // bit length low word
+  const w = new Int32Array(64);
+  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let i = 0; i < padded.length; i += 64){
+    for (let t = 0; t < 16; t++) w[t] = dv.getUint32(i + t * 4);
+    for (let t = 16; t < 64; t++){
+      const x = w[t-15], y = w[t-2];
+      const s0 = rotr(x,7) ^ rotr(x,18) ^ (x >>> 3);
+      const s1 = rotr(y,17) ^ rotr(y,19) ^ (y >>> 10);
+      w[t] = (w[t-16] + s0 + w[t-7] + s1) | 0;
+    }
+    let a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for (let t = 0; t < 64; t++){
+      const S1 = rotr(e,6) ^ rotr(e,11) ^ rotr(e,25);
+      const ch = (e & f) ^ (~e & g);
+      const t1 = (h + S1 + ch + SHA256_K[t] + w[t]) | 0;
+      const S0 = rotr(a,2) ^ rotr(a,13) ^ rotr(a,22);
+      const maj = (a & b) ^ (a & c) ^ (b & c);
+      const t2 = (S0 + maj) | 0;
+      h=g; g=f; f=e; e=(d + t1) | 0; d=c; c=b; b=a; a=(t1 + t2) | 0;
+    }
+    H[0]=(H[0]+a)|0; H[1]=(H[1]+b)|0; H[2]=(H[2]+c)|0; H[3]=(H[3]+d)|0;
+    H[4]=(H[4]+e)|0; H[5]=(H[5]+f)|0; H[6]=(H[6]+g)|0; H[7]=(H[7]+h)|0;
+  }
+  return H.map(x => (x >>> 0).toString(16).padStart(8, "0")).join("");
+}
+
+async function sha256Hex(text){
+  const bytes = new TextEncoder().encode(text);        // UTF-8, no normalization
+  if (window.crypto && crypto.subtle && crypto.subtle.digest){
+    try {
+      const buf = await crypto.subtle.digest("SHA-256", bytes);
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    } catch (e) { /* fall through to pure-JS */ }
+  }
+  return sha256Sync(bytes);
+}
+
+/* ---------------- package extraction ----------------
+   Accepts either the raw GET /api/case/{id}/package payload (which bundles
+   documents:[{doc_id,title,rendered}] and manifest:[{doc_id,title,sha256}])
+   or the SPA's "Download package JSON" wrapper {package:{...}, documents:[...]}. */
+function extractPackage(obj){
+  if (!obj || typeof obj !== "object") return null;
+  const candidates = [obj, obj.package].filter(x => x && typeof x === "object");
+  for (const c of candidates){
+    if (Array.isArray(c.manifest) && Array.isArray(c.documents))
+      return { manifest: c.manifest, documents: c.documents, caseId: obj.case_id || c.case_id || "" };
+  }
+  // wrapper variant: documents at top level, manifest inside .package
+  if (Array.isArray(obj.documents) && obj.package && Array.isArray(obj.package.manifest))
+    return { manifest: obj.package.manifest, documents: obj.documents, caseId: obj.case_id || "" };
+  return null;
+}
+
+/* ---------------- verification ---------------- */
+async function verifyText(raw){
+  const errEl = $("#error");
+  errEl.style.display = "none";
+  $("#resultCard").style.display = "none";
+  $("#status").textContent = "";
+
+  if (!raw || !raw.trim()){
+    return showError("Nothing to verify — drop a file or paste the package JSON first.");
+  }
+  let obj;
+  try { obj = JSON.parse(raw); }
+  catch (e) { return showError("Not valid JSON: " + e.message); }
+
+  const pkg = extractPackage(obj);
+  if (!pkg){
+    return showError("Could not find a manifest + documents bundle in this JSON. " +
+      "Expected manifest:[{doc_id,title,sha256}] alongside documents:[{doc_id,title,rendered}] " +
+      "(the OSSICRO package export includes both).");
+  }
+
+  $("#status").textContent = "Computing SHA-256 for " + pkg.documents.length + " document(s)…";
+  const docById = new Map();
+  for (const d of pkg.documents) if (d && d.doc_id != null) docById.set(String(d.doc_id), d);
+
+  const rows = [];
+  let verified = 0, tampered = 0, missing = 0, nohash = 0;
+
+  for (let i = 0; i < pkg.manifest.length; i++){
+    const m = pkg.manifest[i] || {};
+    const id = String(m.doc_id ?? "");
+    const doc = docById.get(id);
+    docById.delete(id);
+    const expected = String(m.sha256 || "").toLowerCase();
+    let computed = "", status, cls;
+    if (!doc || typeof doc.rendered !== "string"){
+      status = "MISSING DOCUMENT"; cls = "red"; missing++;
+    } else if (!expected){
+      computed = await sha256Hex(doc.rendered);
+      status = "NO MANIFEST HASH"; cls = "red"; nohash++;
+    } else {
+      computed = await sha256Hex(doc.rendered);
+      if (computed === expected){ status = "VERIFIED"; cls = "green"; verified++; }
+      else { status = "TAMPERED"; cls = "red"; tampered++; }
+    }
+    rows.push({ n: i + 1, title: m.title || (doc && doc.title) || id, id,
+                expected, computed, status, cls });
+  }
+  // documents present in the bundle but absent from the manifest
+  let unlisted = 0;
+  for (const [id, doc] of docById){
+    unlisted++;
+    rows.push({ n: rows.length + 1, title: doc.title || id, id,
+                expected: "", computed: typeof doc.rendered === "string" ? await sha256Hex(doc.rendered) : "",
+                status: "NOT IN MANIFEST", cls: "amber" });
+  }
+
+  renderResults(rows, { verified, tampered, missing, nohash, unlisted,
+                        total: pkg.manifest.length, caseId: pkg.caseId });
+  $("#status").textContent = "";
+}
+
+function showError(msg){
+  const el = $("#error");
+  el.textContent = msg;
+  el.style.display = "block";
+  $("#status").textContent = "";
+}
+
+function shortHash(h, bad){
+  if (!h) return '<span class="muted">—</span>';
+  return `<span class="hash${bad ? " mismatch" : ""}" title="${esc(h)}">${esc(h)}</span>`;
+}
+
+function renderResults(rows, s){
+  const v = $("#verdict");
+  if (s.tampered || s.missing || s.nohash){
+    const parts = [];
+    if (s.tampered) parts.push(s.tampered + " document(s) TAMPERED — content does not match the manifest hash");
+    if (s.missing) parts.push(s.missing + " manifest entr(y/ies) with no bundled document");
+    if (s.nohash) parts.push(s.nohash + " manifest entr(y/ies) without a hash");
+    v.className = "verdict bad";
+    v.innerHTML = `<div class="big">PACKAGE NOT VERIFIED</div>
+      <div>${esc(parts.join("; "))}. Do not rely on this export — request a fresh one and re-verify.</div>`;
+  } else if (s.unlisted){
+    v.className = "verdict warn";
+    v.innerHTML = `<div class="big">VERIFIED, WITH EXTRAS</div>
+      <div>All ${s.verified} manifest document(s) verified, but ${s.unlisted} bundled document(s)
+      are not covered by the manifest — their integrity is unattested.</div>`;
+  } else {
+    v.className = "verdict ok";
+    v.innerHTML = `<div class="big">PACKAGE VERIFIED</div>
+      <div>All ${s.verified} of ${s.total} document(s) match their manifest SHA-256 exactly.
+      Content integrity confirmed — the drafts are byte-identical to what was assembled.</div>`;
+  }
+
+  $("#resultTable tbody").innerHTML = rows.map(r => `<tr>
+    <td>${r.n}</td>
+    <td><b>${esc(r.title)}</b></td>
+    <td class="mono small">${esc(r.id)}</td>
+    <td>${shortHash(r.expected)}</td>
+    <td>${shortHash(r.computed, r.status === "TAMPERED")}</td>
+    <td><span class="pill ${r.cls}">${esc(r.status)}</span></td>
+  </tr>`).join("");
+
+  $("#caseNote").textContent =
+    (s.caseId ? "Case " + s.caseId + ". " : "") +
+    "Hashes are SHA-256 over each document's rendered text encoded as UTF-8, computed locally in this browser.";
+  $("#resultCard").style.display = "block";
+  $("#resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ---------------- inputs ---------------- */
+const drop = $("#drop"), fileInput = $("#fileInput");
+
+function readFile(file){
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { $("#pasteBox").value = String(reader.result); verifyText(String(reader.result)); };
+  reader.onerror = () => showError("Could not read the file.");
+  reader.readAsText(file);
+}
+
+drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") fileInput.click(); });
+fileInput.addEventListener("change", () => readFile(fileInput.files[0]));
+
+["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => {
+  e.preventDefault(); e.stopPropagation(); drop.classList.add("hover");
+}));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => {
+  e.preventDefault(); e.stopPropagation(); drop.classList.remove("hover");
+}));
+drop.addEventListener("drop", e => {
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) readFile(f);
+  else {
+    const txt = e.dataTransfer && e.dataTransfer.getData("text");
+    if (txt){ $("#pasteBox").value = txt; verifyText(txt); }
+  }
+});
+
+$("#verifyBtn").addEventListener("click", () => verifyText($("#pasteBox").value));
+$("#clearBtn").addEventListener("click", () => {
+  $("#pasteBox").value = "";
+  fileInput.value = "";
+  $("#resultCard").style.display = "none";
+  $("#error").style.display = "none";
+  $("#status").textContent = "";
+});
+</script>
+</body>
+</html>

@@ -40,8 +40,11 @@ from ossicro.assemble import assemble_submission             # noqa: E402
 from ossicro.ea_generators import build_study, generate_route_documents  # noqa: E402
 from ossicro.pipeline import run_check                       # noqa: E402
 from ossicro.registry import load_documents, load_gates      # noqa: E402
+from ossicro.review_port import DeterministicStubReviewer    # noqa: E402
 
 STATIC_DIR = os.path.join(APP_DIR, "static")
+FIXTURES_DIR = os.path.join(ENGINE_DIR, "fixtures")
+SAMPLE_CASE_PATH = os.path.join(FIXTURES_DIR, "ea_sample_case.json")
 HOST, PORT = "127.0.0.1", 8765
 
 # In-memory case store (MVP; no real PHI).
@@ -72,6 +75,37 @@ def _schema_payload() -> dict:
     return {"fields": routes_mod.intake_fields()}
 
 
+def _sample_payload() -> dict:
+    """A realistic, complete synthetic EA case (no real PHI).
+
+    Loaded from engine/fixtures/ea_sample_case.json and returned as
+    ``{"fields": {<id>: <value>, ...}}``. POSTing these fields to intake yields
+    a mostly-green ledger with submission_ready true — only the non-delegable
+    human-gate ambers remain pending.
+    """
+    with open(SAMPLE_CASE_PATH, encoding="utf-8") as f:
+        data = json.load(f)
+    fields = data.get("fields", data)
+    return {"fields": fields}
+
+
+def _select_reviewer():
+    """Pick the concept reviewer per the shared contract.
+
+    Live Claude reviewer when ANTHROPIC_API_KEY is set; otherwise (or if the
+    SDK is missing) the offline deterministic stub. The escalate-only coupling
+    that keeps a concept finding from ever clearing a gate lives in the
+    pipeline, not here — either reviewer is safe.
+    """
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            from ossicro.review_claude import ClaudeConceptReviewer
+            return ClaudeConceptReviewer.from_anthropic()
+        except Exception:  # missing SDK / bad key -> honest offline fallback
+            return DeterministicStubReviewer()
+    return DeterministicStubReviewer()
+
+
 def _generate_payload(case: dict) -> dict:
     route, study, documents = _study_and_docs(case)
     case["route_id"] = route["route_id"]
@@ -87,7 +121,8 @@ def _generate_payload(case: dict) -> dict:
 
 def _check_payload(case: dict) -> dict:
     route, study, documents = _study_and_docs(case)
-    result = run_check(study, documents, DOC_REGISTRY, GATE_REGISTRY)
+    reviewer = _select_reviewer()
+    result = run_check(study, documents, DOC_REGISTRY, GATE_REGISTRY, reviewer=reviewer)
     totals = {"green": 0, "amber": 0, "red": 0}
     ledger = []
     for item in result.ledger:
@@ -121,7 +156,26 @@ def _check_payload(case: dict) -> dict:
                 "doc_id": doc_id,
                 "questions": pg.questions,
             })
-    return {"ledger": ledger, "totals": totals, "consistency": consistency, "gate_packet": gate_packet}
+    concept_by_doc = {}
+    for doc_id, report in result.concept_by_doc.items():
+        concept_by_doc[doc_id] = [
+            {
+                "principle_id": f.principle_id,
+                "severity": f.severity,
+                "span": f.span,
+                "message": f.message,
+                "suggestion": f.suggestion,
+            }
+            for f in report.findings
+        ]
+    return {
+        "ledger": ledger,
+        "totals": totals,
+        "consistency": consistency,
+        "gate_packet": gate_packet,
+        "concept_by_doc": concept_by_doc,
+        "reviewer": {"model": getattr(reviewer, "model", "unknown")},
+    }
 
 
 def _package_payload(case: dict) -> dict:
@@ -182,6 +236,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._serve_static("index.html")
         if path == "/api/route/3926/schema":
             return self._send_json(_schema_payload())
+        if path == "/api/route/3926/sample":
+            try:
+                return self._send_json(_sample_payload())
+            except Exception as exc:
+                return self._send_json({"error": type(exc).__name__, "detail": str(exc)}, 500)
 
         m = _CASE_CHECK.match(path)
         if m:
@@ -202,6 +261,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json(_package_payload(case))
             except Exception as exc:
                 return self._send_json({"error": type(exc).__name__, "detail": str(exc)}, 500)
+
+        if path.startswith("/static/"):
+            return self._serve_static(path[len("/static/"):])
 
         return self._send_json({"error": "not found", "path": path}, 404)
 

@@ -54,8 +54,11 @@ def assemble_submission(
             "doc_ids": present,
         })
 
-    # Hash manifest over the FDA-facing documents (provenance substrate).
+    # Hash manifest over the FDA-facing documents (provenance substrate), plus
+    # the rendered documents themselves so the package is self-verifiable: a
+    # standalone verifier recomputes sha256(rendered.utf8) and matches manifest.
     manifest: List[Dict[str, str]] = []
+    bundled_documents: List[Dict[str, str]] = []
     for doc_id in fda_docs:
         doc = documents.get(doc_id)
         if doc is None:
@@ -64,6 +67,11 @@ def assemble_submission(
             "doc_id": doc_id,
             "title": doc.title,
             "sha256": _sha256(doc.rendered),
+        })
+        bundled_documents.append({
+            "doc_id": doc_id,
+            "title": doc.title,
+            "rendered": doc.rendered or "",
         })
 
     cover_doc = documents.get("expanded-access-cover-letter")
@@ -110,6 +118,7 @@ def assemble_submission(
         "emergency": bool(route.get("emergency")),
         "ectd_map": ectd_map,
         "cover_letter": cover_letter,
+        "documents": bundled_documents,
         "manifest": manifest,
         "manufacturer_packet": manufacturer_packet,
         "clocks": clocks,
