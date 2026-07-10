@@ -86,11 +86,16 @@ class ReviewReport:
     ``model`` records the reviewing model's identifier and ``reviewed_at`` the
     timestamp -- the Part 11 attribution substrate for every concept-layer
     contribution (docs/VALIDATION-PHILOSOPHY.md §5).
+
+    ``error`` is set when the reviewer itself failed (exception, transport
+    fault): the document is then UNREVIEWED, and the pipeline escalates that
+    to a blocking red -- a reviewer failure can never silently pass a document.
     """
 
     findings: List[ConceptFinding] = field(default_factory=list)
     model: str = ""
     reviewed_at: str = field(default_factory=_utcnow)
+    error: str = ""
 
     @property
     def hard_findings(self) -> List[ConceptFinding]:
@@ -254,4 +259,5 @@ def validate_report(report: ReviewReport, doc) -> ReviewReport:
         if inside_locked:
             continue  # locked span: reviewer may flag but never edit it
         kept.append(f)
-    return ReviewReport(findings=kept, model=report.model, reviewed_at=report.reviewed_at)
+    return ReviewReport(findings=kept, model=report.model,
+                        reviewed_at=report.reviewed_at, error=report.error)

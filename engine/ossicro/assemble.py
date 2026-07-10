@@ -18,17 +18,26 @@ Nothing here files, signs, supplies, or approves. It assembles and validates.
 
 from __future__ import annotations
 
+import datetime
 import hashlib
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .check import ledger_totals
-from .ea_generators import compute_clocks
+from .ea_generators import compute_clocks, derive_as_of
 from .models import Document, Gate, Study
-from .pipeline import run_check
+from .pipeline import CheckResult, run_check
+from .review_port import ConceptReviewer
 
 
 def _sha256(text: str) -> str:
     return hashlib.sha256((text or "").encode("utf-8")).hexdigest()
+
+
+def _package_digest(doc_hashes: List[str]) -> str:
+    """Package-level digest: SHA-256 over the sorted per-document hashes,
+    newline-joined. Order-independent, so the same document set always yields
+    the same digest regardless of route ordering."""
+    return hashlib.sha256("\n".join(sorted(doc_hashes)).encode("utf-8")).hexdigest()
 
 
 def assemble_submission(
@@ -37,12 +46,25 @@ def assemble_submission(
     route: Dict[str, Any],
     doc_registry: Dict[str, dict],
     gate_registry: Dict[str, Gate],
+    reviewer: Optional[ConceptReviewer] = None,
+    check: Optional[CheckResult] = None,
+    as_of: Optional[datetime.date] = None,
 ) -> Dict[str, Any]:
-    """Assemble the reviewer package and the manufacturer packet for a route."""
-    check = run_check(study, documents, doc_registry, gate_registry)
+    """Assemble the reviewer package and the manufacturer packet for a route.
+
+    Concept integrity: pass either the ``reviewer`` that reviewed the drafts or
+    the precomputed ``check`` (CheckResult) the human already saw, so the
+    package reflects the SAME review -- never a silently different one. The
+    reviewing model is recorded on the package (``reviewer_model``). A reviewer
+    exception inside run_check escalates to a blocking red; it never aborts
+    assembly.
+    """
+    if check is None:
+        check = run_check(study, documents, doc_registry, gate_registry, reviewer=reviewer)
     ledger_by_doc = {item.doc_id: item for item in check.ledger}
 
-    fda_docs = route.get("fda_package", route.get("documents", []))
+    route_docs = route.get("documents", [])
+    fda_docs = route.get("fda_package", route_docs)
 
     # eCTD module map (route-declared), carrying only doc ids that were generated.
     ectd_map: List[Dict[str, Any]] = []
@@ -54,19 +76,33 @@ def assemble_submission(
             "doc_ids": present,
         })
 
-    # Hash manifest over the FDA-facing documents (provenance substrate), plus
-    # the rendered documents themselves so the package is self-verifiable: a
-    # standalone verifier recomputes sha256(rendered.utf8) and matches manifest.
-    manifest: List[Dict[str, str]] = []
+    # Hash manifest over EVERY route document (provenance substrate) -- not
+    # just the FDA-facing subset -- plus the rendered documents themselves so
+    # the package is self-verifiable: a standalone verifier recomputes
+    # sha256(rendered.utf8) and matches the manifest. A route document that was
+    # never generated appears as an explicit ABSENT entry (null hash), so the
+    # manifest always accounts for the full declared set.
+    manifest: List[Dict[str, Any]] = []
     bundled_documents: List[Dict[str, str]] = []
-    for doc_id in fda_docs:
+    doc_hashes: List[str] = []
+    for doc_id in route_docs:
         doc = documents.get(doc_id)
         if doc is None:
+            title = doc_registry.get(doc_id, {}).get("title", doc_id)
+            manifest.append({
+                "doc_id": doc_id,
+                "title": title,
+                "sha256": None,
+                "absent": True,
+            })
             continue
+        digest = _sha256(doc.rendered)
+        doc_hashes.append(digest)
         manifest.append({
             "doc_id": doc_id,
             "title": doc.title,
-            "sha256": _sha256(doc.rendered),
+            "sha256": digest,
+            "absent": False,
         })
         bundled_documents.append({
             "doc_id": doc_id,
@@ -107,7 +143,9 @@ def assemble_submission(
             "message": "Manufacturer cross-reference — " + q,
         })
 
-    clocks = compute_clocks(study, route)
+    if as_of is None:
+        as_of = derive_as_of(study)
+    clocks = compute_clocks(study, route, as_of=as_of)
 
     manufacturer_packet = _manufacturer_packet(study, documents)
 
@@ -116,10 +154,13 @@ def assemble_submission(
     return {
         "route_id": route.get("route_id"),
         "emergency": bool(route.get("emergency")),
+        "as_of": as_of.isoformat() if as_of is not None else None,
+        "reviewer_model": check.reviewer_model,
         "ectd_map": ectd_map,
         "cover_letter": cover_letter,
         "documents": bundled_documents,
         "manifest": manifest,
+        "package_sha256": _package_digest(doc_hashes),
         "manufacturer_packet": manufacturer_packet,
         "clocks": clocks,
         "totals": totals,

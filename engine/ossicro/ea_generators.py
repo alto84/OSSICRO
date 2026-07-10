@@ -28,6 +28,7 @@ from .clocks import (
     expanded_access_emergency_deadlines,
     federal_holidays,
     ind_30_day_deadline,
+    working_days_between,
 )
 from .models import Document, ProvenanceRecord, Study
 
@@ -99,6 +100,9 @@ __all__ = [
     "federal_holidays",
     "expanded_access_emergency_deadlines",
     "ind_30_day_deadline",
+    "TriggerDateError",
+    "parse_trigger_date",
+    "derive_as_of",
     "compute_deadline",
     "compute_clocks",
     "build_study",
@@ -107,23 +111,72 @@ __all__ = [
 ]
 
 
-def _parse_date(text: Optional[str]) -> Optional[datetime.date]:
-    if not text:
+class TriggerDateError(ValueError):
+    """A physician-entered trigger date is present but unparseable.
+
+    Raised (never swallowed) so the bad entry surfaces to the user as an
+    error; a garbled date must not be silently treated as absent (HC2).
+    """
+
+    def __init__(self, field_id: str, value: object):
+        self.field_id = field_id
+        self.value = value
+        super().__init__(
+            "Unparseable date %r in intake field '%s' — enter it as YYYY-MM-DD."
+            % (value, field_id)
+        )
+
+
+def parse_trigger_date(text: Optional[str], field_id: str) -> Optional[datetime.date]:
+    """Parse a human-entered trigger date.
+
+    Absent (None/blank) returns None — an unarmed clock, honestly pending.
+    Present but unparseable raises TriggerDateError — an error to surface,
+    never a silent absence.
+    """
+    if text is None or not str(text).strip():
         return None
-    text = str(text).strip()[:10]
+    head = str(text).strip()[:10]
     try:
-        return datetime.datetime.strptime(text, "%Y-%m-%d").date()
+        return datetime.datetime.strptime(head, "%Y-%m-%d").date()
     except ValueError:
-        return None
+        raise TriggerDateError(field_id, text)
 
 
-def compute_deadline(trigger: Optional[str], days: int, calendar: str) -> Optional[str]:
+# Intake fields, in priority order, that can anchor document dates (the
+# ``as_of`` the generators stamp on cover/request dates). All are
+# physician-entered facts; the engine NEVER anchors on the wall clock.
+_AS_OF_FIELDS = (
+    "submission.date",
+    "submission.emergency_auth_datetime",
+    "submission.first_treatment_date",
+    "submission.fda_receipt_date",
+)
+
+
+def derive_as_of(study: Study) -> Optional[datetime.date]:
+    """The document anchor date derived from physician-entered trigger dates.
+
+    Returns the first present trigger date in priority order, or None when the
+    intake carries no date at all — in which case dated spans render as
+    explicit MISSING markers rather than a fabricated 'today'.
+    """
+    for field_id in _AS_OF_FIELDS:
+        value = study.resolve(field_id)
+        if value is not None:
+            return parse_trigger_date(value, field_id)
+    return None
+
+
+def compute_deadline(trigger: Optional[str], days: int, calendar: str,
+                     field_id: str = "trigger") -> Optional[str]:
     """Return the ISO deadline for a trigger date, or None if no trigger given.
 
     ``working`` days route through the canonical ossicro.clocks engine (weekends
-    + observed federal holidays); ``calendar`` days are a plain span.
+    + observed federal holidays); ``calendar`` days are a plain span. An
+    unparseable trigger raises TriggerDateError.
     """
-    start = _parse_date(trigger)
+    start = parse_trigger_date(trigger, field_id)
     if start is None:
         return None
     if calendar == "working":
@@ -131,21 +184,39 @@ def compute_deadline(trigger: Optional[str], days: int, calendar: str) -> Option
     return (start + datetime.timedelta(days=days)).isoformat()
 
 
-def compute_clocks(study: Study, route: Dict[str, object]) -> List[Dict[str, object]]:
+def compute_clocks(study: Study, route: Dict[str, object],
+                   as_of: Optional[datetime.date] = None) -> List[Dict[str, object]]:
     """Compute every clock the route arms. Trigger dates are human-entered.
 
-    A clock with no trigger date entered is returned ``armed=False`` with a null
-    deadline and the resolving question naming the trigger — honestly pending,
-    never guessed.
+    A clock with no trigger date entered is UNARMED: ``armed=False``, a null
+    deadline, and a ``resolving_question`` naming the trigger to enter —
+    honestly pending, never guessed from the wall clock. An unparseable
+    trigger raises TriggerDateError. ``days_remaining`` is computed only when
+    both a deadline and an ``as_of`` anchor exist (working-day clocks count
+    working days; calendar clocks count calendar days).
     """
     out: List[Dict[str, object]] = []
     for clock in route.get("clocks", []):
         trigger_field = clock["trigger_field"]
         trigger_value = study.resolve(trigger_field)
-        # The 30-day IND clock defaults its trigger to the submission date.
+        # The 30-day IND clock defaults its trigger to the submission date —
+        # a recorded fact, never the wall clock.
         if trigger_value is None and clock["id"] == "ind-effective-30-day":
-            trigger_value = study.resolve("submission.date") or datetime.date.today().isoformat()
-        deadline = compute_deadline(trigger_value, clock["days"], clock["calendar"])
+            trigger_value = study.resolve("submission.date")
+        deadline = compute_deadline(trigger_value, clock["days"], clock["calendar"],
+                                    field_id=trigger_field)
+        armed = deadline is not None
+        resolving_question = None if armed else (
+            "Enter the trigger date (intake field '%s') to arm the '%s' clock (%s)."
+            % (trigger_field, clock["label"], clock["basis"])
+        )
+        days_remaining = None
+        if armed and as_of is not None:
+            due = datetime.datetime.strptime(deadline, "%Y-%m-%d").date()
+            if clock["calendar"] == "working":
+                days_remaining = working_days_between(as_of, due)
+            else:
+                days_remaining = (due - as_of).days
         out.append({
             "id": clock["id"],
             "label": clock["label"],
@@ -156,10 +227,22 @@ def compute_clocks(study: Study, route: Dict[str, object]) -> List[Dict[str, obj
             "trigger_field": trigger_field,
             "trigger_value": trigger_value,
             "deadline": deadline,
-            "armed": deadline is not None,
+            "armed": armed,
+            "days_remaining": days_remaining,
+            "resolving_question": resolving_question,
             "note": clock.get("note", ""),
         })
     return out
+
+
+def _anchor_literal(as_of: Optional[datetime.date], citation: str) -> Tuple[Optional[str], str, str]:
+    """A dated-span literal anchored to the physician-entered ``as_of`` date.
+
+    When no anchor exists the value is None, so the span renders as an explicit
+    ``[[MISSING: ...]]`` marker — an honest gap, never a fabricated 'today'.
+    """
+    value = as_of.isoformat() if as_of is not None else None
+    return (value, citation, "physician-entered anchor date (as_of)")
 
 
 # ---------------------------------------------------------------------------
@@ -293,7 +376,8 @@ ______________________________________________  Date: __________
 """
 
 
-def gen_cover_letter(study: Study, doc_registry: Dict[str, dict]) -> Document:
+def gen_cover_letter(study: Study, doc_registry: Dict[str, dict],
+                     as_of: Optional[datetime.date] = None) -> Document:
     degrees = study.resolve("investigator.degrees")
     emergency = str(study.resolve("submission.emergency") or "").strip().lower() in ("true", "1", "yes")
     kind_bits = []
@@ -308,7 +392,7 @@ def gen_cover_letter(study: Study, doc_registry: Dict[str, dict]) -> Document:
 
     if emergency:
         auth = study.resolve("submission.emergency_auth_datetime")
-        auth_date = _parse_date(auth)
+        auth_date = parse_trigger_date(auth, "submission.emergency_auth_datetime")
         if auth_date is not None:
             # The 15-working-day written-3926 clock is the canonical emergency
             # deadline pair's first entry (21 CFR 312.310(d)(2)).
@@ -326,18 +410,26 @@ def gen_cover_letter(study: Study, doc_registry: Dict[str, dict]) -> Document:
         clock_cite = "21 CFR 312.310(d)"
     else:
         receipt = study.resolve("submission.fda_receipt_date")
-        receipt_date = _parse_date(receipt) or datetime.date.today()
-        deadline = ind_30_day_deadline(receipt_date).due.isoformat()
-        clock_statement = (
-            "For a non-emergency request, treatment may not begin until FDA notifies "
-            "the physician it may proceed, or — absent notification — 30 CALENDAR DAYS "
-            "after FDA receipt (%s), i.e. %s (21 CFR 312.40(b)(1))."
-            % (receipt or "FDA receipt", deadline)
-        )
+        receipt_date = parse_trigger_date(receipt, "submission.fda_receipt_date")
+        if receipt_date is not None:
+            deadline = ind_30_day_deadline(receipt_date).due.isoformat()
+            clock_statement = (
+                "For a non-emergency request, treatment may not begin until FDA notifies "
+                "the physician it may proceed, or — absent notification — 30 CALENDAR DAYS "
+                "after FDA receipt (%s), i.e. %s (21 CFR 312.40(b)(1))."
+                % (receipt, deadline)
+            )
+        else:
+            clock_statement = (
+                "Enter the FDA receipt date (submission.fda_receipt_date) so OSSICRO can "
+                "compute the 30-CALENDAR-DAY IND-effective date; treatment may not begin "
+                "until FDA notifies the physician it may proceed, or — absent "
+                "notification — 30 calendar days after FDA receipt (21 CFR 312.40(b)(1))."
+            )
         clock_cite = "21 CFR 312.40(b)(1)"
 
     literals = {
-        "cover_date": (datetime.date.today().isoformat(), "21 CFR 312.23(a)(1)", "computed: today"),
+        "cover_date": _anchor_literal(as_of, "21 CFR 312.23(a)(1)"),
         "submission_kind": (submission_kind, "Form FDA 3926", "computed from submission.* intake"),
         "degrees_suffix": ((", " + degrees) if degrees else "", "21 CFR 312.310(a)", "computed from investigator.degrees"),
         "clock_statement": (clock_statement, clock_cite, "computed clock (HC3)"),
@@ -417,7 +509,8 @@ def _bool_label(study: Study, path: str) -> str:
     return "CHECKED (physician-attested)" if str(raw).strip().lower() in ("true", "1", "yes") else "not checked"
 
 
-def gen_form_3926(study: Study, doc_registry: Dict[str, dict]) -> Document:
+def gen_form_3926(study: Study, doc_registry: Dict[str, dict],
+                  as_of: Optional[datetime.date] = None) -> Document:
     degrees = study.resolve("investigator.degrees")
     initial = (study.resolve("submission.initial_or_followup") or "initial").strip().lower()
     emergency = str(study.resolve("submission.emergency") or "").strip().lower() in ("true", "1", "yes")
@@ -425,7 +518,7 @@ def gen_form_3926(study: Study, doc_registry: Dict[str, dict]) -> Document:
             else "(a) Initial application") if initial != "followup" else "(c) Follow-up submission"
     # Compose the treatment-plan summary and clinical rationale required fields.
     literals = {
-        "submission_date": (datetime.date.today().isoformat(), "Form FDA 3926 field 1", "computed: today"),
+        "submission_date": _anchor_literal(as_of, "Form FDA 3926 field 1"),
         "submission_kind": (kind, "Form FDA 3926 field 2; 21 CFR 312.310(d)", "computed from submission.* intake"),
         "degrees_suffix": ((", " + degrees) if degrees else "", "21 CFR 312.310(a)", "computed from investigator.degrees"),
         "waiver_10a": (_bool_label(study, "waiver_10a"), "21 CFR 312.10", "physician attestation: waiver_10a"),
@@ -504,7 +597,8 @@ Signature: ______________________________  Date: __________
 """
 
 
-def gen_treatment_plan(study: Study, doc_registry: Dict[str, dict]) -> Document:
+def gen_treatment_plan(study: Study, doc_registry: Dict[str, dict],
+                       as_of: Optional[datetime.date] = None) -> Document:
     dose = study.resolve("drug.dose")
     route = study.resolve("drug.route")
     duration = study.resolve("drug.duration")
@@ -577,9 +671,10 @@ Authorized official, {{manufacturer_name}}
 """
 
 
-def gen_loa(study: Study, doc_registry: Dict[str, dict]) -> Document:
+def gen_loa(study: Study, doc_registry: Dict[str, dict],
+            as_of: Optional[datetime.date] = None) -> Document:
     literals = {
-        "loa_date": (datetime.date.today().isoformat(), "21 CFR 312.23(b)", "computed: today"),
+        "loa_date": _anchor_literal(as_of, "21 CFR 312.23(b)"),
     }
     sources = {
         "manufacturer_name": ("manufacturer.name", "21 CFR 312.23(b)"),
@@ -636,10 +731,11 @@ Respectfully,
 """
 
 
-def gen_loa_request(study: Study, doc_registry: Dict[str, dict]) -> Document:
+def gen_loa_request(study: Study, doc_registry: Dict[str, dict],
+                    as_of: Optional[datetime.date] = None) -> Document:
     degrees = study.resolve("investigator.degrees")
     literals = {
-        "request_date": (datetime.date.today().isoformat(), "FDCA 561A", "computed: today"),
+        "request_date": _anchor_literal(as_of, "FDCA 561A"),
         "degrees_suffix": ((", " + degrees) if degrees else "", "21 CFR 312.310(a)", "computed from investigator.degrees"),
     }
     sources = {
@@ -690,12 +786,14 @@ Informed consent per 21 CFR Part 50 will be obtained before treatment begins.
 """
 
 
-def gen_irb_request(study: Study, doc_registry: Dict[str, dict]) -> Document:
+def gen_irb_request(study: Study, doc_registry: Dict[str, dict],
+                    as_of: Optional[datetime.date] = None) -> Document:
     emergency = str(study.resolve("submission.emergency") or "").strip().lower() in ("true", "1", "yes")
     chair = str(study.resolve("irb.chair_concurrence") or "").strip().lower() in ("true", "1", "yes")
     if emergency:
         ftd = study.resolve("submission.first_treatment_date")
-        deadline = compute_deadline(ftd, 5, "working")
+        deadline = compute_deadline(ftd, 5, "working",
+                                    field_id="submission.first_treatment_date")
         if deadline:
             pathway = ("EMERGENCY USE (21 CFR 56.104(c)): treatment may proceed before IRB "
                        "review provided the IRB is notified within 5 WORKING DAYS of the "
@@ -711,7 +809,7 @@ def gen_irb_request(study: Study, doc_registry: Dict[str, dict]) -> Document:
         pathway = ("Standard pathway: IRB APPROVAL is requested before treatment begins "
                    "(21 CFR Part 56).")
     literals = {
-        "request_date": (datetime.date.today().isoformat(), "21 CFR 56.109", "computed: today"),
+        "request_date": _anchor_literal(as_of, "21 CFR 56.109"),
         "pathway_statement": (pathway, "21 CFR 56.104(c)/56.105", "computed from submission.emergency / irb.chair_concurrence"),
     }
     sources = {
@@ -748,7 +846,8 @@ Dispensing entries: {{dispensing_entries}}
 """
 
 
-def gen_drug_accountability(study: Study, doc_registry: Dict[str, dict]) -> Document:
+def gen_drug_accountability(study: Study, doc_registry: Dict[str, dict],
+                            as_of: Optional[datetime.date] = None) -> Document:
     sources = {
         "drug_name": ("drug.name", "21 CFR 312.62(a)"),
         "lot_numbers": ("drug.lot_numbers", "21 CFR 312.62(a)"),
@@ -762,7 +861,10 @@ def gen_drug_accountability(study: Study, doc_registry: Dict[str, dict]) -> Docu
 # and their SHA-256-verified provenance intact for rule R-ICF-50.25).
 # ---------------------------------------------------------------------------
 
-def gen_icf(study: Study, doc_registry: Dict[str, dict]) -> Document:
+def gen_icf(study: Study, doc_registry: Dict[str, dict],
+            as_of: Optional[datetime.date] = None) -> Document:
+    # The built-in ICF template carries no engine-stamped date span; as_of is
+    # accepted for dispatch uniformity and unused.
     return builtin_generate.generate_document(study, "informed-consent-form-part50", doc_registry)
 
 
@@ -770,7 +872,7 @@ def gen_icf(study: Study, doc_registry: Dict[str, dict]) -> Document:
 # Dispatch
 # ---------------------------------------------------------------------------
 
-_GENERATORS: Dict[str, Callable[[Study, Dict[str, dict]], Document]] = {
+_GENERATORS: Dict[str, Callable[..., Document]] = {
     "expanded-access-cover-letter": gen_cover_letter,
     "form-fda-3926-individual-patient-expanded-access": gen_form_3926,
     "expanded-access-treatment-plan": gen_treatment_plan,
@@ -783,16 +885,22 @@ _GENERATORS: Dict[str, Callable[[Study, Dict[str, dict]], Document]] = {
 
 
 def generate_route_documents(study: Study, route: Dict[str, object],
-                             doc_registry: Dict[str, dict]) -> Dict[str, Document]:
+                             doc_registry: Dict[str, dict],
+                             as_of: Optional[datetime.date] = None) -> Dict[str, Document]:
     """Generate every document the route declares, in the route's order.
 
     A doc id with no registered EA generator is skipped (its absence surfaces as
-    a red 'missing document' ledger item, not a crash).
+    a red 'missing document' ledger item, not a crash). ``as_of`` anchors the
+    documents' dated spans; when omitted it is derived from the physician-
+    entered trigger dates (never the wall clock), and when no anchor exists the
+    dated spans render as MISSING markers.
     """
+    if as_of is None:
+        as_of = derive_as_of(study)
     docs: Dict[str, Document] = {}
     for doc_id in route.get("documents", []):
         gen = _GENERATORS.get(doc_id)
         if gen is None:
             continue
-        docs[doc_id] = gen(study, doc_registry)
+        docs[doc_id] = gen(study, doc_registry, as_of=as_of)
     return docs

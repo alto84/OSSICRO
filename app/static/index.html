@@ -236,6 +236,46 @@
   .ready.no b{color:var(--red)}
   .ready ul{margin:8px 0 0;padding-left:20px}
 
+  /* ---------- statutory clocks ---------- */
+  .clockgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+  .clock{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:var(--surface);border-left:4px solid var(--green)}
+  .clock.amber{border-left-color:var(--amber);background:color-mix(in srgb,var(--amber-soft) 40%,var(--surface))}
+  .clock.red{border-left-color:var(--red);background:color-mix(in srgb,var(--red-soft) 45%,var(--surface))}
+  .clock .cname{font-weight:700;font-size:.9rem;margin-bottom:4px}
+  .clock .crow{display:flex;justify-content:space-between;gap:10px;font-size:.82rem;margin:2px 0}
+  .clock .crow .k{color:var(--muted)}
+  .clock .days{font-weight:800}
+  .clock.red .days{color:var(--red)} .clock.amber .days{color:var(--amber)}
+  .clock .cq{margin-top:8px;font-size:.83rem;padding:7px 10px;border-radius:8px;background:var(--amber-soft);
+    border:1px solid color-mix(in srgb,var(--amber) 30%,transparent)}
+  .clock.red .cq{background:var(--red-soft);border-color:color-mix(in srgb,var(--red) 30%,transparent)}
+
+  /* ---------- stale-draft guard ---------- */
+  .stalebanner{display:none;border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:.9rem;
+    background:var(--red-soft);border:1px solid color-mix(in srgb,var(--red) 45%,transparent)}
+  .stalebanner b{color:var(--red)}
+  .stalebanner.show{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .stalebanner span{flex:1;min-width:220px}
+
+  /* ---------- fix-loop ---------- */
+  .fixlink{font-weight:700;font-size:.82rem;white-space:nowrap;margin-left:8px;cursor:pointer;text-decoration:underline}
+  .missbadge{font-size:.72rem;font-weight:800;letter-spacing:.04em;color:var(--red);
+    background:var(--red-soft);border:1px solid color-mix(in srgb,var(--red) 30%,transparent);
+    padding:2px 9px;border-radius:999px}
+  .savecard{position:sticky;bottom:10px;z-index:25}
+  @keyframes fieldflash{0%,100%{box-shadow:none}25%,75%{box-shadow:0 0 0 3px color-mix(in srgb,var(--amber) 65%,transparent)}}
+  .field.flash{animation:fieldflash 1.6s ease 2;border-radius:8px}
+
+  /* ---------- sign-off form (records the human act; never performs it) ---------- */
+  .soform{margin-top:9px;padding:12px 14px;border-radius:10px;background:var(--surface);
+    border:1px dashed color-mix(in srgb,var(--amber) 50%,var(--line))}
+  .soform .row{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+  .soform label{display:flex;flex-direction:column;gap:3px;font-size:.78rem;font-weight:700;flex:1;min-width:150px}
+  .soform input{background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:7px 10px;font:inherit;font-size:.88rem}
+  .soform input[readonly]{background:var(--surface2);color:var(--muted)}
+  .soform .disclaimer{font-size:.78rem;color:var(--muted);font-style:italic;margin:4px 0 0}
+
   /* ---------- misc ---------- */
   .hardline{border:1px dashed color-mix(in srgb,var(--brand) 45%,var(--line));border-radius:12px;
     background:var(--brand-soft);padding:14px 18px;font-size:.88rem}
@@ -335,10 +375,11 @@
     </div>
     <form id="intakeForm" novalidate>
       <div id="intakeFields"><p class="muted"><span class="spin"></span>Loading Route-3926 field schema…</p></div>
-      <div class="card tight">
+      <div class="card tight savecard">
         <div class="btnrow">
           <button type="submit" class="btn primary" id="saveIntakeBtn">Save intake</button>
           <button type="button" class="btn accent" id="saveGenBtn">Save &amp; generate documents</button>
+          <span class="pill red" id="reqCounter" style="display:none"></span>
           <span class="muted small" id="intakeStatus"></span>
         </div>
       </div>
@@ -347,6 +388,11 @@
 
   <!-- ================= SCREEN 3 : GENERATE + LEDGER ================= -->
   <section class="screen" id="screen-check">
+    <div class="stalebanner" id="staleBanner3">
+      <span><b>Stale drafts.</b> The intake has changed since these documents were generated.
+        The ledger, clocks, and package below no longer reflect the saved intake — regenerate first.</span>
+      <button class="btn primary" id="staleRegenBtn">Regenerate now</button>
+    </div>
     <div class="card tight">
       <div class="btnrow">
         <button class="btn primary" id="genBtn">Generate documents</button>
@@ -356,6 +402,16 @@
     </div>
 
     <div id="ledgerArea" style="display:none">
+      <div class="card" id="clocksCard" style="display:none">
+        <h3>Statutory clocks</h3>
+        <p class="muted small" style="margin-top:-4px">
+          Deterministic working-day / calendar-day arithmetic (weekends + observed federal holidays)
+          from <b>physician-entered trigger dates</b>. A clock with no trigger date stays unarmed —
+          OSSICRO never assumes &ldquo;today&rdquo;.
+        </p>
+        <div class="clockgrid" id="clocksGrid"></div>
+      </div>
+
       <h2>Completeness ledger</h2>
       <p class="muted small" style="margin-top:-4px">
         Green = complete. Amber = drafted but awaiting a named human act (the gate shown). Red = missing
@@ -398,6 +454,11 @@
 
   <!-- ================= SCREEN 4 : PACKAGE ================= -->
   <section class="screen" id="screen-package">
+    <div class="stalebanner" id="staleBanner4">
+      <span><b>Stale package.</b> The intake has changed since the documents were generated.
+        Assembly and export stay disabled until you regenerate on the previous screen.</span>
+      <button class="btn primary" id="staleRegenBtn4">Regenerate now</button>
+    </div>
     <div id="pkgLoading" class="card tight"><p class="muted" style="margin:0"><span class="spin"></span>Assembling package…</p></div>
 
     <div id="pkgArea" style="display:none">
@@ -435,11 +496,13 @@
         <div class="card">
           <div class="eyebrow">Assembled package</div>
           <h3>Document manifest</h3>
-          <p class="muted small" style="margin-top:-2px">SHA-256 fingerprints anchor each draft's exact content. Click a hash to copy.</p>
+          <p class="muted small" style="margin-top:-2px">SHA-256 fingerprints anchor each draft's exact content — all route documents are listed,
+            with any missing one marked absent rather than omitted. Click a hash to copy.</p>
           <div class="tblwrap"><table id="manifestTable">
             <thead><tr><th>#</th><th>Document</th><th>Registry id</th><th>SHA-256</th></tr></thead>
             <tbody></tbody>
           </table></div>
+          <p class="muted small mono" id="pkgDigest" style="margin:10px 0 0;word-break:break-all"></p>
         </div>
       </div>
 
@@ -507,8 +570,10 @@ const S = {           // client state
   schema: null,       // [{id,label,citation,type,required,help,section}]
   intakeSaved: false,
   documents: null,    // [{doc_id,title,rendered}]
-  check: null,        // {ledger,totals,consistency,gate_packet}
-  pkg: null           // package payload
+  check: null,        // {ledger,totals,consistency,gate_packet,clocks,stale,...}
+  pkg: null,          // package payload
+  intakeRev: 0,       // server revision of the saved intake
+  generatedRev: null  // intake revision the current drafts were generated from
 };
 
 /* ---------------- utilities ---------------- */
@@ -559,10 +624,10 @@ $("#themeBtn").addEventListener("click", () => {
 
 /* ---------------- stepper / screens ---------------- */
 const STEPS = ["start","intake","check","package"];
-function show(screen){
+function show(screen, noScroll){
   $$(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-"+screen));
   $$("#stepper .step").forEach(b => b.classList.toggle("active", b.dataset.screen === screen));
-  window.scrollTo({top:0, behavior:"smooth"});
+  if (!noScroll) window.scrollTo({top:0, behavior:"smooth"});
   if (screen === "package") loadPackage();
 }
 function enableStep(screen){
@@ -588,8 +653,12 @@ $("#startBtn").addEventListener("click", async () => {
     ]);
     S.caseId = caseRes.case_id;
     S.schema = schemaRes.fields || [];
+    S.intakeRev = 0; S.generatedRev = null;
+    location.hash = S.caseId;                  // resumable URL — survives restarts
     $("#caseChip").textContent = "case " + S.caseId;
     renderIntake();
+    updateMissing();
+    updateStaleUI();
     markDone("start"); enableStep("intake");
     show("intake");
     toast("Case " + S.caseId + " opened — draft workspace, no real PHI.");
@@ -601,16 +670,134 @@ $("#startBtn").addEventListener("click", async () => {
   }
 });
 
+/* ---------------- persist + resume ----------------
+   The case id lives in location.hash; the server persists the case to
+   app/data/cases/{id}.json. localStorage keeps a belt-and-suspenders mirror
+   of the intake (updated as you type) that fills any gap the server copy
+   doesn't have — the server copy always wins where both exist. */
+function mirrorKey(){ return "ossicro-intake-" + S.caseId; }
+let mirrorTimer = null;
+function mirrorIntake(){
+  if (!S.caseId) return;
+  try { localStorage.setItem(mirrorKey(), JSON.stringify(collectIntake())); } catch {}
+}
+function scheduleMirror(){
+  clearTimeout(mirrorTimer);
+  mirrorTimer = setTimeout(mirrorIntake, 800);
+}
+
+async function resumeCase(cid){
+  try {
+    const [caseRes, schemaRes] = await Promise.all([
+      api("/api/case/" + encodeURIComponent(cid)),
+      api("/api/route/3926/schema")
+    ]);
+    S.caseId = cid;
+    S.schema = schemaRes.fields || [];
+    S.intakeRev = caseRes.intake_rev ?? 0;
+    S.generatedRev = caseRes.generated_rev ?? null;
+    $("#caseChip").textContent = "case " + cid;
+    renderIntake();
+    const serverIntake = caseRes.intake || {};
+    const n = applySampleFields(serverIntake);
+    let mirrored = 0;
+    try {                                       // local mirror fills the gaps only
+      const mirror = JSON.parse(localStorage.getItem(mirrorKey()) || "null");
+      if (mirror){
+        const gaps = {};
+        for (const k in mirror) if (!(k in serverIntake)) gaps[k] = mirror[k];
+        mirrored = applySampleFields(gaps);
+      }
+    } catch {}
+    updateMissing();
+    markDone("start"); enableStep("intake");
+    if (Object.keys(serverIntake).length){
+      S.intakeSaved = true;
+      markDone("intake"); enableStep("check");
+    }
+    updateStaleUI();
+    show("intake");
+    toast(`Case ${cid} resumed — ${n} field(s) restored from the server` +
+          (mirrored ? ` (+${mirrored} unsaved from this browser's mirror — save to keep them)` : "") + ".");
+  } catch (e) {
+    toast("Could not resume case " + cid + ": " + e.message, true);
+    history.replaceState(null, "", location.pathname);
+  }
+}
+
+/* ---------------- stale-draft guard ----------------
+   intake_rev advances on every intake change; generated_rev is the intake
+   revision the current drafts were generated from. Any mismatch = the drafts
+   no longer reflect the saved intake -> red banner, assembly/export frozen. */
+function staleNow(){ return S.generatedRev != null && S.intakeRev !== S.generatedRev; }
+function updateStaleUI(){
+  const stale = staleNow();
+  $("#staleBanner3").classList.toggle("show", stale);
+  $("#staleBanner4").classList.toggle("show", stale);
+  $("#toPackageBtn").disabled = stale || !S.check;
+  ["#exportJsonBtn", "#verifyPkgBtn", "#printBtn", "#refreshPkgBtn"]
+    .forEach(sel => { const b = $(sel); if (b) b.disabled = stale; });
+}
+async function regenerateFromStale(){
+  show("check");
+  await generateDocs();
+}
+$("#staleRegenBtn").addEventListener("click", regenerateFromStale);
+$("#staleRegenBtn4").addEventListener("click", regenerateFromStale);
+
+/* ---------------- fix-loop: jump from a ledger question to its field ------ */
+function gotoField(fid){
+  show("intake", true);
+  const wrap = document.getElementById("fld-" + fid);
+  if (!wrap){ toast("Field " + fid + " is not in the intake form.", true); return; }
+  setTimeout(() => {
+    wrap.scrollIntoView({ behavior:"smooth", block:"center" });
+    const ctl = wrap.querySelector("input:not([type=hidden]),select,textarea");
+    if (ctl) try { ctl.focus({ preventScroll:true }); } catch {}
+    wrap.classList.remove("flash"); void wrap.offsetWidth; wrap.classList.add("flash");
+  }, 60);
+}
+
+/* ---------------- missing-required tracking ---------------- */
+function requiredMissing(){
+  const form = $("#intakeForm"), out = [];
+  for (const f of S.schema || []){
+    if (!f.required) continue;
+    const el = form.querySelector(`[name="${CSS.escape(f.id)}"]`);
+    if (el && String(el.value ?? "").trim() === "") out.push(f);
+  }
+  return out;
+}
+function updateMissing(){
+  const miss = requiredMissing();
+  const bySec = {};
+  for (const f of miss){ const s = f.section || "General"; bySec[s] = (bySec[s] || 0) + 1; }
+  $$("#intakeFields .missbadge").forEach(b => {
+    const n = bySec[b.dataset.sec] || 0;
+    b.style.display = n ? "inline-block" : "none";
+    b.textContent = n + " required empty";
+  });
+  const c = $("#reqCounter");
+  if (miss.length){
+    c.style.display = "inline-flex";
+    c.innerHTML = '<span class="dot"></span>' + miss.length + " required field" + (miss.length === 1 ? "" : "s") + " empty";
+  } else {
+    c.style.display = "none";
+  }
+}
+$("#intakeForm").addEventListener("input", () => { updateMissing(); scheduleMirror(); });
+
 /* ---------------- screen 2: intake ---------------- */
 const WIDE_TYPES = new Set(["textarea","longtext","narrative"]);
 function fieldControl(f){
   const t = (f.type || "text").toLowerCase();
   const name = esc(f.id);
+  const attrs = `name="${name}" id="in-${name}" ${f.required ? "data-required" : ""}`;
   if (WIDE_TYPES.has(t))
-    return `<textarea name="${name}" ${f.required ? "data-required" : ""}></textarea>`;
+    return `<textarea ${attrs}></textarea>`;
   if (t === "boolean" || t === "checkbox" || t === "bool"){
     // Tri-state: unattested / yes / no. Never defaulted — the physician sets it.
-    return `<input type="hidden" name="${name}" value="" ${f.required ? "data-required" : ""}>
+    return `<input type="hidden" ${attrs} value="">
       <div class="segmented" data-bool="${name}">
         <button type="button" data-v="" class="sel-un">Unattested</button>
         <button type="button" data-v="true">Yes</button>
@@ -624,17 +811,17 @@ function fieldControl(f){
       const l = typeof o === "object" ? (o.label ?? v) : o;
       return `<option value="${esc(v)}">${esc(l)}</option>`;
     }).join("");
-    return `<select name="${name}" ${f.required ? "data-required" : ""}>
+    return `<select ${attrs}>
       <option value="">— unattested —</option>${opts}</select>`;
   }
-  if (t === "date") return `<input type="date" name="${name}" ${f.required ? "data-required" : ""}>`;
+  if (t === "date") return `<input type="date" ${attrs}>`;
   if (t === "datetime" || t === "datetime-local")
-    return `<input type="datetime-local" name="${name}" ${f.required ? "data-required" : ""}>`;
+    return `<input type="datetime-local" ${attrs}>`;
   if (t === "number" || t === "integer")
-    return `<input type="number" name="${name}" ${f.required ? "data-required" : ""}>`;
-  if (t === "email") return `<input type="email" name="${name}" ${f.required ? "data-required" : ""}>`;
-  if (t === "phone" || t === "tel") return `<input type="tel" name="${name}" ${f.required ? "data-required" : ""}>`;
-  return `<input type="text" name="${name}" ${f.required ? "data-required" : ""}>`;
+    return `<input type="number" ${attrs}>`;
+  if (t === "email") return `<input type="email" ${attrs}>`;
+  if (t === "phone" || t === "tel") return `<input type="tel" ${attrs}>`;
+  return `<input type="text" ${attrs}>`;
 }
 
 function renderIntake(){
@@ -651,13 +838,14 @@ function renderIntake(){
     const fields = bySection.get(sec);
     html += `<div class="card">
       <div class="sectionhead"><h3>${esc(sec)}</h3>
-        <span class="count">${fields.length} field${fields.length===1?"":"s"}</span></div>
+        <span class="count">${fields.length} field${fields.length===1?"":"s"}</span>
+        <span class="missbadge" data-sec="${esc(sec)}" style="display:none"></span></div>
       <div class="fieldgrid">`;
     for (const f of fields){
       const t = (f.type || "text").toLowerCase();
       const wide = WIDE_TYPES.has(t);
-      html += `<div class="field${wide ? " wide" : ""}">
-        <label for="fld-${esc(f.id)}">${esc(f.label)}${f.required ? '<span class="req" title="Required for a complete package">*</span>' : ""}</label>
+      html += `<div class="field${wide ? " wide" : ""}" id="fld-${esc(f.id)}">
+        <label for="in-${esc(f.id)}">${esc(f.label)}${f.required ? '<span class="req" title="Required for a complete package">*</span>' : ""}</label>
         ${f.help ? `<p class="help">${esc(f.help)}</p>` : ""}
         ${fieldControl(f)}
         <span class="cite" title="Governing citation">${esc(f.citation || "")}</span>
@@ -675,6 +863,7 @@ function renderIntake(){
       hidden.value = btn.dataset.v;
       seg.querySelectorAll("button").forEach(b => b.className = "");
       btn.className = btn.dataset.v === "true" ? "sel-yes" : btn.dataset.v === "false" ? "sel-no" : "sel-un";
+      updateMissing(); scheduleMirror();
     });
   });
 }
@@ -724,6 +913,7 @@ $("#loadExampleBtn").addEventListener("click", async () => {
   try {
     const res = await api("/api/route/3926/sample");
     const n = applySampleFields(res.fields || {});
+    updateMissing(); scheduleMirror();
     toast(`Example case loaded — ${n} fields populated (synthetic, no real PHI). Review, then save.`);
   } catch (e) {
     toast(e.message, true);
@@ -753,16 +943,21 @@ async function saveIntake(){
   const fields = collectIntake();
   $("#intakeStatus").innerHTML = '<span class="spin"></span>Saving…';
   try {
-    await api(`/api/case/${S.caseId}/intake`, {
+    const res = await api(`/api/case/${S.caseId}/intake`, {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ fields })
     });
     S.intakeSaved = true;
+    if (res && res.intake_rev != null) S.intakeRev = res.intake_rev;
+    mirrorIntake();
+    updateStaleUI();
     const n = Object.keys(fields).length, total = S.schema.length;
     $("#intakeStatus").textContent =
       `Saved ${n} of ${total} fields — ${total - n} left honestly unattested.`;
     markDone("intake"); enableStep("check");
-    toast("Intake saved with provenance.");
+    toast(staleNow()
+      ? "Intake saved — the existing drafts are now stale; regenerate them."
+      : "Intake saved with provenance.");
     return true;
   } catch (e) {
     $("#intakeStatus").textContent = "";
@@ -784,6 +979,9 @@ async function generateDocs(){
   try {
     const gen = await api(`/api/case/${S.caseId}/generate`, { method:"POST" });
     S.documents = gen.documents || [];
+    if (gen.intake_rev != null) S.intakeRev = gen.intake_rev;
+    if (gen.generated_rev != null) S.generatedRev = gen.generated_rev;
+    updateStaleUI();
     renderDocs();
     $("#genStatus").textContent = `${S.documents.length} document draft(s) generated. Running completeness check…`;
     await runCheck();
@@ -805,14 +1003,104 @@ $("#checkBtn").addEventListener("click", async () => {
 
 async function runCheck(){
   S.check = await api(`/api/case/${S.caseId}/check`);
+  if (S.check.intake_rev != null) S.intakeRev = S.check.intake_rev;
+  if (S.check.generated_rev != null) S.generatedRev = S.check.generated_rev;
+  renderClocks();
   renderLedger();
   markDone("check"); enableStep("package");
-  $("#toPackageBtn").disabled = false;
+  updateStaleUI();
 }
 
 function gateInfo(gateId){
   const g = (S.check && S.check.gate_packet || []).find(x => x.gate_id === gateId);
   return g || null;
+}
+
+/* ---------------- statutory clocks panel ----------------
+   Unarmed = no physician-entered trigger date (amber, with the resolving
+   question — never silently "today"). Armed and due within 3 days (or
+   overdue, or an unparseable trigger) = red. */
+function clockDaysLabel(c){
+  if (c.days_remaining == null) return "—";
+  const unit = c.basis === "working-day" ? "working day" : "calendar day";
+  if (c.days_remaining < 0) return `OVERDUE by ${-c.days_remaining} ${unit}${c.days_remaining === -1 ? "" : "s"}`;
+  return `${c.days_remaining} ${unit}${c.days_remaining === 1 ? "" : "s"} remaining`;
+}
+function renderClocks(){
+  const clocks = (S.check && S.check.clocks) || [];
+  $("#clocksCard").style.display = clocks.length ? "block" : "none";
+  $("#clocksGrid").innerHTML = clocks.map(c => {
+    let cls, state;
+    if (c.error){ cls = "red"; state = "Invalid trigger"; }
+    else if (!c.armed){ cls = "amber"; state = "Unarmed"; }
+    else if (c.days_remaining <= 3){ cls = "red"; state = c.days_remaining < 0 ? "Overdue" : "Due imminently"; }
+    else { cls = "green"; state = "Armed"; }
+    const fix = c.trigger_field
+      ? ` <a class="fixlink" data-fid="${esc(c.trigger_field)}">Fix in intake →</a>` : "";
+    const q = c.error
+      ? `<div class="cq"><b>Error:</b> ${esc(c.error)}${fix}</div>`
+      : (!c.armed ? `<div class="cq">${esc(c.resolving_question || "")}${fix}</div>` : "");
+    return `<div class="clock ${cls}">
+      <div class="cname">${esc(c.name)}</div>
+      <div class="crow"><span class="k">Authority</span><span class="cite">${esc(c.citation || "")}</span></div>
+      <div class="crow"><span class="k">Basis</span><span>${esc(c.days)} ${esc(c.basis)}s · ${esc(c.owner || "")}</span></div>
+      <div class="crow"><span class="k">Trigger date</span><span class="mono">${esc(c.trigger || "— not entered —")}</span></div>
+      <div class="crow"><span class="k">Deadline</span><span class="mono">${esc(c.deadline || "—")}</span></div>
+      <div class="crow"><span class="k">Status</span><span class="days">${esc(state)}${c.armed ? " · " + clockDaysLabel(c) : ""}</span></div>
+      ${q}
+    </div>`;
+  }).join("");
+  $$("#clocksGrid .fixlink").forEach(a =>
+    a.addEventListener("click", () => gotoField(a.dataset.fid)));
+}
+
+/* ---------------- sign-off: record the human act ----------------
+   POSTs an attribution record to /api/case/{id}/signoff. The server re-applies
+   it through the engine's gates.record_signoff (role must match the gate's
+   responsible role), and the ledger's own has_signoff path is what moves
+   amber to green — the UI never clears a gate. */
+function openSignoff(gateId, docId){
+  const box = document.getElementById("so-" + docId);
+  if (!box) return;
+  if (box.style.display === "block"){ box.style.display = "none"; return; }
+  const g = gateInfo(gateId) || {};
+  const role = g.responsible_role || "";
+  const today = new Date().toISOString().slice(0, 10);
+  box.innerHTML = `
+    <div><b>Record the human act</b> — ${esc(g.name || gateId)}</div>
+    <p class="disclaimer">This records that the named human performed the act outside OSSICRO;
+      it does not perform it.</p>
+    <div class="row">
+      <label>Signer (named human)<input type="text" class="so-name" placeholder="Full name"></label>
+      <label>Role<input type="text" class="so-role" value="${esc(role)}" readonly
+        title="Fixed by the gate: ${esc(g.citation || "gate definition")}"></label>
+      <label>Date performed<input type="date" class="so-date" value="${today}"></label>
+    </div>
+    <div class="btnrow">
+      <button type="button" class="btn primary so-submit">Record sign-off</button>
+      <button type="button" class="btn so-cancel">Cancel</button>
+    </div>`;
+  box.style.display = "block";
+  box.querySelector(".so-cancel").addEventListener("click", () => box.style.display = "none");
+  box.querySelector(".so-submit").addEventListener("click", async () => {
+    const name = box.querySelector(".so-name").value.trim();
+    const date = box.querySelector(".so-date").value;
+    if (!name){ toast("Enter the signer's name — a gate is executed by a named human.", true); return; }
+    if (!date){ toast("Enter the date the act was performed.", true); return; }
+    const btn = box.querySelector(".so-submit");
+    btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Recording…';
+    try {
+      await api(`/api/case/${S.caseId}/signoff`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ gate_id: gateId, doc_id: docId, signer_name: name, role, date })
+      });
+      toast("Sign-off recorded — re-running the check.");
+      await runCheck();
+    } catch (e) {
+      toast(e.message, true);
+      btn.disabled = false; btn.textContent = "Record sign-off";
+    }
+  });
 }
 
 /* Concept-review findings for one document. Tolerates either a bare findings
@@ -866,15 +1154,26 @@ function renderLedger(){
     .sort((a,b) => (order[a.status] ?? 3) - (order[b.status] ?? 3));
   $("#ledgerList").innerHTML = items.map(item => {
     const st = (item.status || "").toLowerCase();
-    const qs = (item.questions || []).map(q => `<li>${esc(asText(q))}</li>`).join("");
+    // Questions arrive as {text, field_id}; a field_id links back to intake.
+    const qs = (item.questions || []).map(q => {
+      const text = asText(q);
+      const fid = (q && typeof q === "object") ? q.field_id : null;
+      return `<li>${esc(text)}${fid ? ` <a class="fixlink" data-fid="${esc(fid)}">Fix in intake →</a>` : ""}</li>`;
+    }).join("");
     let gateHtml = "";
-    if (item.gate_id){
+    if (item.gate_id && st !== "green"){   // green = gate's human act already recorded
       const g = gateInfo(item.gate_id);
       const gname = g ? g.name : item.gate_id;
       const role = g ? g.responsible_role : "";
+      const pending = st === "amber" && g;   // gate still awaiting its human
       gateHtml = `<div class="gatecall"><b>Awaiting human act:</b> ${esc(gname)}
         ${role ? ` — <span class="rolechip">${esc(role)}</span> must act` : ""}
-        <span class="muted small"> · gate <code>${esc(item.gate_id)}</code> fails closed; OSSICRO cannot perform this step.</span></div>`;
+        <span class="muted small"> · this gate fails closed; OSSICRO cannot perform this step.</span>
+        ${pending ? `<div class="btnrow" style="margin-top:8px">
+          <button type="button" class="btn" data-signoff="${esc(item.gate_id)}" data-doc="${esc(item.doc_id)}">Record the human act</button>
+          <span class="muted small">Records that the ${esc(role)} performed it outside OSSICRO — it does not perform it.</span>
+        </div>` : ""}</div>
+        ${pending ? `<div class="soform" id="so-${esc(item.doc_id)}" style="display:none"></div>` : ""}`;
     }
     return `<div class="ledgeritem ${esc(st)}">
       <div class="top">
@@ -887,6 +1186,10 @@ function renderLedger(){
       ${voiceReviewHtml(item.doc_id)}
     </div>`;
   }).join("") || "<p class='muted'>Ledger is empty.</p>";
+  $$("#ledgerList .fixlink").forEach(a =>
+    a.addEventListener("click", () => gotoField(a.dataset.fid)));
+  $$("#ledgerList [data-signoff]").forEach(b =>
+    b.addEventListener("click", () => openSignoff(b.dataset.signoff, b.dataset.doc)));
 
   const cons = c.consistency || [];
   $("#consistencyCard").style.display = cons.length ? "block" : "none";
@@ -917,6 +1220,12 @@ $("#toPackageBtn").addEventListener("click", () => show("package"));
 
 /* ---------------- screen 4: package ---------------- */
 async function loadPackage(){
+  if (staleNow()){
+    $("#pkgLoading").style.display = "none";
+    $("#pkgArea").style.display = "none";
+    updateStaleUI();
+    return;
+  }
   $("#pkgLoading").style.display = "block";
   $("#pkgArea").style.display = "none";
   try {
@@ -958,14 +1267,23 @@ function renderPackage(){
   // cover letter
   $("#coverLetter").textContent = asText(p.cover_letter) || "(cover letter not yet drafted)";
 
-  // manifest
+  // manifest — every route document, incl. explicit ABSENT rows
   $("#manifestTable tbody").innerHTML = (p.manifest || []).map((m, i) => `<tr>
     <td>${i+1}</td>
     <td>${esc(m.title || "")}</td>
     <td class="mono small">${esc(m.doc_id || "")}</td>
-    <td><span class="sha" data-sha="${esc(m.sha256 || "")}" title="Click to copy full hash">${esc((m.sha256 || "").slice(0,16))}…</span></td>
+    <td>${m.sha256
+      ? `<span class="sha" data-sha="${esc(m.sha256)}" title="Click to copy full hash">${esc(m.sha256.slice(0,16))}…</span>`
+      : '<span class="pill red"><span class="dot"></span>absent</span>'}</td>
   </tr>`).join("");
-  $$("#manifestTable .sha").forEach(el => el.addEventListener("click", async () => {
+  const digestEl = $("#pkgDigest");
+  if (digestEl){
+    digestEl.innerHTML = p.package_sha256
+      ? `Package digest (SHA-256 over the sorted per-document hashes):
+         <span class="sha" data-sha="${esc(p.package_sha256)}" title="Click to copy">${esc(p.package_sha256)}</span>`
+      : "";
+  }
+  $$("#manifestTable .sha, #pkgDigest .sha").forEach(el => el.addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(el.dataset.sha); toast("SHA-256 copied."); }
     catch { toast(el.dataset.sha); }
   }));
@@ -984,6 +1302,7 @@ $$(".tab").forEach(t => t.addEventListener("click", () => {
 
 /* ---------------- export ---------------- */
 $("#exportJsonBtn").addEventListener("click", () => {
+  if (staleNow()){ toast("Intake changed since generation — regenerate before exporting.", true); return; }
   if (!S.pkg){ toast("Assemble the package first.", true); return; }
   const payload = {
     _notice: "OSSICRO DRAFT PACKAGE — for qualified human review. Not signed. Not submitted to FDA.",
@@ -1007,6 +1326,7 @@ $("#exportJsonBtn").addEventListener("click", () => {
    and open the standalone verifier, which recomputes each SHA-256 with no
    server and no OSSICRO trust. */
 $("#verifyPkgBtn").addEventListener("click", () => {
+  if (staleNow()){ toast("Intake changed since generation — regenerate before verifying.", true); return; }
   if (!S.pkg){ toast("Assemble the package first.", true); return; }
   const blob = new Blob([JSON.stringify(S.pkg, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
@@ -1019,6 +1339,7 @@ $("#verifyPkgBtn").addEventListener("click", () => {
 });
 
 $("#printBtn").addEventListener("click", () => {
+  if (staleNow()){ toast("Intake changed since generation — regenerate before printing.", true); return; }
   if (!S.pkg){ toast("Assemble the package first.", true); return; }
   const p = S.pkg;
   const docs = S.documents || [];
@@ -1063,6 +1384,12 @@ $("#printBtn").addEventListener("click", () => {
     </body></html>`);
   w.document.close();
 });
+
+/* ---------------- boot: resume a case from the URL hash ---------------- */
+(function boot(){
+  const cid = (location.hash || "").replace(/^#\/?(case=)?/, "").trim();
+  if (cid) resumeCase(cid);
+})();
 </script>
 </body>
 </html>

@@ -41,3 +41,6 @@ sources/**/*.ppt
 sources/**/*.pptx
 sources/**/*.zip
 sources/download-log.tsv
+
+# App case store (disk-backed drafts; coded identifiers only, still never committed)
+app/data/

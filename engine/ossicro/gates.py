@@ -9,16 +9,55 @@ a qualified human executed it, with attribution.
 
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from .models import Document, Gate, GateViolation, HumanSignoff, SafetyReport
 
 __all__ = [
     "GateViolation",
     "record_signoff",
+    "signoff_problems",
+    "has_valid_signoff",
     "finalize",
     "record_causality_determination",
 ]
+
+
+def signoff_problems(signoff: HumanSignoff, gate: Gate) -> List[str]:
+    """Read-time validation of a recorded sign-off against its gate.
+
+    Sign-offs can be re-applied from persistence (a case store) without
+    passing through record_signoff, so the same requirements are re-checked
+    every time the sign-off is READ to clear a gate: right gate, a named
+    human, the gate's responsible role, and an attestation statement.
+    Returns the list of problems; empty means valid.
+    """
+    problems: List[str] = []
+    if signoff.gate_id != gate.id:
+        problems.append("sign-off targets gate %r, not %r" % (signoff.gate_id, gate.id))
+    if not (signoff.person or "").strip():
+        problems.append("no named human on the sign-off")
+    if signoff.role != gate.responsible_role:
+        problems.append(
+            "role %r does not match the gate's responsible role %r (authority: %s)"
+            % (signoff.role, gate.responsible_role, gate.citation)
+        )
+    if not (signoff.statement or "").strip():
+        problems.append("no attestation statement")
+    return problems
+
+
+def has_valid_signoff(document: Document, gate_id: str,
+                      gate_registry: Dict[str, Gate]) -> bool:
+    """True iff the document carries a sign-off for ``gate_id`` that is VALID
+    at read time. An unknown gate fails closed (no sign-off can clear it)."""
+    gate = gate_registry.get(gate_id)
+    if gate is None:
+        return False
+    return any(
+        s.gate_id == gate_id and not signoff_problems(s, gate)
+        for s in document.signoffs
+    )
 
 
 def record_signoff(
@@ -70,11 +109,12 @@ def record_signoff(
 def finalize(document: Document, gate_registry: Dict[str, Gate]) -> Document:
     """Advance a document to 'final'.
 
-    Raises GateViolation if the document is gated and no human sign-off
-    has been recorded. This is the only sanctioned path to 'final' for
+    Raises GateViolation if the document is gated and no VALID human
+    sign-off has been recorded (validity re-checked at read time via
+    signoff_problems). This is the only sanctioned path to 'final' for
     gated documents, and it cannot create the sign-off itself.
     """
-    if document.gate_id and not document.has_signoff(document.gate_id):
+    if document.gate_id and not has_valid_signoff(document, document.gate_id, gate_registry):
         gate = gate_registry.get(document.gate_id)
         who = gate.responsible_role if gate else "the responsible human"
         why = gate.citation if gate else "governing authority"

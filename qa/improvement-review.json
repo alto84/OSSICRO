@@ -1,0 +1,296 @@
+{
+ "reviews": [
+  {
+   "model_reported": "claude-fable-5 (Fable 5)",
+   "surface": "mvp-experience-trust \u2014 the running Route-3926 MVP judged end to end (drove the live API: sample case = 4 green/4 amber/0 red, submission_ready; empty case = 8 red with correct blocking list; emergency case = 15-working-day and 5-working-day deadlines computed correctly). The core flow works and the hard line holds. The gaps below are what a real physician, pharma reviewer, or FDA reviewer hits first.",
+   "improvements": [
+    {
+     "title": "Render the statutory clocks \u2014 the deadline panel",
+     "what": "The clock engine computes every deadline (verified live: emergency auth 2026-07-06 \u2192 written-3926 due 2026-07-27; first treatment 2026-07-06 \u2192 IRB notice due 2026-07-13; 30-day IND effective 2026-07-15) and returns them in the /package payload, but the frontend never renders pkg.clocks. The only 'clocks' string in index.html is prose. An emergency physician \u2014 the highest-stakes user \u2014 never sees the deadline OSSICRO exists to compute; the only trace is one sentence buried in the cover-letter text.",
+     "why_it_matters": "This is the product's core safety promise (spec \u00a73, Constitution HC3, build-acceptance criterion 4) and it is functionally invisible. Surfacing it serves all three audiences: the physician sees days-remaining, the FDA reviewer sees the \u00a7312.310(d) acknowledgment substantiated, and the trust story ('computed, never judged') becomes demonstrable instead of asserted.",
+     "build_sketch": "Server: add compute_clocks(study, route) output to _check_payload (it's already imported in assemble.py; one extra key in server.py's check response) so clocks appear on screen 3, not just screen 4. Frontend: a 'Statutory clocks' card \u2014 one row per clock with label, basis citation, trigger date, deadline, and days-remaining computed against today; unarmed clocks (no trigger entered) render amber with the resolving question ('Enter the FDA telephone-authorization date\u2026'); armed clocks within 3 working days render red. ~60 lines of HTML/JS, zero engine changes.",
+     "effort": "S",
+     "leverage": "high"
+    },
+    {
+     "title": "Persist cases and make them resumable",
+     "what": "CASES is an in-memory dict and case identity lives only in JS state. A page refresh mid-intake destroys a 55-field entry; a server restart 404s every open case ('unknown case') with no recovery path. There is no GET endpoint to read back saved intake, so even within a session the server-side truth can't rehydrate the form.",
+     "why_it_matters": "This is the first catastrophe a real physician hits. Losing an hour of clinical intake to an accidental refresh ends trust in the tool immediately \u2014 worse than any missing feature. It also blocks the real usage pattern: intake is entered over days as the LOA and IRB facts arrive.",
+     "build_sketch": "Server: write app/data/cases/{id}.json on every intake POST; load the directory into CASES at startup; add GET /api/case/{id} returning {intake} (plus recorded sign-offs once those exist). Frontend: put the case id in location.hash after case creation; on load with a hash, fetch the case and rehydrate the form via the existing applySampleFields path; belt-and-suspenders localStorage mirror of the intake dict so even a dead server loses nothing. No PHI change \u2014 same coded-identifier discipline, now on disk with the same 'no real PHI' notice.",
+     "effort": "M",
+     "leverage": "high"
+    },
+    {
+     "title": "Link ledger questions back to intake fields",
+     "what": "Red ledger questions name template placeholders, not intake fields: an empty case yields 'Provide patient_initials_coded for Form FDA 3926\u2026' \u2014 but the intake field is labeled 'Coded patient identifier' with id patient.coded_id. The physician must mentally translate placeholder \u2192 field, then manually navigate back to screen 2 and hunt through 55 fields across 7 sections. There is also no missing-required summary on the intake screen itself; the * markers exist but nothing counts them before save.",
+     "why_it_matters": "This is the single-pass review surface breaking exactly where it matters: the fix loop (see red \u2192 fix field \u2192 re-check) is the MVP's core interaction, and today each iteration costs a manual search. Generators already know the placeholder\u2192dotted-path mapping (the sources dicts in ea_generators.py), so the linkage is sitting in the code unexposed.",
+     "build_sketch": "Engine: extend the missing-field question emission to carry the source path (LedgerItem questions become {text, field_id} or a parallel field_ids list \u2014 the sources dict in _render already maps placeholder \u2192 dotted path). Server: pass field_id through _check_payload. Frontend: each red question renders a 'Fix in intake \u2192' link that switches to screen 2, scrolls to the field (id=fld-{id} anchors already exist), and flashes a highlight; add a per-section missing-required badge in the section header and a sticky 'N required fields empty' counter near Save.",
+     "effort": "M",
+     "leverage": "high"
+    },
+    {
+     "title": "Make the gate lifecycle operable: record human sign-offs",
+     "what": "The engine models HumanSignoff and pipeline._gate_packet checks doc.has_signoff(gate_id) \u2014 but the app offers no way to record one. Ambers can never clear in the UI; the gate packet is permanently pending. The physician who has actually signed the 3926 and obtained IRB chair concurrence has nowhere to record those facts, so the ledger can never honestly reach its terminal state.",
+     "why_it_matters": "Recording that a named human performed an act is exactly what OSSICRO is sanctioned to do (it records; it never performs). Without it, the completeness ledger \u2014 the trust centerpiece \u2014 can never show a truthfully finished case, and the demo always ends on 'awaiting human act' with no next move. This is the difference between a diorama of the workflow and the workflow.",
+     "build_sketch": "Server: POST /api/case/{id}/signoff {gate_id, doc_id, signer_name, role, date} appended to the case record (persisted per improvement 2); _study_and_docs re-applies stored sign-offs to regenerated Document objects before run_check, so amber\u2192green flows through the existing has_signoff fact path \u2014 no gate logic is weakened. Frontend: a 'Record the human act' button inside each .gatecall block opening a small form (name, role, date) with explicit copy: 'This records that the named human performed the act outside OSSICRO; it does not perform it.' Gate packet and totals update on re-check. Also fix the leaked engine-speak while there: 'see gates registry' in the amber question should name the responsible role in plain language.",
+     "effort": "M",
+     "leverage": "high"
+    },
+    {
+     "title": "Invalidate stale drafts when intake changes after generate",
+     "what": "Every endpoint regenerates documents from current intake (_study_and_docs runs independently in generate, check, and package). Edit one intake field after reviewing documents on screen 3, then assemble: the package silently hashes and bundles different text than what was reviewed, while screen 3 still shows the old drafts (S.documents is client-cached from generate). The SHA-256 manifest attests package-time regeneration, not what the physician read.",
+     "why_it_matters": "The manifest's whole claim is 'these exact bytes were reviewed.' A silent divergence between the reviewed drafts and the hashed drafts is precisely the class of error the verifier exists to catch \u2014 and here the system itself creates it.",
+     "build_sketch": "Server: on intake POST, stamp case['intake_rev'] += 1; on generate, record case['generated_rev']; check and package responses include {stale: intake_rev != generated_rev}. Frontend: if stale, show a red banner on screens 3-4 ('Intake changed since these drafts were generated \u2014 regenerate before assembling') and disable Assemble/Export until regenerated. ~20 lines server, ~15 lines client.",
+     "effort": "S",
+     "leverage": "medium"
+    },
+    {
+     "title": "Cover the manufacturer packet in the manifest",
+     "what": "assemble_submission hashes and bundles only fda_package docs (6 of 8). The manufacturer-loa-request \u2014 the document the pharma reviewer actually acts on \u2014 and the drug-accountability-log are excluded from both manifest and bundle, so the manufacturer view's integrity is unattested and unverifiable.",
+     "why_it_matters": "The MVP's trust pitch is 'verify without trusting OSSICRO,' but the packet sent to the counterparty most likely to demand provenance (pharma medical affairs / legal) is the one artifact outside the hash perimeter.",
+     "build_sketch": "assemble.py: iterate route['documents'] (not just fda_package) for manifest + bundled_documents, adding an fda_facing: bool flag per entry; frontend manifest table groups by audience; verify.html already handles the added docs (it verifies whatever the manifest lists). ~15 lines.",
+     "effort": "S",
+     "leverage": "medium"
+    },
+    {
+     "title": "Real Form 3926 fidelity \u2014 file-ready output, not a facsimile",
+     "what": "The generated '3926' is a text facsimile whose field numbering doesn't obviously match OMB 0910-0814 (the template runs 1-8 then 10.a/10.b/11, skipping 9), and the only exports are JSON and a browser print popup. A physician cannot file any of this: they must re-type every answer into the actual fillable PDF, re-introducing the transcription errors OSSICRO exists to prevent.",
+     "why_it_matters": "For the FDA reviewer, the deliverable is the form, not a rendering of its content. This is the largest completeness gap between 'impressive demo' and 'used for a real filing.' The citation-mapped intake is already a superset of the form's fields \u2014 the last mile is mechanical.",
+     "build_sketch": "Phase 1 (S): audit the template's field numbering against the actual Form 3926 and emit a 'transcription map' section per document \u2014 'Form field 3 \u2190 patient.coded_id: CD-2026-114' \u2014 so re-typing is checklist-driven. Phase 2 (L): fill the real fillable 3926 PDF server-side (pypdf form-fill from the same sources dict; keep stdlib purity by making it an optional export path), stamped DRAFT, unsigned, per HC1. Phase 2 is the one L-effort item on this list that most changes what the MVP is.",
+     "effort": "L",
+     "leverage": "high"
+    },
+    {
+     "title": "Per-document export and friendlier failure modes",
+     "what": "Individual documents can only be copy-pasted out of a <pre> or bulk-printed via a popup (which popup blockers kill, with only a toast). The LOA request must reach a manufacturer as a standalone document. And when the server restarts, every action toasts 'unknown case' with no guidance.",
+     "why_it_matters": "These are the small frictions that decide whether the operator reaches for the tool a second time. The LOA request in particular has a real recipient outside the room; 'select-all inside a pre tag' is not a send path.",
+     "build_sketch": "Add a 'Download .txt' button per document (blob download of d.rendered \u2014 the exact bytes the manifest hashes, so the downloaded file is itself verifiable) and a per-document print view. On any 404 'unknown case', the frontend offers 'Start a new case \u2014 your intake is preserved' and rehydrates from the localStorage mirror (improvement 2). ~40 lines.",
+     "effort": "S",
+     "leverage": "medium"
+    }
+   ],
+   "biggest_lever": "Render the statutory clocks. The deterministic deadline engine is OSSICRO's most defensible differentiator and its clearest safety contribution \u2014 I verified it computes the 15-working-day written-3926 deadline, the 5-working-day IRB notice, and the 30-day IND-effective date correctly \u2014 and the UI never shows any of it; the data is already in the /package payload the frontend discards. One small card (deadline, days-remaining, citation, unarmed-clock resolving question) converts the constitution's HC3 promise from prose into product for all three audiences at near-zero effort. If a second pick is allowed, pair it with case persistence: an emergency physician who loses a 55-field intake to a refresh never comes back to see the clocks."
+  },
+  {
+   "model_reported": "Fable 5 (claude-fable-5)",
+   "surface": "engine-correctness-robustness",
+   "improvements": [
+    {
+     "title": "Remove invented clock anchors: no today() fallbacks, one injected as_of",
+     "what": "compute_clocks (ea_generators.py:147) arms the 30-day IND clock from datetime.date.today() when submission.fda_receipt_date is absent (via a submission.date path that does not even exist in the intake schema), and gen_cover_letter (line 329) does the same before rendering a concrete deadline date into the FDA-facing cover letter. Both violate HC3 as clocks.py itself states it: anchors are recorded human-entered dates, never 'now'. Separately, cover_date/submission_date/loa_date/request_date literals all call today() at generation time, making rendered bytes and therefore the SHA-256 manifest non-reproducible across regenerations.",
+     "why_it_matters": "Failure scenario: draft generated July 9 with no receipt date entered; the cover letter states 'i.e. 2026-08-08 (21 CFR 312.40(b)(1))'. Physician mails it July 20; FDA receives July 22; the true effective date is August 21. The letter asserts a fabricated statutory date under a citation, provenance-stamped as 'computed clock (HC3)' \u2014 the anchor is invented, which is exactly the fabrication class the constitution exists to prevent. It reads plausible, so human review is unlikely to catch it.",
+     "build_sketch": "Delete both today() fallbacks. Unanchored clock -> armed=False, deadline=None, and the cover-letter clock_statement renders the existing 'enter the FDA receipt date' instruction branch (already written for the emergency path). Thread a single as_of: datetime.date parameter through generate_route_documents/assemble_submission (default None -> caller supplies; CLI supplies today explicitly) and use it for all *_date literals, provenance-stamped 'as_of supplied at generation'. Add a test: no module under ossicro/ calls date.today() except the CLI entry point (grep-based test keeps it enforced).",
+     "effort": "S",
+     "leverage": "high"
+    },
+    {
+     "title": "Fix the cross-year New Year's Day observance bug in federal_holidays",
+     "what": "When Jan 1 of year N+1 falls on Saturday, the OPM-observed holiday is Friday Dec 31 of year N. federal_holidays(N) only computes the observance of Jan 1 of year N, so is_working_day(date(2027,12,31)) returns True even though it is the observed 2028 New Year's holiday (Jan 1 2028 is a Saturday). Every working-day window crossing that date is computed one day off.",
+     "why_it_matters": "The clock engine's whole claim is deterministic correctness against 5 U.S.C. 6103 + OPM rules. The error direction is conservative for the filer (deadline reported earlier than legally true), but a cited 15-working-day due date in a 312.310(d)(2) submission letter is simply wrong the next time this fires (Dec 31, 2027 \u2014 within the system's operating horizon).",
+     "build_sketch": "In is_federal_holiday (or inside federal_holidays), also include _observed(date(year+1,1,1)) when it lands in December of the queried year \u2014 one line plus membership. Add table tests pinning 2027-12-31 as a holiday and 2027 windows that cross it (e.g. add_working_days(date(2027,12,20), 10)). Only New Year's crosses years; Sunday-observance shifts forward within the same year, so no other holiday needs this.",
+     "effort": "S",
+     "leverage": "high"
+    },
+    {
+     "title": "Assemble must run the same review the human saw, and the package must record it",
+     "what": "assemble_submission takes no reviewer parameter \u2014 run_check at assemble.py:42 always uses DeterministicStubReviewer. If the frontend ran the live ClaudeConceptReviewer and showed the physician a red ledger (e.g. a 'deficient' finding on the consent risks section), the export path re-checks with the stub, sees no hard finding, and emits submission_ready=True with empty blocking. The returned package also discards check.gate_packet, the full ledger, and the reviewer attribution (model, reviewed_at), so the exported dossier does not record what check outcome it was assembled under.",
+     "why_it_matters": "submission_ready is the engine's operative go/no-go signal, and it can silently be computed on a weaker review layer than the one the human trusted. Escalate-only holds within one run_check but not across invocations \u2014 this is the seam where it leaks. It also breaks Part-11-style attribution: the concept layer's contribution to the package is unrecoverable from the package.",
+     "build_sketch": "Add reviewer: Optional[ConceptReviewer] = None to assemble_submission, passed through to run_check (or accept a precomputed CheckResult and assert its identity). Embed in the returned package: the serialized ledger (doc_id/status/questions), gate_packet, and per-doc {model, reviewed_at, hard/advisory counts} from concept_by_doc. Frontend passes the same reviewer instance it used for the ledger view. Test: live-style fake reviewer producing a hard finding -> assemble with it -> submission_ready False; assemble without -> assert the package records model='deterministic-stub-v0' so the downgrade is at least visible.",
+     "effort": "S",
+     "leverage": "high"
+    },
+    {
+     "title": "Error boundary around the concept layer: reviewer failure escalates, never aborts",
+     "what": "run_check (pipeline.py:96) calls reviewer.review with no exception handling. The live adapter raises ConceptReviewError on any malformed model output (its greedy re.search(r'\\[.*\\]') grabs first-'[' to last-']', so trailing prose containing ']' poisons the JSON), and Anthropic SDK network/rate-limit errors propagate raw. Any of these destroys the entire CheckResult \u2014 ledger, rule results, and gate packet from the cheap deterministic layers are all lost because the optional judgment layer threw.",
+     "why_it_matters": "Failure scenario: transient 529 from the API during a physician's session -> the whole completeness ledger disappears instead of degrading. Fail-loudly is right for the reviewer itself, but the fact-shaped spine's output should never be hostage to layer 5. The correct semantics under escalate-only: a failed review cannot clear anything, so record it as an escalation.",
+     "build_sketch": "Wrap the per-doc review call in try/except; on failure, synthesize a ReviewReport with model=reviewer.model and one hard finding: 'concept review failed to complete (<error class>): judgment layer unresolved' -> item goes red with a resolving question ('re-run the concept review'), and the error string lands in notes. Fail-closed per doc, spine intact. Also replace the greedy regex in ClaudeConceptReviewer._parse with json.JSONDecoder().raw_decode scanning from the first '['. Tests: fake client raising; fake client returning '[{...}] trailing ]'.",
+     "effort": "S",
+     "leverage": "high"
+    },
+    {
+     "title": "validate_report: all-occurrence locked-span logic and an audit trail for dropped findings",
+     "what": "Two defects in the defensive validator (review_port.py:249-256). (1) It locates only rendered.find(span) \u2014 the first occurrence. A quoted span whose first occurrence sits inside a verbatim-locked region but which also appears in generated prose (short spans like '30 days' or a repeated phrase) is dropped even though the finding legitimately targets the unlocked occurrence; overlap-at-boundary findings are likewise discarded whole. (2) All drops are silent: a reviewer that hallucinates quotes, or a model that normalizes whitespace/smart-quotes when quoting (common), has its findings vanish with zero telemetry.",
+     "why_it_matters": "Both failure modes delete real findings from the judgment layer with no trace. In a system whose audit posture is 'every concept-layer contribution is attributed', silently discarding reviewer output is itself an integrity gap \u2014 you cannot distinguish a clean document from a validator that ate the findings, and you cannot measure the live reviewer's hallucination rate.",
+     "build_sketch": "Keep the finding if ANY occurrence of the span lies at least partly outside all locked ranges (iterate rendered.find in a loop, as _locked_ranges already does). Add dropped: List[Tuple[ConceptFinding, str]] (finding, reason: 'not-present' | 'locked-span') to ReviewReport; _fold_findings appends a ledger note per dropped finding ('reviewer finding dropped: quoted text not found \u2014 possible misquote'). Optional second pass: whitespace-normalized matching as a fallback before declaring not-present, still recorded as normalized-match. Tests for the dual-occurrence and boundary-straddle cases.",
+     "effort": "M",
+     "leverage": "high"
+    },
+    {
+     "title": "Validate sign-off integrity at read time, not only at write time",
+     "what": "gates.record_signoff enforces role/person/statement, but nothing forces callers through it: Document.signoffs is a plain list, and build_ledger (check.py:179), _gate_packet (pipeline.py:212), and Document.advance all gate on has_signoff \u2014 bare existence of any HumanSignoff with a matching gate_id. A signoff appended directly with the wrong role, empty person, or empty statement clears amber to green and silences the gate packet.",
+     "why_it_matters": "This is the gate-enforcement corner: the hard line is enforced on the sanctioned write path but the read path trusts the record unconditionally. Any frontend/backend code path (or future contributor) that constructs HumanSignoff directly \u2014 the dataclass invites it \u2014 bypasses the eight non-delegable gates without any layer noticing. Failure scenario: an API handler deserializes a signoff from a request body and appends it; role 'assistant' clears the submission-to-fda gate.",
+     "build_sketch": "Add Document.has_valid_signoff(gate_id, gate_registry): matching gate_id AND role == gate.responsible_role AND person.strip() AND statement.strip(). Use it in build_ledger's amber check, _gate_packet, and the advance('final') guard (advance needs the registry or a validated flag \u2014 simplest is to route finalization exclusively through gates.finalize and have advance keep the existing check as a floor). Invalid records surface as red with a resolving question naming the defect ('sign-off recorded with role X; gate requires Y'). Tests: forged wrong-role and empty-person signoffs stay amber/red.",
+     "effort": "S",
+     "leverage": "medium"
+    },
+    {
+     "title": "Key the consistency engine on provenance source paths, not rendered field names",
+     "what": "check_consistency matches Document.fields keys against the five CONSISTENCY_KEYS names exactly. The EA generators fill the same identity fact under different names: investigator.name lands as physician_name on the 3926 and treatment plan and authorized_party on the LOA. Those documents are invisible to the 'cross-document consistency engine' for the investigator identity \u2014 the exact field class (identity-critical) it exists to guard.",
+     "why_it_matters": "Generation-time drift is impossible (one study record), so the consistency layer's entire value is imported/edited/regenerated-stale documents \u2014 where the aliased fields are precisely the ones that will drift. Failure scenario: physician re-generates after correcting their name in intake but the previously exported LOA draft (already sent to the manufacturer, re-imported for the package) still carries the old name as authorized_party; the check reports clean.",
+     "build_sketch": "Every filled field already carries a ProvenanceRecord with source = '<path> = <value>'. Rewrite check_consistency to group fields by provenance path: for each doc, parse record.source path; for paths in a small identity-critical set (investigator.name, ind_number, protocol_number, protocol_version, title), compare the field value against study.resolve(path). Falls back to the current name map for documents without provenance (imports), which import_existing_documents deliberately stamps differently \u2014 keep that behavior as the drift detector. Tests: LOA with deviant authorized_party -> inconsistency implicating it.",
+     "effort": "M",
+     "leverage": "medium"
+    },
+    {
+     "title": "Manifest completeness and a package-level digest the verifier can check",
+     "what": "assemble builds the manifest only from documents that exist (assemble.py:63 'if doc is None: continue'), so a package missing an FDA-facing document verifies clean \u2014 the standalone verifier proves integrity of what is present, never completeness of what should be present. There is also no digest over the manifest itself, the ledger, or the blocking list: any of those can be edited post-export without failing verification.",
+     "why_it_matters": "HC4's provenance substrate currently certifies less than it appears to. Failure scenario: a bug (or a person) drops the informed-consent form from the exported dossier; every remaining hash matches; the verifier reports success; the physician mails an incomplete package believing it hash-verified. Same for a hand-edited blocking:[] in the exported JSON.",
+     "build_sketch": "Manifest gains one entry per route fda_package doc_id, with status 'present'+sha256 or explicit 'ABSENT'. Add package_digest = sha256 over a canonical serialization (sorted doc_id:sha256 pairs + route_id + ledger statuses + submission_ready). Verifier: recompute per-doc hashes (existing), then recompute package_digest and fail on any ABSENT entry or digest mismatch. Note honestly in output that this is tamper-evidence, not tamper-proofing \u2014 a full re-forge of manifest+digest+docs is still possible without a signature; a detached signature is the production step.",
+     "effort": "M",
+     "leverage": "medium"
+    },
+    {
+     "title": "Small-defect batch: malformed dates, unflatten collisions, fabricated green note",
+     "what": "Three small but real: (1) _parse_date returns None for a malformed entry, so compute_clocks reports a mistyped trigger ('07/15/2026') as armed=False exactly like an absent one \u2014 the physician entered a date and the engine reports 'not entered'. (2) unflatten silently destroys data on key collisions ('manufacturer' scalar + 'manufacturer.name' -> one overwrites the other by dict order). (3) build_ledger's green note prints 'n/n required fields filled' with both n's computed from the same len() \u2014 a fabricated-looking count in an honesty-first ledger.",
+     "why_it_matters": "(1) is the only one with regulatory surface: a typo in the emergency-authorization date silently disarms the 15-working-day clock instead of asking for a correction \u2014 the deadline the emergency route exists to track. (2) and (3) are robustness/credibility polish caught while auditing.",
+     "build_sketch": "(1) compute_clocks distinguishes trigger_value-present-but-unparseable: armed=False plus note 'trigger entered but not a valid YYYY-MM-DD date \u2014 correct it' (and the frontend already renders clock notes). (2) unflatten raises ValueError naming the colliding key. (3) count actually-filled required fields (len([f for f in required if doc.fields.get(f)])). All three are one-function changes with direct tests.",
+     "effort": "S",
+     "leverage": "low"
+    }
+   ],
+   "biggest_lever": "Time discipline: eliminate invented clock anchors and inject a single as_of date (improvement 1). The today() fallbacks in compute_clocks and gen_cover_letter are the one place the engine currently fabricates a regulatory fact \u2014 a cited statutory deadline in an FDA-facing letter, computed from an anchor no human entered \u2014 which is precisely the failure class every other mechanism (provenance, gates, escalate-only) exists to prevent, and it defeats them all because the fabricated date is provenance-stamped as 'computed clock (HC3)' and looks plausible under review. The same fix (one injected as_of, no scattered date.today()) also makes rendered documents byte-reproducible, which stabilizes the SHA-256 manifest and makes the whole provenance substrate testable end-to-end. Small effort, and it repairs the engine's core promise rather than adding a feature."
+  },
+  {
+   "model_reported": "claude-fable-5",
+   "surface": "product-levers",
+   "improvements": [
+    {
+     "title": "Emit the real FDA Form 3926 PDF and print-ready submittable artifacts",
+     "what": "Map the 55 intake fields onto the actual OMB-approved Form FDA 3926 PDF (already in sources/fda-form/, with its instructions PDF alongside), render the ICF, cover letter, LOA request, and treatment plan as print-ready PDFs, and add a per-case 'where this goes' sheet: the correct CDER/CBER review division address and email per the 3926 instructions, plus the note that individual-patient EA is exempt from eCTD electronic-submission requirements.",
+     "why_it_matters": "This is the tool/demo boundary. A physician judges OSSICRO in ten seconds by one test: does it produce the thing I can actually send to FDA? Today the answer is no \u2014 provenance-stamped markdown shaped like a submission is a demonstration, not a deliverable. The eCTD module map is architecture theater for this route (3926 submissions go to the review division directly); the filled official form is the entire point of the pathway Congress built. Everything else in the system \u2014 gates, ledger, provenance \u2014 becomes real the moment its output is real.",
+     "build_sketch": "Read the 3926 AcroForm field names (pypdf or a stdlib FDF/XFDF overlay \u2014 the app layer already tolerates one thin dependency per the execution plan's P3 decision; the engine stays pure). Extend the intake-to-document mapping with a pdf-field column per intake field; fill 10.a/10.b waiver logic as the deterministic branch it already is. Render narrative documents to PDF via headless-Chrome print or reportlab in the app layer. Hash-manifest the PDFs, not just the source docs, so the verifier covers what actually ships. Verify the filled form field-by-field against the instructions PDF once, and record that verification.",
+     "effort": "M",
+     "leverage": "high"
+    },
+    {
+     "title": "Durable cases: persistence, resume, and durable gate records",
+     "what": "Replace in-memory case state with local SQLite (or JSON-file store) in app/server.py: case create/resume, intake snapshots, generated-document versions, ledger history, and \u2014 critically \u2014 gate sign-off and clock-anchor records that survive restart.",
+     "why_it_matters": "A real expanded-access case runs for weeks: LOA request out to the manufacturer, IRB concurrence, the 30-day IND wait, the 15-working-day emergency follow-up clock. A tool that loses the case on process restart cannot host a single real case, full stop. The clocks are the sharpest version of this: HC3 computes deadlines from recorded anchors, and an anchor held in RAM is a deadline the system will forget. Persistence is also the precondition for the Part 11 story being more than prose \u2014 an audit trail that evaporates is not an audit trail.",
+     "build_sketch": "One module in the app layer (engine untouched): sqlite3 from stdlib, tables for case, intake_revision, document, signoff, clock_anchor, audit_event; every write append-only where it feeds the audit trail. Case list + resume in the frontend. Export the audit trail per case as JSON \u2014 this doubles as the records-exportability commitment the micro-CRO and pharma personas both flagged. Roughly 2-3 days including tests.",
+     "effort": "S",
+     "leverage": "high"
+    },
+    {
+     "title": "Route-scoped verification pass: 'cited' becomes 'verified' for everything on Route 3926",
+     "what": "A human \u2014 Alton is qualified \u2014 verifies every citation, field mapping, clock computation, and regulatory claim on the 3926 route against the current authorities (21 CFR 312.310/312.305, 50.25, 56.104(c), the 3926 instructions PDF, the federal-holiday table), fixes what's wrong, and records the verification per-rule: verified_by, date, authority version, written into rules.json and the route registry. Fold in the open punch-list citation items that touch this route.",
+     "why_it_matters": "The README's honesty note currently disclaims the entire knowledge base: 'must be independently verified before any real use.' That sentence is the right thing to say and it makes the tool unusable as stated \u2014 no physician stakes a patient's access and their own license on unverified citations. You cannot verify 131 wiki pages soon, but you can verify one route completely, and one fully-verified route is worth more than the whole researched corpus. It also exercises the Constitution's own machinery: verification dates on rules are what make the regulatory-change clock in Section V operable.",
+     "build_sketch": "Generate a verification worksheet from rules.json + routes.json + the 55-field intake schema: one row per claim, citation, and source document (the originals are already local in sources/). Alton works through it \u2014 a focused day or two for one route. Add verified/verified_by/verified_date/authority_version fields to the rule schema; a conformance test warns on any rule serving the 3926 route without a verification record. Ship the worksheet itself in the repo as the evidence.",
+     "effort": "M",
+     "leverage": "high"
+    },
+    {
+     "title": "Seed the Manufacturer Front-Door Registry (P5 task 1, pulled forward)",
+     "what": "Build the structured registry of 25-50 manufacturers' expanded-access front doors: the \u00a7561A-required published EA policy URL, the sanctioned intake contact (Medical Affairs / medical information \u2014 never sales, as a validation rule), required fields, format, stated decision timelines; each record with source URL, retrieval date, content hash, and human confirmation before first use. Wire the LOA-request generator to address the packet to the registry record.",
+     "why_it_matters": "The manufacturer's yes is the step OSSICRO cannot perform and the step where real patients actually lose weeks \u2014 not drafting, but finding whom to ask and asking in the form that gets answered. Every 561A policy is required by law to be published, so the data exists and nobody has assembled it usably. This is the one improvement that creates value outside the product: a public-good dataset that gives physicians a reason to find the repo, cites OSSICRO into the expanded-access conversation (alongside Reagan-Udall's Navigator, which proves demand), and compounds \u2014 every later route reuses it. It has zero code dependency on anything else in flight.",
+     "build_sketch": "Schema per the execution plan's P5.1. A Claude agent drafts records from published EA policies (WebFetch over manufacturer sites); every record human-confirmed before it can drive a real LOA \u2014 a stale contact spends the patient's clock. Start with the ~30 companies with active early-phase oncology/rare-disease pipelines, where EA requests concentrate. Freshness job re-checks hashes monthly and diffs. Ships as JSON data in the open repo.",
+     "effort": "M",
+     "leverage": "high"
+    },
+    {
+     "title": "One timed pilot case end-to-end, with independent expert review of the output",
+     "what": "Drive one realistic case through the entire flow \u2014 intake, generate with the live Claude reviewer on (already wired behind ANTHROPIC_API_KEY), red-resolution, gate packets, export of the real PDFs \u2014 timed, then put the exported package in front of an independent regulatory-affairs professional (or benchmark it against Reagan-Udall Expanded Access Navigator materials and FDA's EA staff guidance) and record every finding.",
+     "why_it_matters": "This is the difference between an impressive prototype and evidence. The regulator persona's core objection \u2014 'the signature proves presence, not review; show me the package holds up' \u2014 is only answerable by an external reader who owes the project nothing. Every finding feeds the slop corpus (growing the recall lane from actual failure, exactly as the plan specifies) and the punch list. And the wall-clock number (intake to gate-ready ledger in N hours) is the first honest instance of the Days-to-Drug metric \u2014 the claim the whole mission rests on, currently unmeasured.",
+     "build_sketch": "Depends on items 1-3 landing first. Construct a realistic synthetic oncology EA case (Alton can author a clinically plausible one). Run it with a stopwatch and the live reviewer; capture the full audit trail. Recruit one reviewer \u2014 a regulatory-affairs consultant, an IRB administrator, or a colleague who has filed 3926s \u2014 for a paid read of the exported package. Write up findings verbatim in qa/, fix, re-run. The re-run time is the number that goes in the README.",
+     "effort": "M",
+     "leverage": "high"
+    }
+   ],
+   "biggest_lever": "Emitting the real FDA Form 3926 PDF and submittable artifacts. The official form and its instructions are already sitting in sources/; the 55 intake fields already map to citations; what's missing is the last translation from provenance-stamped internal documents to the artifact FDA actually accepts. Every other improvement raises trust or durability, but a physician literally cannot use OSSICRO for its stated purpose until it produces the thing that gets sent \u2014 and the pilot case, the verification pass, and the trust story all hang off that output being real. The honest gap summary: today OSSICRO is a governed engine that produces excellent drafts of documents shaped like a submission, held in RAM, with researched-but-unverified content, ending at the exact moment the real process begins (manufacturer yes, FDA receipt). Items 1-3 close the usability gap in roughly two focused weeks; items 4-5 close the trust gap. The shortest path across: real PDF out, cases that persist, one route verified, one timed pilot reviewed by someone with no stake in the answer."
+  }
+ ],
+ "synth": {
+  "do_first": "Item 1: kill the invented clock anchors. Delete both date.today() fallbacks (compute_clocks and gen_cover_letter), thread one injected as_of through generation, fix the cross-year New Year's observance bug, and treat entered-but-unparseable trigger dates as errors, not absences. Reasons it goes first: (a) it is the only place the engine currently fabricates a regulatory fact \u2014 a cited statutory deadline in an FDA-facing letter computed from an anchor no human entered, provenance-stamped as a computed clock, which defeats every other safeguard; (b) it makes rendered bytes reproducible, which items 3, 6, 7, and 11 all silently depend on; (c) it is small (S) and pure-engine, no UI or persistence prerequisite. Do NOT ship the clock panel (item 3) before this lands \u2014 rendering the clocks prominently while two of them can be armed by 'now' would amplify the fabrication, not fix it.",
+  "model_reported": "claude-fable-5 (Fable 5) \u2014 all three reviews self-reported the same model",
+  "ranked_build_next": [
+   {
+    "rank": 1,
+    "title": "Time discipline: no invented clock anchors, one injected as_of, correct holidays",
+    "what": "Delete the date.today() fallbacks in compute_clocks and gen_cover_letter (unanchored clock -> armed=False, deadline=None, render the existing 'enter the FDA receipt date' instruction branch instead of a fabricated deadline). Thread a single as_of date through generate_route_documents/assemble_submission for all generated-date literals. Fix the cross-year New Year's observance bug (Jan 1 of N+1 on Saturday -> Friday Dec 31 of N is a federal holiday). Distinguish entered-but-unparseable trigger dates from absent ones. (Merges R2 items 1, 2, and defect 9.1.)",
+    "acceptance": "Grep-based test proves no module under ossicro/ calls date.today() except the CLI entry point. Table test pins is_working_day(date(2027,12,31)) == False and a 15-working-day window crossing it. A case with no fda_receipt_date renders the cover-letter instruction branch, never a concrete effective date. A malformed trigger date ('07/15/2026') yields armed=False plus a 'correct the date' note, distinct from absent. Generating the same case twice with the same as_of yields byte-identical documents and an identical SHA-256 manifest.",
+    "effort": "S",
+    "surface": "engine"
+   },
+   {
+    "rank": 2,
+    "title": "Persist cases: disk-backed store, resume by URL, durable sign-offs and clock anchors",
+    "what": "Replace the in-memory CASES dict with a disk store (stdlib sqlite3 or JSON files in app/data/cases/): case create/resume, intake revisions, recorded sign-offs, clock anchors, and an append-only audit-event log. Add GET /api/case/{id}; case id in location.hash; rehydrate the form on load; localStorage mirror of intake as a belt-and-suspenders layer. Same coded-identifier/no-real-PHI discipline, now on disk. (Merges R1 item 2 and R3 item 2.)",
+    "acceptance": "Kill and restart the server mid-case, reload the case URL: intake (all 55 fields), recorded sign-offs, and clock anchors are intact and run_check reproduces the prior ledger. A page refresh mid-intake loses zero entered fields. The per-case audit trail exports as JSON.",
+    "effort": "M",
+    "surface": "app + frontend"
+   },
+   {
+    "rank": 3,
+    "title": "Render the statutory clocks panel",
+    "what": "Surface the already-computed clocks on the check screen (screen 3), not just inside the /package payload the frontend discards: one card per clock with label, basis citation, trigger date, deadline, and days-remaining vs today; unarmed clocks amber with their resolving question; armed clocks within 3 working days red. Server side: include compute_clocks output in the check response. Depends on rank 1 so no rendered clock can rest on an invented anchor. (R1 item 1.)",
+    "acceptance": "The emergency sample case shows the 15-working-day written-3926 deadline and the 5-working-day IRB-notice deadline on screen 3 with the dates the engine already computes (verified live: 2026-07-27 and 2026-07-13 from a 2026-07-06 trigger) plus days-remaining. The empty case shows every clock unarmed with its resolving question. No clock ever displays a deadline whose anchor was not human-entered.",
+    "effort": "S",
+    "surface": "app + frontend"
+   },
+   {
+    "rank": 4,
+    "title": "Operable gate lifecycle: record human sign-offs, validate them at read time",
+    "what": "POST /api/case/{id}/signoff {gate_id, doc_id, signer_name, role, date} persisted to the case record and re-applied to regenerated Documents before run_check, so amber->green flows through the existing has_signoff fact path. Simultaneously close the read-side hole: has_valid_signoff(gate_id, registry) requiring matching gate_id AND role == gate.responsible_role AND non-empty person/statement, used by build_ledger, _gate_packet, and finalization. UI: 'Record the human act' form per gate with explicit copy that this records an act performed outside OSSICRO. Also replace the leaked 'see gates registry' engine-speak with the responsible role in plain language. (Merges R1 item 4 and R2 item 6.)",
+    "acceptance": "Sample case: record a valid physician sign-off on an amber gate, re-check -> that item goes green and the gate packet updates; sign-off survives server restart. Forged sign-offs (wrong role, empty person, empty statement) appended directly to Document.signoffs do NOT clear the gate and surface a red item naming the defect. Tests cover both directions.",
+    "effort": "M",
+    "surface": "engine + app + frontend"
+   },
+   {
+    "rank": 5,
+    "title": "Concept-layer integrity: assemble runs the review the human saw; reviewer failure escalates; no silent finding drops",
+    "what": "Three seams where the judgment layer silently downgrades or vanishes. (a) assemble_submission accepts the same reviewer (or a precomputed CheckResult) instead of always re-checking with DeterministicStubReviewer, and the exported package embeds the serialized ledger, gate packet, and per-doc reviewer attribution (model, reviewed_at, finding counts). (b) Wrap per-doc reviewer.review in try/except: on failure synthesize a hard finding ('concept review failed to complete \u2014 judgment layer unresolved') so the item goes red and the deterministic spine survives; fix the greedy [.*] JSON regex with raw_decode. (c) validate_report keeps a finding if ANY occurrence of the quoted span lies outside locked ranges, and every dropped finding is recorded with a reason instead of vanishing. (Merges R2 items 3, 4, 5.)",
+    "acceptance": "Tests: fake reviewer emitting a hard finding -> assemble with it returns submission_ready=False; assemble without a reviewer -> package records model='deterministic-stub-v0' so the downgrade is visible. Fake client raising mid-review -> run_check still returns a full CheckResult with that doc red, ledger and gate packet intact. Model output with trailing prose containing ']' parses. Dual-occurrence span (locked + unlocked) is kept; a hallucinated quote is dropped WITH a ledger note ('reviewer finding dropped: quoted text not found').",
+    "effort": "M",
+    "surface": "engine"
+   },
+   {
+    "rank": 6,
+    "title": "Stale-draft invalidation: the manifest attests what was reviewed",
+    "what": "Stamp intake_rev on every intake POST and generated_rev on generate; check and package responses include stale: bool. Frontend shows a red banner on screens 3-4 and disables Assemble/Export until regeneration, so the SHA-256 manifest can never hash different bytes than the physician read. (R1 item 5.)",
+    "acceptance": "Edit any intake field after generating, navigate to documents or export: stale banner appears and Assemble/Export are disabled; after regenerating, the banner clears and the manifest hashes match the drafts displayed on screen 3 byte-for-byte.",
+    "effort": "S",
+    "surface": "app + frontend"
+   },
+   {
+    "rank": 7,
+    "title": "Manifest completeness: all 8 documents, ABSENT entries, package-level digest",
+    "what": "assemble iterates all route documents (not just fda_package), bringing the manufacturer LOA request and drug-accountability log inside the hash perimeter with an fda_facing flag; the manifest carries an explicit 'ABSENT' entry for any expected doc that is missing; add package_digest = SHA-256 over a canonical serialization (sorted doc_id:hash pairs + route_id + ledger statuses + submission_ready). Verifier fails on any ABSENT entry or digest mismatch, and states honestly that this is tamper-evidence, not tamper-proofing. (Merges R1 item 6 and R2 item 8.)",
+    "acceptance": "The manufacturer LOA request verifies via verify.html. Deleting one document from an exported bundle -> verifier fails naming it. Hand-editing blocking:[] or a ledger status in the exported JSON -> verifier fails on package_digest. A package missing an expected FDA-facing doc can no longer verify clean.",
+    "effort": "M",
+    "surface": "engine + verifier"
+   },
+   {
+    "rank": 8,
+    "title": "Close the fix loop: ledger questions link to intake fields",
+    "what": "Missing-field ledger questions carry the source dotted path (already sitting in the generators' sources dicts) as field_id; each red question renders a 'Fix in intake' link that switches to screen 2, scrolls to the field anchor, and highlights it; per-section missing-required badges plus a sticky 'N required fields empty' counter. (R1 item 3.)",
+    "acceptance": "On the empty case, every red missing-field question has a working link that lands focus on the exact intake field it names; section headers show accurate missing counts; the counter reaches zero exactly when a re-check produces no missing-field reds.",
+    "effort": "M",
+    "surface": "engine + frontend"
+   },
+   {
+    "rank": 9,
+    "title": "Real Form FDA 3926 output: transcription map now, filled official PDF next",
+    "what": "Phase 1 (S): audit the template's field numbering against the actual OMB 0910-0814 form (already in sources/fda-form/) and emit a per-document transcription map ('Form field 3 <- patient.coded_id: CD-2026-114') so re-typing is checklist-driven; add per-document .txt download of the exact manifest-hashed bytes (the LOA request needs a standalone send path). Phase 2 (L): fill the real fillable 3926 AcroForm server-side in the app layer (engine stays stdlib-pure), stamped DRAFT and unsigned per HC1, with the PDF hashed into the manifest; include the 'where this goes' sheet (review-division address, eCTD-exemption note). (Merges R1 items 7, 8 and R3 item 1.)",
+    "acceptance": "Phase 1: transcription map section present per document, verified field-by-field once against the 3926 instructions PDF with that verification recorded; downloaded .txt bytes hash-match the manifest entry. Phase 2: the exported PDF opens in a stock reader with every filled field matching intake values, carries a visible DRAFT stamp and no signature, and its SHA-256 appears in the manifest and passes the verifier.",
+    "effort": "S (phase 1) + L (phase 2)",
+    "surface": "app + templates"
+   },
+   {
+    "rank": 10,
+    "title": "Route-scoped verification pass: 'cited' becomes 'verified' for everything on Route 3926",
+    "what": "A qualified human (Alton) verifies every citation, field mapping, clock computation, and regulatory claim serving the 3926 route against the current authorities (312.310/312.305, 50.25, 56.104(c), the 3926 instructions, the federal-holiday table), fixes what is wrong, and records verified_by/verified_date/authority_version per rule in rules.json and the route registry. Generate the worksheet from rules.json + routes.json + the intake schema; ship the completed worksheet in the repo as evidence. (R3 item 3.)",
+    "acceptance": "A conformance test warns (and lists) any rule serving Route 3926 without a verification record \u2014 and passes with zero. The completed verification worksheet is committed. The README honesty note narrows from 'the entire knowledge base is unverified' to a route-scoped claim: Route 3926 verified as of {date} against {authority versions}.",
+    "effort": "M (mostly qualified-human time, ~1-2 focused days)",
+    "surface": "knowledge base + rules schema + human"
+   },
+   {
+    "rank": 11,
+    "title": "One timed pilot case end-to-end, independently reviewed",
+    "what": "Drive one realistic synthetic oncology EA case through the whole flow \u2014 intake over multiple sessions (exercising persistence), live Claude reviewer on, red-resolution via the intake links, sign-offs recorded, clocks armed, real-PDF export \u2014 timed with a stopwatch and full audit trail captured. Put the exported package in front of an independent regulatory-affairs reader (or benchmark against Reagan-Udall Navigator materials and FDA EA staff guidance); record every finding verbatim in qa/, fix, re-run. Gated on ranks 1-9. (R3 item 5.)",
+    "acceptance": "A committed qa/ record containing: the wall-clock time intake-to-gate-ready (the first honest Days-to-Drug data point), the complete audit trail, the external reviewer's findings verbatim, and the re-run time after fixes \u2014 which is the number that goes in the README.",
+    "effort": "M",
+    "surface": "validation + human"
+   }
+  ],
+  "summary_md": "## OSSICRO build-next synthesis (3 Fable reviews -> 1 list)\n\n**Shape of the merge.** The three reviews converge hard: 5 of the 22 raw items are duplicates or near-duplicates across surfaces. Merged: persistence (R1.2 + R3.2), sign-offs (R1.4 + R2.6), real 3926 output (R1.7 + R1.8 + R3.1), manifest integrity (R1.6 + R2.8), and the clock cluster (R2.1 + R2.2 + R2.9a as correctness; R1.1 as rendering \u2014 deliberately kept as two ranked items because rendering a clock that can be armed by `date.today()` would amplify the defect).\n\n**Ordering logic.** Correctness of the spine before visibility of the spine (1 before 3); durability before workflow features that write durable records (2 before 4); integrity seams closed before the artifact that carries the trust claim ships (5-7 before 9); the human verification pass and the pilot last because they certify what the code items produce (10, 11).\n\n**Dropped, with reasons:**\n- *Consistency-engine provenance-path rework (R2.7)* \u2014 real, but its value case (re-imported stale documents) is not yet a flow the MVP hosts; revisit when document import is real.\n- *unflatten collision + fabricated green-count (R2.9b/c)* \u2014 genuine but polish; batch into any adjacent engine PR.\n- *Manufacturer Front-Door Registry (R3.4)* \u2014 high-leverage and I'd fund it, but it is a **parallel track**, not a build-next for the running MVP: zero code dependency, different skill mix (research + human confirmation), and it doesn't make the MVP more correct or trustworthy. Start it alongside ranks 10-11 if bandwidth exists.\n\n**Constitution check.** Nothing on the list weakens the hard line. Rank 1 *repairs* an existing HC3 violation (fabricated anchors). Rank 4 records human acts, never performs them, and closes a read-side gate bypass. Rank 5 prevents silent downgrade of the judgment layer. Rank 9 phase 2 emits a DRAFT-stamped, unsigned form \u2014 drafts only, nothing filed by software.\n\n**Effort profile.** Ranks 1, 3, 6 are S \u2014 roughly a day of engine/UI work combined, and they remove the two worst trust defects (invented deadlines, reviewed-vs-hashed divergence). Ranks 2, 4, 5, 7, 8 are M. Rank 9 phase 2 is the only L and the single biggest change to what the MVP *is*."
+ }
+}

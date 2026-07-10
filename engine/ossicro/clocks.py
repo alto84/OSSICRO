@@ -51,7 +51,14 @@ def _observed(d: datetime.date) -> datetime.date:
 
 
 def federal_holidays(year: int) -> Dict[datetime.date, str]:
-    """The observed US federal holidays for a calendar year."""
+    """The observed US federal holidays falling within a calendar year.
+
+    New Year's Day is the one holiday whose observance can cross a year
+    boundary: when January 1 of year N+1 is a Saturday it is observed on
+    December 31 of year N, so that observed date belongs to year N's table
+    (and, symmetrically, a Saturday January 1 of THIS year is observed in the
+    prior year and is excluded here). Every entry returned falls in ``year``.
+    """
     h = {
         _observed(datetime.date(year, 1, 1)): "New Year's Day",
         _nth_weekday(year, 1, 0, 3): "Birthday of Martin Luther King, Jr.",
@@ -65,7 +72,13 @@ def federal_holidays(year: int) -> Dict[datetime.date, str]:
         _nth_weekday(year, 11, 3, 4): "Thanksgiving Day",
         _observed(datetime.date(year, 12, 25)): "Christmas Day",
     }
-    return h
+    # Next year's New Year's Day, when observed on this year's Dec 31.
+    next_nyd = _observed(datetime.date(year + 1, 1, 1))
+    if next_nyd.year == year:
+        h[next_nyd] = "New Year's Day"
+    # Drop any observed date that fell outside this year (a Saturday Jan 1
+    # observed the prior Dec 31 belongs to the prior year's table).
+    return {d: name for d, name in h.items() if d.year == year}
 
 
 def is_federal_holiday(d: datetime.date) -> bool:
