@@ -18,8 +18,8 @@ drafts only — OSSICRO never performs a non-delegable regulated act.
 | **I-audit** | Append-only, hash-chained audit log + persistence hardening | **done** (built/reviewed/revised, 239 tests) |
 | **B** | INV-4 de-identified egress gateway | **done** (closed struct, allow-list, live path disabled, hash-chained egress audit; built/reviewed/revised) |
 | **C** | Matching engine — registry-search organizer (trials + EA records) | **done** (criteria not scores, absence framing, mini-eval, /match gated; built/reviewed/revised, 282 tests) |
-| **D** | Fillable Form FDA 3926 PDF (AcroForm), replacing text render | not built (HITL-1) |
-| **E** | Pharma persona — manufacturer view of incoming LOA requests | not built |
+| **D** | Form FDA 3926 export — print-ready PDF (DRAFT watermark) + FDF field-map | **done** (pure-stdlib PDF, gated, human-verify FDF map; built/reviewed/revised) |
+| **E** | Pharma persona — manufacturer view behind a named-human release gate | **done** (opaque release_id, snapshot view, audit-logged release; built/reviewed/revised, 311 tests) |
 | **F** | Patient persona — patient-facing intake / status | not built |
 | **G** | Micro-CRO persona — coordinator dashboard tying the parties | not built |
 | **H** | INV-5 `promote()` — preparatory-review → enrollment legal transition | not built |

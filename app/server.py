@@ -35,6 +35,28 @@ SHARED API CONTRACT:
                                            live egress disabled; a registry-search
                                            ORGANIZER: criteria, never scores)
     GET  /api/case/{id}/package         -> manifest over ALL route documents + package digest
+    GET  /api/case/{id}/form3926.pdf    -> DRAFT-watermarked filled Form-3926 PDF
+                                           (INV-3 gate: 409 unless committed — a
+                                           draft PDF of an unconfirmed input
+                                           must not exist; watermark stays
+                                           until the gates clear)
+    GET  /api/case/{id}/form3926.fdf    -> DRAFT-marked FDF fill data (same gate;
+                                           field-name map UNVERIFIED — see
+                                           ossicro.pdf_3926.FDF_3926_FIELD_MAP)
+    POST /api/case/{id}/release         -> {actor, to:'manufacturer'}: the
+                                           NAMED-HUMAN cross-persona release act
+                                           (Wave 3 E). Requires committed profile
+                                           + documents generated from it; writes
+                                           one audit 'release' record; refused
+                                           otherwise. Cross-persona visibility
+                                           is a SEND — never a default.
+    GET  /api/manufacturer/inbox        -> RELEASED cases only, release-time
+                                           snapshot view (LOA request +
+                                           drug/indication + coded id). The
+                                           supply/authorize decision and the LOA
+                                           signature stay the manufacturer's
+                                           alone (FDCA 561A) — OSSICRO models
+                                           neither as an action it takes.
 
 The backend imports the engine (models / generate / pipeline / gates / routes /
 ea_generators / assemble). It drafts, checks, and assembles; it never performs a
@@ -91,6 +113,7 @@ from ossicro.profile import (                                # noqa: E402
     require_committed,
     stamp_input_hash,
 )
+from ossicro.pdf_3926 import fdf_3926, render_3926_pdf       # noqa: E402
 from ossicro.registry import load_documents, load_gates      # noqa: E402
 from ossicro.review_port import DeterministicStubReviewer    # noqa: E402
 
@@ -113,6 +136,37 @@ REGISTRY_ADAPTER = MockRegistryAdapter()
 
 # Intake schema, indexed by dotted field id.
 SCHEMA_FIELDS = {f["id"]: f for f in routes_mod.intake_fields()}
+
+# ---------------------------------------------------------------------------
+# Display-string table (BUILD-PLAN Wave 3: "All UI strings move into a single
+# display-string table from this wave on"). NEW user-facing strings land HERE
+# so the Wave-5 jargon pass (K) is a data pass over one object. Existing
+# strings are deliberately NOT refactored into it in this wave.
+# ---------------------------------------------------------------------------
+STRINGS = {
+    "release_actor_required": (
+        "actor is required — a release is an explicit act by a named human "
+        "(BUILD-PLAN Wave 3 / HC1); OSSICRO never releases on its own."),
+    "release_target_invalid": (
+        "unsupported release target — the only release destination in this "
+        "wave is 'manufacturer'."),
+    "release_requires_generated_loa": (
+        "release refused: no generated LOA request exists for the committed "
+        "profile — generate the route documents (which include the "
+        "manufacturer LOA request) from the committed input first."),
+    "release_already_released": (
+        "already released to the manufacturer for this committed profile — "
+        "a re-release only applies after the profile is re-committed with "
+        "changes (a new named release act over the new input-of-record)."),
+    "inbox_note": (
+        "DRAFT — synthetic-only pilot. Only cases a named human explicitly "
+        "released appear here. The decision to supply the drug and the "
+        "Letter of Authorization signature are the manufacturer's alone "
+        "(FDCA 561A) — OSSICRO records facts; it never decides, signs, or "
+        "sends on the manufacturer's behalf."),
+    "pdf_filename": "form-fda-3926-%s-DRAFT.pdf",
+    "fdf_filename": "form-fda-3926-%s-DRAFT.fdf",
+}
 
 _CASE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{4,64}$")
 _LOCK = threading.Lock()
@@ -144,7 +198,13 @@ def _new_case() -> dict:
             # actions, actors, timestamps, input hashes; NEVER chart values
             # (INV-8). Written via ossicro.audit.append only; later waves
             # (INV-4 egress, INV-5 enrollment, release acts) write here too.
-            "audit": []}
+            "audit": [],
+            # Wave 3 (E): the cross-persona RELEASE record. None = never
+            # released — the case is INVISIBLE to every non-physician persona.
+            # Set only by the explicit named-human release act (POST /release,
+            # audit-logged); the manufacturer-facing view is snapshotted at
+            # release time so later intake edits never leak un-released text.
+            "released": None}
 
 
 def _normalize_case(case: dict) -> dict:
@@ -660,6 +720,143 @@ def _match_payload(case: dict) -> dict:
         as_of=datetime.date.today().isoformat())
 
 
+def _form3926_pdf_bytes(case: dict) -> bytes:
+    """GET /api/case/{id}/form3926.pdf — the DRAFT-watermarked filled 3926.
+
+    Gated behind the SAME require_committed as /generate: a draft PDF of an
+    unconfirmed input must not exist (raises ProfileNotCommitted -> 409).
+    The render is value-faithful to the committed intake snapshot; every
+    page carries the DRAFT watermark (the engine offers no other render).
+    """
+    intake = dict(case["intake"])   # B1: one snapshot for gate + render
+    require_committed(intake, case.get("committed_profile"))
+    return render_3926_pdf(intake)
+
+
+def _form3926_fdf_bytes(case: dict) -> bytes:
+    """GET /api/case/{id}/form3926.fdf — DRAFT-marked FDF fill data.
+
+    Same INV-3 gate as the PDF. Field-name map is UNVERIFIED (see
+    ossicro.pdf_3926.FDF_3926_FIELD_MAP) — synthetic-only until the human
+    verification pass against the official AcroForm.
+    """
+    intake = dict(case["intake"])
+    require_committed(intake, case.get("committed_profile"))
+    return fdf_3926(intake)
+
+
+# ---------------------------------------------------------------------------
+# Wave 3 (E): the Pharma persona — release act + manufacturer inbox.
+#
+# Cross-persona visibility is a SEND (BUILD-PLAN BLOCKER 2): nothing the
+# physician produced appears in the manufacturer persona without the explicit
+# NAMED-HUMAN release act below, audit-logged as 'release'. The manufacturer's
+# supply/authorize decision and the LOA signature are the manufacturer's alone
+# (FDCA 561A) — no endpoint here models OSSICRO taking either act.
+# ---------------------------------------------------------------------------
+
+def _release(case: dict, payload: dict):
+    """POST /api/case/{id}/release {actor, to:'manufacturer'} -> (body, status).
+
+    Requires a committed profile AND documents generated from that committed
+    input (the LOA request among them). Refuses a repeat release for the same
+    committed hash; a re-release becomes possible only after a re-commit
+    (new input-of-record, new named act). Caller holds _LOCK and persists.
+    """
+    actor = str(payload.get("actor", "")).strip()
+    if not actor:
+        return {"error": STRINGS["release_actor_required"]}, 400
+    to = str(payload.get("to", "")).strip().lower()
+    if to != "manufacturer":
+        return {"error": STRINGS["release_target_invalid"]}, 400
+    intake = dict(case["intake"])   # B1: one snapshot for gate + view build
+    try:
+        committed_hash = require_committed(intake, case.get("committed_profile"))
+    except ProfileNotCommitted as exc:
+        return {"error": "profile not committed", "pending": exc.pending,
+                "state": exc.state}, 409
+    # The release covers a generated artifact, not a hypothetical one: the
+    # last /generate must have consumed exactly this committed input.
+    if case.get("generated_hash") != committed_hash:
+        return {"error": STRINGS["release_requires_generated_loa"]}, 409
+    rel = case.get("released")
+    if isinstance(rel, dict) and rel.get("released_hash") == committed_hash:
+        return {"error": STRINGS["release_already_released"],
+                "released": {k: rel.get(k) for k in
+                             ("to", "actor", "at", "released_hash")}}, 409
+    _route, _study, documents = _study_and_docs(case, intake)
+    loa_request = documents.get("manufacturer-loa-request")
+    if loa_request is None:
+        return {"error": STRINGS["release_requires_generated_loa"]}, 409
+    # The manufacturer-facing view is SNAPSHOTTED at release time: exactly
+    # what the named human released, immune to later intake drift. Coded id
+    # only — no other patient identifiers (the schema itself is coded-only,
+    # and the view narrows further to LOA request + drug/indication summary).
+    view = {
+        "patient_coded_id": str(intake.get("patient.coded_id", "") or ""),
+        "drug": str(intake.get("drug.name", "") or ""),
+        "indication": str(intake.get("patient.diagnosis", "") or ""),
+        "physician": str(intake.get("investigator.name", "") or ""),
+        "loa_request": loa_request.rendered,
+    }
+    # MAJOR-1: the manufacturer is handed an OPAQUE release_id, never the
+    # case_id — the case_id is a full-access capability on the unauthenticated
+    # GET /api/case/{id} (persona auth is INV-7-deferred), so leaking it would
+    # void the release view's minimization. The inbox keys on release_id only.
+    prior_rid = rel.get("release_id") if isinstance(rel, dict) else None
+    case["released"] = {"to": "manufacturer", "actor": actor,
+                        "at": _utcnow_z(), "released_hash": committed_hash,
+                        "release_id": prior_rid or uuid.uuid4().hex[:16],
+                        "view": view}
+    # I-AUDIT: exactly one immutable 'release' record per release act — the
+    # named human, the released artifact, the committed hash. No content.
+    audit_mod.append(case.setdefault("audit", []), actor=actor,
+                     action="release", target="manufacturer-loa-request",
+                     input_hash=committed_hash,
+                     detail={"to": "manufacturer"})
+    return {"ok": True,
+            "released": {k: case["released"][k] for k in
+                         ("to", "actor", "at", "released_hash")}}, 200
+
+
+def _manufacturer_inbox() -> dict:
+    """GET /api/manufacturer/inbox — RELEASED cases only, manufacturer view.
+
+    A case with no release record simply does not exist here. Each item is
+    the release-time snapshot: LOA request + drug/indication summary + the
+    coded patient id — never intake at large, never a later edit.
+    """
+    with _LOCK:                       # MINOR-5: snapshot ids without racing a POST
+        case_ids = set(CASES)
+    if os.path.isdir(CASES_DIR):
+        for name in os.listdir(CASES_DIR):
+            if name.endswith(".json") and _CASE_ID_RE.match(name[:-len(".json")]):
+                case_ids.add(name[:-len(".json")])
+    items = []
+    for case_id in sorted(case_ids):
+        case = _get_case(case_id)
+        if case is None:
+            continue
+        rel = case.get("released")
+        if not isinstance(rel, dict) or rel.get("to") != "manufacturer":
+            continue   # un-released = invisible, unconditionally
+        view = rel.get("view") if isinstance(rel.get("view"), dict) else {}
+        items.append({
+            # MAJOR-1: opaque release_id, NOT case_id (no capability leak).
+            "release_id": rel.get("release_id", ""),
+            "released_by": rel.get("actor", ""),
+            "released_at": rel.get("at", ""),
+            "released_hash": rel.get("released_hash", ""),
+            "patient_coded_id": view.get("patient_coded_id", ""),
+            "drug": view.get("drug", ""),
+            "indication": view.get("indication", ""),
+            "physician": view.get("physician", ""),
+            "loa_request": view.get("loa_request", ""),
+            "draft": True,
+        })
+    return {"inbox": items, "count": len(items), "note": STRINGS["inbox_note"]}
+
+
 def _record_signoff(case: dict, payload: dict):
     """Validate and persist a human sign-off record. Returns (obj, err, status)."""
     gate_id = str(payload.get("gate_id", "")).strip()
@@ -813,6 +1010,9 @@ _CASE_FHIR_IMPORT = re.compile(r"^/api/case/([^/]+)/fhir/import$")
 _CASE_MATCH = re.compile(r"^/api/case/([^/]+)/match$")
 _CASE_PROFILE_COMMIT = re.compile(r"^/api/case/([^/]+)/profile/commit$")
 _CASE_PROFILE_CONFIRM = re.compile(r"^/api/case/([^/]+)/profile/confirm$")
+_CASE_FORM3926_PDF = re.compile(r"^/api/case/([^/]+)/form3926\.pdf$")
+_CASE_FORM3926_FDF = re.compile(r"^/api/case/([^/]+)/form3926\.fdf$")
+_CASE_RELEASE = re.compile(r"^/api/case/([^/]+)/release$")
 
 
 # ---------------------------------------------------------------------------
@@ -889,6 +1089,15 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_bytes(self, data, content_type, filename, status=200):
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Disposition",
+                         'attachment; filename="%s"' % filename)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def _read_json(self):
         length = int(self.headers.get("Content-Length", 0) or 0)
         if length == 0:
@@ -945,6 +1154,52 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json({"error": str(exc), "field_id": exc.field_id}, 400)
             except Exception as exc:
                 return self._send_json({"error": type(exc).__name__, "detail": str(exc)}, 500)
+
+        if path == "/api/manufacturer/inbox":
+            # Pharma persona: RELEASED cases only (a SEND happened); nothing
+            # else exists in this view. Read-only — the supply/authorize
+            # decision is never modeled as an action OSSICRO takes.
+            try:
+                return self._send_json(_manufacturer_inbox())
+            except Exception as exc:  # no chart content in error payloads
+                return self._send_json({"error": type(exc).__name__}, 500)
+
+        m = _CASE_FORM3926_PDF.match(path)
+        if m:
+            case_id = m.group(1)
+            case = self._case(case_id)
+            if case is None:
+                return self._send_json({"error": "unknown case"}, 404)
+            try:
+                pdf = _form3926_pdf_bytes(case)
+            except ProfileNotCommitted as exc:  # INV-3 hard gate: a draft PDF
+                # of an unconfirmed input must not exist — fail closed.
+                return self._send_json({"error": "profile not committed",
+                                        "pending": exc.pending,
+                                        "state": exc.state}, 409)
+            except Exception as exc:
+                return self._send_json({"error": type(exc).__name__,
+                                        "detail": str(exc)}, 500)
+            return self._send_bytes(pdf, "application/pdf",
+                                    STRINGS["pdf_filename"] % case_id)
+
+        m = _CASE_FORM3926_FDF.match(path)
+        if m:
+            case_id = m.group(1)
+            case = self._case(case_id)
+            if case is None:
+                return self._send_json({"error": "unknown case"}, 404)
+            try:
+                fdf = _form3926_fdf_bytes(case)
+            except ProfileNotCommitted as exc:  # same fail-closed gate
+                return self._send_json({"error": "profile not committed",
+                                        "pending": exc.pending,
+                                        "state": exc.state}, 409)
+            except Exception as exc:
+                return self._send_json({"error": type(exc).__name__,
+                                        "detail": str(exc)}, 500)
+            return self._send_bytes(fdf, "application/vnd.fdf",
+                                    STRINGS["fdf_filename"] % case_id)
 
         m = _CASE_AUDIT.match(path)
         if m:
@@ -1148,6 +1403,24 @@ class Handler(BaseHTTPRequestHandler):
                 body, status = _profile_commit(case, payload)
                 if status == 200:
                     _save_case(case_id)
+            return self._send_json(body, status)
+
+        m = _CASE_RELEASE.match(path)
+        if m:
+            case_id = m.group(1)
+            case = self._case(case_id)
+            if case is None:
+                return self._send_json({"error": "unknown case"}, 404)
+            payload = self._read_json()
+            if payload is None or not isinstance(payload, dict):
+                return self._send_json({"error": "expected a JSON object"}, 400)
+            try:
+                with _LOCK:
+                    body, status = _release(case, payload)
+                    if status == 200:
+                        _save_case(case_id)
+            except Exception as exc:  # no chart content in error payloads
+                return self._send_json({"error": type(exc).__name__}, 500)
             return self._send_json(body, status)
 
         m = _CASE_PROFILE_CONFIRM.match(path)

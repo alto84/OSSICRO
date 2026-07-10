@@ -453,6 +453,7 @@
     <span class="routechip">Route-3926 · 21 CFR 312.310</span>
     <span class="casechip" id="caseChip">no case open</span>
     <span class="spacer"></span>
+    <button class="iconbtn" id="personaBtn"></button>
     <button class="iconbtn" id="themeBtn" title="Toggle light/dark">Theme</button>
   </div>
 </header>
@@ -733,6 +734,12 @@
         </div>
       </div>
 
+      <!-- Wave 3: filled Form 3926 draft PDF + FDF field-map (strings from STRINGS.form3926) -->
+      <div class="card" id="form3926Card"></div>
+
+      <!-- Wave 3: cross-persona release — a named-human act (strings from STRINGS.release) -->
+      <div class="card" id="releaseCard"></div>
+
       <div class="card tight">
         <div class="btnrow">
           <button class="btn accent" id="exportJsonBtn">Download package JSON</button>
@@ -792,6 +799,24 @@
     </div>
   </section>
 
+  <!-- ================= PHARMA PERSONA : MANUFACTURER VIEW (Wave 3 E) =================
+       Shows GET /api/manufacturer/inbox — released cases ONLY (cross-persona visibility
+       is a SEND: a named-human release act put each one here). No patient identifiers,
+       no decision affordance. All text injected from STRINGS.pharma. -->
+  <section class="screen" id="screen-pharma">
+    <div class="card">
+      <div class="eyebrow" id="pharmaEyebrow"></div>
+      <h2 id="pharmaTitle"></h2>
+      <p class="muted small" id="pharmaIntro" style="max-width:86ch"></p>
+      <div class="hardline" id="pharmaDecisionNote"></div>
+      <div class="btnrow" style="margin-top:12px">
+        <button class="btn" id="inboxRefreshBtn"></button>
+        <span class="muted small" id="inboxStatus"></span>
+      </div>
+    </div>
+    <div id="inboxList"></div>
+  </section>
+
   <footer>
     OSSICRO — Open Source Sponsor-Investigator CRO · Route-3926 MVP ·
     Governed by the OSSICRO Constitution: complete documentation drafted for qualified human review;
@@ -832,7 +857,86 @@ const S = {           // client state
   match: null,        // /match payload — organizer results (criteria groups, never a score)
   intakeRev: 0,       // server revision of the saved intake
   generatedRev: null, // intake revision the current drafts were generated from
-  profile: null       // {state,profile_hash,pending,committed_by,committed_at} | null = not yet reported
+  profile: null,      // {state,profile_hash,pending,committed_by,committed_at} | null = not yet reported
+  release: null       // {released_by,released_at,to} | null = not released (Wave 3 cross-persona send)
+};
+
+/* ============================================================
+   Display-string table (Wave 3 onward). ALL NEW user-facing UI
+   strings live here so the Wave-5 jargon pass is a data pass over
+   this object, not a code sweep. Existing strings are deliberately
+   NOT refactored into it yet — new code only.
+   ============================================================ */
+const STRINGS = {
+  persona: {
+    toManufacturer: "Manufacturer view",
+    toPhysician: "← Physician view",
+    btnTitle: "Switch between the physician workspace and the manufacturer view"
+  },
+  form3926: {
+    eyebrow: "Form FDA 3926",
+    title: "Filled Form 3926 — draft PDF",
+    downloadBtn: "Download Form 3926 (draft PDF)",
+    fdfLink: "FDF field-map",
+    caption: "This PDF is a DRAFT for qualified human review — the DRAFT watermark stays " +
+      "until the gates clear. The FDF field names require verification against the official " +
+      "FDA form before any real use; OSSICRO renders its own faithful layout and never " +
+      "fetches or fills the official form.",
+    preparing: "Preparing…",
+    pdfDownloaded: "Draft Form 3926 PDF downloaded — DRAFT watermark retained; for qualified human review only.",
+    fdfDownloaded: "FDF field-map downloaded — verify every field name against the official FDA form before use.",
+    noCase: "Start a case first — the draft form is filled from an open case.",
+    stale: "Intake changed since generation — regenerate before downloading the draft form.",
+    unreachable: "Backend unreachable — is the OSSICRO server running?",
+    downloadFailed: "Could not download the draft:"
+  },
+  release: {
+    eyebrow: "Cross-persona release",
+    title: "Release to manufacturer",
+    framing: "Releasing makes this case's manufacturer-facing request visible in the " +
+      "manufacturer view. OSSICRO transmits nothing else and sends no message; the supply " +
+      "and LOA decision are the manufacturer's alone.",
+    actorLabel: "Releasing clinician",
+    namePlaceholder: "Your name",
+    btn: "Release to manufacturer view",
+    busy: "Recording release…",
+    needName: "Enter the releasing clinician's name — release is a named-human act.",
+    auditNote: "Release is a named-human act, recorded in the case audit trail. It is not a " +
+      "signature and clears no gate; it changes visibility only.",
+    done: "Release recorded — this case's request is now visible in the manufacturer view. Nothing was sent.",
+    releasedPill: "released",
+    releasedBy: "Released by",
+    at: "at",
+    releasedNote: "This case's manufacturer-facing request is visible in the manufacturer " +
+      "view. OSSICRO sent no message; the supply and LOA decision remain the manufacturer's " +
+      "alone (FDCA §561A).",
+    stale: "Intake changed since generation — regenerate before releasing."
+  },
+  pharma: {
+    eyebrow: "Pharma persona",
+    title: "Manufacturer view — released requests",
+    intro: "A case appears here only after a named clinician explicitly released it from the " +
+      "physician workspace — cross-persona visibility is a send, and it is audit-logged. " +
+      "Synthetic cases only through the pilot; no patient identifiers appear in this view.",
+    decisionLead: "No decision happens here.",
+    decisionNote: "The supply/authorize decision and the LOA signature are the " +
+      "manufacturer's — OSSICRO drafts, it does not decide or send (FDCA §561A). There is " +
+      "deliberately no approve, deny, or reply control anywhere in this view.",
+    refresh: "Refresh inbox",
+    loading: "Loading released requests…",
+    loadError: "Could not load the manufacturer inbox:",
+    empty: "No released requests.",
+    emptyNote: "A request appears here only after a named clinician records an explicit " +
+      "release on the physician side.",
+    countOne: "1 released request.",
+    countMany: "{n} released requests.",
+    drugLabel: "Drug:",
+    indicationLabel: "Indication:",
+    loaHeading: "LOA request (draft — the physician sends it; OSSICRO does not)",
+    noLoaText: "(LOA request text not provided by the inbox)",
+    cardNote: "Draft for the manufacturer's own review. The supply/authorize decision and " +
+      "LOA signature are the manufacturer's — OSSICRO drafts, it does not decide or send."
+  }
 };
 
 /* ---------------- utilities ---------------- */
@@ -886,7 +990,15 @@ $("#themeBtn").addEventListener("click", () => {
 
 /* ---------------- stepper / screens ---------------- */
 const STEPS = ["start","intake","check","package","match"];
+let personaMode = "physician";   // "physician" | "manufacturer" — top-level view mode
+let lastScreen = "start";        // last physician screen; persona toggle returns here
 function show(screen, noScroll){
+  lastScreen = screen;                       // persona toggle returns here
+  if (personaMode === "manufacturer"){       // any physician navigation exits pharma mode
+    personaMode = "physician";
+    const st = $("#stepper"); if (st) st.style.display = "";
+    const pb = $("#personaBtn"); if (pb) pb.textContent = STRINGS.persona.toManufacturer;
+  }
   $$(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-"+screen));
   $$("#stepper .step").forEach(b => b.classList.toggle("active", b.dataset.screen === screen));
   if (!noScroll) window.scrollTo({top:0, behavior:"smooth"});
@@ -921,6 +1033,7 @@ $("#startBtn").addEventListener("click", async () => {
     S.schema = schemaRes.fields || [];
     S.intakeRev = 0; S.generatedRev = null;
     setProfile(caseRes.profile || { state:"UNCOMMITTED", pending:[] });  // fresh case = uncommitted
+    S.release = extractRelease(caseRes);       // fresh case = not released
     location.hash = S.caseId;                  // resumable URL — survives restarts
     $("#caseChip").textContent = "case " + S.caseId;
     renderIntake();
@@ -964,6 +1077,7 @@ async function resumeCase(cid){
     S.intakeRev = caseRes.intake_rev ?? 0;
     S.generatedRev = caseRes.generated_rev ?? null;
     setProfile(caseRes.profile || null);
+    S.release = extractRelease(caseRes);
     $("#caseChip").textContent = "case " + cid;
     renderIntake();
     const serverIntake = caseRes.intake || {};
@@ -1570,6 +1684,8 @@ async function refreshProfile(){
   try {
     const res = await api("/api/case/" + encodeURIComponent(S.caseId));
     if (res && res.profile !== undefined) setProfile(res.profile);
+    const rel = extractRelease(res);
+    if (rel) { S.release = rel; renderReleaseCard(); }
   } catch {}   // panel keeps its last honest state; next check refreshes it
 }
 
@@ -2077,6 +2193,12 @@ function renderPackage(){
   const mp = p.manufacturer_packet || {};
   $("#loaRequest").textContent = asText(mp.loa_request) || "(LOA request not yet drafted)";
   $("#mfrCover").textContent = asText(mp.cover) || "(manufacturer cover not yet drafted)";
+
+  // Wave 3: draft-PDF download card + cross-persona release card
+  const rel = extractRelease(p);
+  if (rel) S.release = rel;              // package payload may carry the release record
+  renderForm3926Card();
+  renderReleaseCard();
 }
 
 /* tabs */
@@ -2210,6 +2332,244 @@ async function runMatch(){
   }
 }
 $("#matchBtn").addEventListener("click", runMatch);
+
+/* ============================================================
+   Wave 3 — D + E. All strings from STRINGS (see the table above).
+
+   D: GET /api/case/{id}/form3926.pdf  (filled draft — DRAFT watermark
+      retained until the gates clear) and .../form3926.fdf (field-map).
+      Both 409 unless the profile is COMMITTED — routed to the commit
+      panel, never surfaced as a raw error.
+
+   E: cross-persona visibility is a SEND. POST /api/case/{id}/release
+      {actor, to:"manufacturer"} is the explicit NAMED-HUMAN release act
+      (audit-logged server-side as action "release"); only after it does
+      the case appear in GET /api/manufacturer/inbox. OSSICRO transmits
+      nothing else and sends no message — the supply/authorize decision
+      and the LOA signature are the manufacturer's alone (FDCA §561A),
+      so the manufacturer view renders NO decision affordance.
+   ============================================================ */
+
+/* tolerant reader for the release record on any payload that may carry it */
+function extractRelease(obj){
+  if (!obj || typeof obj !== "object") return null;
+  if (obj.release && typeof obj.release === "object") return obj.release;
+  const rl = obj.releases;
+  if (Array.isArray(rl) && rl.length) return rl[rl.length - 1];
+  return null;
+}
+function releaseInfo(r){
+  if (!r) return null;
+  return { by: r.released_by || r.actor || r.by || "—",
+           at: r.released_at || r.at || r.when || null,
+           to: r.to || "manufacturer" };
+}
+
+/* ---- D: draft Form 3926 PDF + FDF field-map downloads ---- */
+function renderForm3926Card(){
+  const box = $("#form3926Card"); if (!box) return;
+  const T = STRINGS.form3926;
+  box.innerHTML = `
+    <div class="eyebrow">${esc(T.eyebrow)}</div>
+    <h3>${esc(T.title)} <span class="draftstamp">DRAFT</span></h3>
+    <div class="btnrow">
+      <button type="button" class="btn primary" id="dl3926Pdf">${esc(T.downloadBtn)}</button>
+      <a class="fixlink" id="dl3926Fdf" role="button" tabindex="0">${esc(T.fdfLink)}</a>
+    </div>
+    <p class="muted small" style="margin:10px 0 0;max-width:86ch">${esc(T.caption)}</p>`;
+  $("#dl3926Pdf").addEventListener("click", () => downloadForm3926("pdf", $("#dl3926Pdf")));
+  const fdf = $("#dl3926Fdf");
+  fdf.addEventListener("click", () => downloadForm3926("fdf", null));
+  fdf.addEventListener("keydown", ev => {
+    if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); downloadForm3926("fdf", null); }
+  });
+}
+
+async function downloadForm3926(kind, btn){
+  const T = STRINGS.form3926;
+  if (!S.caseId){ toast(T.noCase, true); return; }
+  if (staleNow()){ toast(T.stale, true); return; }
+  const orig = btn ? btn.textContent : "";
+  if (btn){ btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + esc(T.preparing); }
+  try {
+    let res;
+    try { res = await fetch(`/api/case/${S.caseId}/form3926.${kind}`); }
+    catch { throw new Error(T.unreachable); }
+    if (res.status === 409){
+      let body = null;
+      try { body = JSON.parse(await res.text()); } catch {}
+      if (body && (body.state || body.pending)) setProfileFrom409(body);
+      explainCommitGate();               // route to the commit panel, never a raw 409
+      return;
+    }
+    if (!res.ok){
+      let msg = res.status + " " + res.statusText;
+      try { const b = JSON.parse(await res.text());
+            msg = (b && (b.error || b.detail || b.message)) || msg; } catch {}
+      throw new Error(T.downloadFailed + " " + msg);
+    }
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `ossicro-route3926-${S.caseId}-form3926-DRAFT.${kind}`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast(kind === "pdf" ? T.pdfDownloaded : T.fdfDownloaded);
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = orig; }
+  }
+}
+
+/* ---- E: release to manufacturer — the named-human send ---- */
+const REL = { actor: "" };   // releasing clinician — persists across re-renders
+
+function renderReleaseCard(){
+  const box = $("#releaseCard"); if (!box) return;
+  const R = STRINGS.release;
+  const rel = releaseInfo(S.release);
+  if (rel){
+    box.innerHTML = `
+      <div class="eyebrow">${esc(R.eyebrow)}</div>
+      <h3>${esc(R.title)}
+        <span class="pill green" style="vertical-align:2px"><span class="dot"></span>${esc(R.releasedPill)}</span></h3>
+      <div class="commitmeta">
+        <span>${esc(R.releasedBy)} <b>${esc(rel.by)}</b></span>
+        <span class="muted">${esc(R.at)} <span class="mono">${esc(fmtWhen(rel.at))}</span></span>
+      </div>
+      <p class="muted small" style="margin:4px 0 0;max-width:86ch">${esc(R.releasedNote)}</p>`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="eyebrow">${esc(R.eyebrow)}</div>
+    <h3>${esc(R.title)}</h3>
+    <p class="small" style="margin:4px 0 8px;max-width:86ch">${esc(R.framing)}</p>
+    <div class="btnrow">
+      <label class="confirmclin">${esc(R.actorLabel)}
+        <input type="text" id="releaseActor" placeholder="${esc(R.namePlaceholder)}"
+               autocomplete="off" value="${esc(REL.actor)}">
+      </label>
+      <button type="button" class="btn primary" id="releaseBtn" disabled>${esc(R.btn)}</button>
+    </div>
+    <p class="muted small" style="margin:8px 0 0;max-width:86ch">${esc(R.auditNote)}</p>`;
+  const nameEl = $("#releaseActor"), btn = $("#releaseBtn");
+  const sync = () => { btn.disabled = !(REL.actor && REL.actor.trim()); };
+  nameEl.addEventListener("input", () => { REL.actor = nameEl.value; sync(); });
+  btn.addEventListener("click", releaseToManufacturer);
+  sync();
+}
+
+async function releaseToManufacturer(){
+  const R = STRINGS.release;
+  const actor = (REL.actor || "").trim();
+  if (!actor){ toast(R.needName, true); return; }
+  if (staleNow()){ toast(R.stale, true); return; }
+  const btn = $("#releaseBtn");
+  if (btn){ btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + esc(R.busy); }
+  try {
+    const res = await api(`/api/case/${S.caseId}/release`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ actor, to: "manufacturer" })
+    });
+    S.release = extractRelease(res)
+      || ((res && (res.released_by || res.released_at)) ? res : null)
+      || { released_by: actor, released_at: new Date().toISOString(), to: "manufacturer" };
+    renderReleaseCard();
+    toast(R.done);
+  } catch (e) {
+    if (e.status === 409 && e.body && (e.body.state || e.body.pending)){
+      setProfileFrom409(e.body);
+      explainCommitGate();               // profile re-opened — route to the commit panel
+      renderReleaseCard();
+    } else {
+      renderReleaseCard();               // restore the form's button state
+      toast(e.message, true);
+    }
+  }
+}
+
+/* ---- E: pharma persona — the manufacturer view (top-level mode) ---- */
+function setPersona(mode){
+  personaMode = mode;
+  const pharma = mode === "manufacturer";
+  const st = $("#stepper"); if (st) st.style.display = pharma ? "none" : "";
+  const pb = $("#personaBtn");
+  if (pb) pb.textContent = pharma ? STRINGS.persona.toPhysician : STRINGS.persona.toManufacturer;
+  $$(".screen").forEach(s => s.classList.toggle("active",
+    pharma ? s.id === "screen-pharma" : s.id === "screen-" + lastScreen));
+  if (pharma) loadInbox();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+$("#personaBtn").addEventListener("click", () =>
+  setPersona(personaMode === "manufacturer" ? "physician" : "manufacturer"));
+
+function inboxItemHtml(it){
+  const T = STRINGS.pharma;
+  // Render ONLY the coded, manufacturer-facing fields — never a raw dump.
+  // The manufacturer sees the coded patient id and an opaque release id —
+  // never the case_id (a full-access capability; deliberately not sent).
+  const id   = asText(it.patient_coded_id || it.coded_id || it.release_id || it.id) || "—";
+  const drug = asText(it.drug || it.drug_name) || "—";
+  const ind  = asText(it.indication || it.diagnosis) || "—";
+  const loa  = asText(it.loa_request || it.loa_request_text || it.request);
+  const rel  = releaseInfo((it.released_by || it.actor || it.by) ? it : extractRelease(it));
+  return `<div class="card">
+    <div class="prophead">
+      <span class="proplabel mono">${esc(id)}</span>
+      <span class="draftstamp">DRAFT</span>
+    </div>
+    <div class="commitmeta">
+      <span><b>${esc(T.drugLabel)}</b> ${esc(drug)}</span>
+      <span><b>${esc(T.indicationLabel)}</b> ${esc(ind)}</span>
+      ${rel && rel.by !== "—" ? `<span class="muted">${esc(STRINGS.release.releasedBy)} <b>${esc(rel.by)}</b>
+        ${rel.at ? `${esc(STRINGS.release.at)} <span class="mono">${esc(fmtWhen(rel.at))}</span>` : ""}</span>` : ""}
+    </div>
+    <p class="muted small" style="margin:6px 0 4px">${esc(T.loaHeading)}</p>
+    <pre class="render open">${esc(loa || T.noLoaText)}</pre>
+    <p class="muted small" style="margin:8px 0 0">${esc(T.cardNote)}</p>
+  </div>`;
+}
+
+async function loadInbox(){
+  const T = STRINGS.pharma;
+  const box = $("#inboxList"); if (!box) return;
+  const status = $("#inboxStatus");
+  box.innerHTML = `<div class="card tight"><p class="muted" style="margin:0">
+    <span class="spin"></span>${esc(T.loading)}</p></div>`;
+  if (status) status.textContent = "";
+  try {
+    const res = await api("/api/manufacturer/inbox");
+    const items = Array.isArray(res) ? res
+      : (res && (res.inbox || res.cases || res.requests || res.released)) || [];
+    if (!items.length){
+      box.innerHTML = `<div class="absencecard">
+        <div class="amsg">${esc(T.empty)}</div>
+        <p class="muted small" style="margin:7px 0 0">${esc(T.emptyNote)}</p></div>`;
+    } else {
+      box.innerHTML = items.map(inboxItemHtml).join("");
+      if (status) status.textContent = items.length === 1
+        ? T.countOne : T.countMany.replace("{n}", items.length);
+    }
+  } catch (e) {
+    box.innerHTML = `<div class="card tight"><p class="muted" style="margin:0">
+      ${esc(T.loadError)} ${esc(e.message)}</p></div>`;
+  }
+}
+
+/* one-time injection of the pharma screen's static strings */
+(function initPersonaUI(){
+  const T = STRINGS.pharma;
+  const pb = $("#personaBtn");
+  if (pb){ pb.textContent = STRINGS.persona.toManufacturer; pb.title = STRINGS.persona.btnTitle; }
+  $("#pharmaEyebrow").textContent = T.eyebrow;
+  $("#pharmaTitle").textContent = T.title;
+  $("#pharmaIntro").textContent = T.intro;
+  $("#pharmaDecisionNote").innerHTML = `<b>${esc(T.decisionLead)}</b> ${esc(T.decisionNote)}`;
+  const rb = $("#inboxRefreshBtn");
+  rb.textContent = T.refresh;
+  rb.addEventListener("click", loadInbox);
+})();
 
 /* ---------------- export ---------------- */
 $("#exportJsonBtn").addEventListener("click", () => {
