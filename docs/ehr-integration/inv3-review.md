@@ -112,3 +112,12 @@ persistence-hardening pass (it pairs with m3's real-POST integration test). **m4
 m5 is correct-as-is (noted so nobody "fixes" it unsafely); m4 (non-str key coercion) is
 unreachable through the JSON boundary; m6 (dead frontend branch) is a one-GET waste, folded
 into the hardening pass. None are gate or privacy holes.
+
+**Wave-1 hardening follow-up (2026-07-10): m1 and m6 CLOSED.** m1: the 409
+`{error, pending, state}` contract for `/generate` and `/package` is now driven through the
+real `Handler` via socketless in-process requests (`app/tests/test_wave1_hardening.py::
+TestHttp409Contract` — deleting either `except ProfileNotCommitted` clause now fails tests).
+m6: `POST /intake` now returns the already-computed `profile` block, so the client's existing
+`res.profile` branch is live and the follow-up GET is gone (server-side fix; index.html
+untouched). Shipped alongside I-AUDIT (`engine/ossicro/audit.py` + `case['audit']` +
+`GET /api/case/{id}/audit`) and the persistence hardening. Suite 201 → 233.

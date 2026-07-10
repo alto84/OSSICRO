@@ -14,7 +14,8 @@ drafts only — OSSICRO never performs a non-delegable regulated act.
 
 | Tag | Feature | Status entering this plan |
 |-----|---------|---------------------------|
-| **A** | INV-3 `commit_profile` (hard-gate, per-field re-confirmation) | **building now** (workflow) |
+| **A** | INV-3 `commit_profile` (hard-gate, per-field re-confirmation) | **done** (built/reviewed/revised, 201 tests) |
+| **I-audit** | Append-only, hash-chained audit log + persistence hardening | **done** (built/reviewed/revised, 239 tests) |
 | **B** | INV-4 de-identified egress gateway | not built (safety substrate for C) |
 | **C** | Matching engine — diagnosis → candidate drugs / trials / manufacturers | not built (**marquee feature**) |
 | **D** | Fillable Form FDA 3926 PDF (AcroForm), replacing text render | not built (HITL-1) |

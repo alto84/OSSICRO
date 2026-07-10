@@ -10,8 +10,9 @@ SHARED API CONTRACT:
 
     GET  /api/route/3926/schema
     POST /api/case
-    GET  /api/case/{id}                 -> {intake, signoffs, intake_rev, generated_rev}
-    POST /api/case/{id}/intake          -> {ok, intake_rev}
+    GET  /api/case/{id}                 -> {intake, signoffs, intake_rev, generated_rev, profile, audit}
+    POST /api/case/{id}/intake          -> {ok, intake_rev, stale, profile}
+                                           (rejects any key not in the route schema)
     POST /api/case/{id}/generate        -> {route_id, documents, generated_rev, intake_rev}
                                            (INV-3 hard gate: 409 {error, pending, state}
                                            unless a named human committed the profile
@@ -53,6 +54,7 @@ ENGINE_DIR = os.path.join(REPO_ROOT, "engine")
 if ENGINE_DIR not in sys.path:
     sys.path.insert(0, ENGINE_DIR)
 
+from ossicro import audit as audit_mod                       # noqa: E402
 from ossicro import routes as routes_mod                     # noqa: E402
 from ossicro.assemble import assemble_submission             # noqa: E402
 from ossicro.clocks import working_days_between                  # noqa: E402
@@ -121,13 +123,34 @@ def _new_case() -> dict:
             # performing the named-human act). generated_hash is the committed
             # profile hash consumed by the last /generate (hash authority for
             # staleness; the rev counters stay as display metadata).
-            "committed_profile": None, "generated_hash": None}
+            "committed_profile": None, "generated_hash": None,
+            # I-AUDIT (Wave 1): the append-only audit trail — field ids,
+            # actions, actors, timestamps, input hashes; NEVER chart values
+            # (INV-8). Written via ossicro.audit.append only; later waves
+            # (INV-4 egress, INV-5 enrollment, release acts) write here too.
+            "audit": []}
 
 
 def _normalize_case(case: dict) -> dict:
+    """Backfill missing keys on a loaded case. Idempotent.
+
+    Raises ValueError on a shape that cannot be a case (non-dict JSON, or an
+    audit trail that is not a list) — the loader SKIPS such a file with a
+    warning rather than crashing startup or silently discarding an audit
+    trail (append-only means we never replace a corrupt trail with []).
+    """
+    if not isinstance(case, dict):
+        raise ValueError("case JSON must be an object, got %s"
+                         % type(case).__name__)
     base = _new_case()
     for key, default in base.items():
         case.setdefault(key, default)
+    if not isinstance(case["audit"], list):
+        raise ValueError("case audit trail is corrupt (not a list) — "
+                         "refusing to load rather than discard it")
+    if not all(isinstance(entry, dict) for entry in case["audit"]):
+        raise ValueError("case audit trail has a non-dict entry — refusing to "
+                         "load rather than serve a corrupt trail")
     return case
 
 
@@ -136,13 +159,27 @@ def _case_path(case_id: str) -> str:
 
 
 def _save_case(case_id: str) -> None:
-    """Atomic write: tmp file + os.replace so a crash never truncates a case."""
+    """Atomic write: tmp file + fsync + os.replace.
+
+    A crash mid-write never truncates a case (the good file is replaced only
+    by a fully-flushed tmp), and a failed dump never clobbers it — on any
+    error the tmp is removed and the previous on-disk case stands.
+    """
     os.makedirs(CASES_DIR, exist_ok=True)
     path = _case_path(case_id)
     tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(CASES[case_id], f, indent=1, sort_keys=True)
-    os.replace(tmp, path)
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(CASES[case_id], f, indent=1, sort_keys=True)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def _load_cases() -> None:
@@ -622,6 +659,14 @@ def _record_signoff(case: dict, payload: dict):
                 if not (s.get("gate_id") == gate_id and s.get("doc_id") == doc_id)]
     signoffs.append(record)
     case["signoffs"] = signoffs
+    # I-AUDIT: one record per recorded sign-off — the named signer, the gate
+    # and document ids, and the committed-profile hash in force at the time
+    # ("" = honest absence, pre-commit). No document or chart content.
+    audit_mod.append(case.setdefault("audit", []), actor=signer,
+                     action="signoff", target=doc_id,
+                     input_hash=record["input_hash"],
+                     detail={"gate_id": gate_id, "doc_id": doc_id,
+                             "role": role, "date": date})
     return record, None, 200
 
 
@@ -668,6 +713,12 @@ def _profile_commit(case: dict, payload: dict):
     case["committed_profile"] = new_cp
     _append_confirmation(case, actor, "commit",
                          list(new_cp["field_hashes"].keys()))
+    # I-AUDIT: exactly one immutable record per commit — field ids and the
+    # committed hash, never values (INV-8).
+    audit_mod.append(case.setdefault("audit", []), actor=actor,
+                     action="commit", target="committed-profile",
+                     input_hash=new_cp["profile_hash"],
+                     detail={"field_ids": sorted(new_cp["field_hashes"])})
     return {"ok": True, "profile": _profile_block(case)}, 200
 
 
@@ -696,6 +747,14 @@ def _profile_confirm(case: dict, payload: dict):
         new_cp["intake_rev_at_commit"] = case["intake_rev"]
     case["committed_profile"] = new_cp
     _append_confirmation(case, actor, "reconfirm", field_ids)
+    # I-AUDIT: one record per re-confirmation. input_hash is the commit
+    # object's CURRENT hash — the new hash when the pending set drained and
+    # confirm_fields auto-recommitted, the still-standing prior hash when
+    # fields remain staged (honest either way).
+    audit_mod.append(case.setdefault("audit", []), actor=actor,
+                     action="reconfirm", target="committed-profile",
+                     input_hash=new_cp.get("profile_hash") or "",
+                     detail={"field_ids": sorted(field_ids)})
     return {"ok": True, "profile": _profile_block(case)}, 200
 
 
@@ -709,6 +768,7 @@ _CASE_GENERATE = re.compile(r"^/api/case/([^/]+)/generate$")
 _CASE_CHECK = re.compile(r"^/api/case/([^/]+)/check$")
 _CASE_PACKAGE = re.compile(r"^/api/case/([^/]+)/package$")
 _CASE_SIGNOFF = re.compile(r"^/api/case/([^/]+)/signoff$")
+_CASE_AUDIT = re.compile(r"^/api/case/([^/]+)/audit$")
 _CASE_FHIR_IMPORT = re.compile(r"^/api/case/([^/]+)/fhir/import$")
 _CASE_PROFILE_COMMIT = re.compile(r"^/api/case/([^/]+)/profile/commit$")
 _CASE_PROFILE_CONFIRM = re.compile(r"^/api/case/([^/]+)/profile/confirm$")
@@ -744,17 +804,26 @@ def _fhir_import(case: dict, case_id: str, payload: dict):
 
     # Privacy-state note: a bundle was loaded and mapped in PREPARATORY_REVIEW
     # mode. Hash + metadata only — the bundle itself is not retained (INV-8).
+    bundle_hash = bundle_sha256(bundle)
     with _LOCK:
         case.setdefault("privacy_log", []).append({
             "event": "fhir_bundle_loaded",
             "state": "MAPPED",
             "mode": "PREPARATORY_REVIEW",
             "source_kind": source_kind,
-            "bundle_sha256": bundle_sha256(bundle),
+            "bundle_sha256": bundle_hash,
             "proposals": result["summary"]["auto"],
             "at": datetime.datetime.now(datetime.timezone.utc)
                   .strftime("%Y-%m-%dT%H:%M:%SZ"),
         })
+        # I-AUDIT: one record per bundle load. No named human performs this
+        # act (import MAPS only; confirmation happens later via /intake and
+        # /profile/confirm), so actor is honestly blank — never synthesized.
+        audit_mod.append(case.setdefault("audit", []), actor="",
+                         action="bundle_loaded", target="fhir-bundle",
+                         input_hash="sha256:" + bundle_hash,
+                         detail={"source_kind": source_kind,
+                                 "proposals": result["summary"]["auto"]})
         _save_case(case_id)
     return result, None, 200
 
@@ -836,6 +905,25 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 return self._send_json({"error": type(exc).__name__, "detail": str(exc)}, 500)
 
+        m = _CASE_AUDIT.match(path)
+        if m:
+            case = self._case(m.group(1))
+            if case is None:
+                return self._send_json({"error": "unknown case"}, 404)
+            # I-AUDIT read: copies of the immutable records, in order, plus the
+            # tamper-evidence verdict from the hash chain. The trail carries no
+            # chart values (INV-8), so it is safe to return verbatim.
+            try:
+                trail = case.get("audit", [])
+                broken = audit_mod.verify_chain(trail)
+                return self._send_json({
+                    "audit": [dict(r) for r in trail],
+                    "chain_ok": not broken,
+                    "chain_broken_at": broken,
+                })
+            except Exception as exc:
+                return self._send_json({"error": type(exc).__name__, "detail": str(exc)}, 500)
+
         m = _CASE_GET.match(path)
         if m:
             case = self._case(m.group(1))
@@ -878,6 +966,16 @@ class Handler(BaseHTTPRequestHandler):
             payload = self._read_json()
             if payload is None or not isinstance(payload.get("fields"), dict):
                 return self._send_json({"error": "expected {fields:{...}}"}, 400)
+            # MAJOR-1: intake accepts ONLY schema field ids. An unknown key is a
+            # client bug or a key/value swap; without this it would flow into the
+            # commit's field_ids and thence into the append-only audit trail — a
+            # durable INV-8 leak in the one structure that can never be edited.
+            unknown = [k for k in payload["fields"] if k not in SCHEMA_FIELDS]
+            if unknown:
+                return self._send_json(
+                    {"error": "unknown intake field id(s): %s — intake accepts only "
+                     "the route's schema fields" % ", ".join(sorted(unknown)[:5]),
+                     "unknown": sorted(unknown)}, 400)
             actor = str(payload.get("actor", "")).strip()
             provenance = payload.get("provenance")
             provenance = provenance if isinstance(provenance, dict) else {}
@@ -912,8 +1010,12 @@ class Handler(BaseHTTPRequestHandler):
                 if case["intake"] != before:
                     case["intake_rev"] += 1
                 _save_case(case_id)
-            return self._send_json({"ok": True, "intake_rev": case["intake_rev"],
-                                    "stale": _is_stale(case)})
+                # MINOR-4: compute the response state INSIDE the lock so it can't
+                # reflect a concurrent write. m6: carry the profile block so the
+                # client's res.profile branch works without a follow-up GET.
+                resp = {"ok": True, "intake_rev": case["intake_rev"],
+                        "stale": _is_stale(case), "profile": _profile_block(case)}
+            return self._send_json(resp)
 
         m = _CASE_GENERATE.match(path)
         if m:
