@@ -24,4 +24,5 @@
 | 3 Build (backend FHIR ingest + confirmation UI + polish) | done | `engine/ossicro/fhir_ingest.py` (+23 tests, 97 green), `app/server.py` (POST `/fhir/import`), `app/static/index.html` (import + confirmation UI + uplift). HTTP-verified: import returns 19 proposals, does NOT mutate intake, no patient PHI in proposals, planted-PHI bundle leaks nothing, confirm→`/intake` works. |
 | 4 Adversarial review (clinical-informatics + privacy skeptic) | done | `docs/ehr-integration/review.md` — 3 BLOCKER, 7 MAJOR, 4 MINOR + T1 test-gap; all reproduced by executing code |
 | 5 Revise (orchestrator, not builders) | done | fixes B1/B2/B3/M1-M7/MIN1-3 + hostile-bundle test battery (97→120 tests); doc-honesty pass on `privacy-state-machine.md`; per-charge reply in review.md |
-| 6 Re-review (fresh reviewer) | in progress | round-2 memo |
+| 6 Re-review (fresh reviewer) | done | `docs/ehr-integration/review-round2.md` — verdict **FIRE after small patching**; 14/14 round-1 fixes verified, none regressed; 2 blocking + 4 non-blocking patches applied (97→128 tests) |
+| 7 Greenlight | BLOCKED-awaiting-greenlight | Alton, in chat |

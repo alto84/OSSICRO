@@ -368,11 +368,11 @@ def _extract_diagnosis(bundle, proposals):
     if not parts:
         return
     dx = " | ".join(parts) if len(parts) > 1 else parts[0]
-    stage, stage_dt, _ = _latest_observation(bundle, LOINC_STAGE_GROUP)
+    stage, stage_dt, stage_tainted = _latest_observation(bundle, LOINC_STAGE_GROUP)
     ecog, ecog_dt, ecog_tainted = _latest_observation(bundle, LOINC_ECOG)
     if ecog is None:
         ecog, ecog_dt, ecog_tainted = _latest_observation(bundle, LOINC_KARNOFSKY)
-    tainted = tainted or ecog_tainted
+    tainted = tainted or stage_tainted or ecog_tainted
     bits = [dx]
     if stage:
         bits.append("Stage: %s%s" % (stage, (" (as of %s)" % stage_dt) if stage_dt else ""))
@@ -591,6 +591,11 @@ def _render_address(addr: Optional[Dict[str, Any]]) -> Optional[str]:
 
 # --- Drug + treatment section --------------------------------------------------
 
+# Statuses that mean an order is closed/dead — never an EA candidate.
+_CLOSED_MR_STATUSES = frozenset({"completed", "stopped", "cancelled",
+                                 "entered-in-error"})
+
+
 # The expanded-access candidate is a STAGED order, not an active therapy. An
 # active home-med order (status=active, intent=order) is existing treatment and
 # must never be mistaken for the investigational agent (B2).
@@ -599,15 +604,23 @@ def _candidate_drug_requests(bundle) -> List[Dict[str, Any]]:
     for mr in _of_type(bundle, "MedicationRequest"):
         status = mr.get("status")
         intent = mr.get("intent")
-        if status in ("draft", "on-hold") or intent in ("proposal", "plan"):
+        # A staged order (draft/on-hold), OR a plan/proposal that has NOT been
+        # killed. The intent arm must still exclude dead statuses, or a
+        # cancelled/entered-in-error/completed plan resurrects as the EA agent
+        # (the M4 quarantine bug, re-created in the drug section — NEW-2).
+        if status in ("draft", "on-hold") or (
+                intent in ("proposal", "plan")
+                and status not in _CLOSED_MR_STATUSES):
             out.append(mr)
     return out
 
 
-def _extract_drug(bundle, proposals) -> Optional[str]:
+def _extract_drug(bundle, proposals) -> Tuple[Optional[str], Optional[str]]:
+    """Returns (drug_name, drug_rxnorm_code) — the code, when present, lets
+    first_treatment match by code equality rather than a loose token overlap."""
     candidates = _candidate_drug_requests(bundle)
     if not candidates:
-        return None
+        return None, None
     mr = candidates[0]
     # More than one staged candidate -> the mapper cannot know which is the
     # investigational agent; cap everything drug.* at medium and say so (§1.2).
@@ -638,7 +651,8 @@ def _extract_drug(bundle, proposals) -> Optional[str]:
                 "code — expected for investigational agents)%s" % multi_note,
                 None, "medium", tainted=name_tainted))
     if not drug_name:
-        return None
+        return None, None
+    drug_code = rx.get("code") if rx else None
 
     di = (mr.get("dosageInstruction") or [{}])[0]
 
@@ -688,20 +702,23 @@ def _extract_drug(bundle, proposals) -> Optional[str]:
         proposals.append(_proposal(
             "drug.duration", duration, "MedicationRequest", duration_path,
             "UCUM", "medium"))
-    return str(drug_name)
+    return str(drug_name), drug_code
 
 
 def _norm_tokens(s: str) -> set:
     return set(re.sub(r"[^a-z0-9]+", " ", s.lower()).split())
 
 
-def _extract_first_treatment(bundle, proposals, drug_name: Optional[str], emergency: bool):
+def _extract_first_treatment(bundle, proposals, drug_name: Optional[str],
+                             drug_code: Optional[str], emergency: bool):
     """submission.first_treatment_date — EMERGENCY-path documentation only (M2).
 
     Fires only when (a) the emergency route is selected, (b) a drug candidate
     was identified, and (c) a completed MedicationAdministration matches that
-    agent by code or by a whole-word name match (not a first-token substring).
-    Absent = unattested = no proposal (correct on the non-emergency path).
+    agent. Matching is by RxNorm CODE EQUALITY (the only path that earns high)
+    or by whole-token CONTAINMENT of one name in the other — never a single
+    shared token, which would false-match "sodium chloride" to "sodium
+    bicarbonate" (NEW-3).
     """
     if not emergency or not drug_name:
         return
@@ -714,9 +731,11 @@ def _extract_first_treatment(bundle, proposals, drug_name: Optional[str], emerge
         med_text = _coded_display(med) or ""
         if med_text == "" and isinstance(med, dict):
             med_text = str(med.get("text") or "")
-        coded_match = bool(rx and rx.get("display")
-                           and _norm_tokens(rx["display"]) & drug_tokens)
-        text_match = bool(drug_tokens and (drug_tokens & _norm_tokens(med_text)))
+        coded_match = bool(rx and drug_code and rx.get("code") == drug_code)
+        admin_tokens = _norm_tokens(med_text)
+        text_match = bool(drug_tokens and admin_tokens
+                          and (drug_tokens <= admin_tokens
+                               or admin_tokens <= drug_tokens))
         if not (coded_match or text_match):
             continue
         when = ma.get("effectiveDateTime") or (ma.get("effectivePeriod") or {}).get("start")
@@ -828,20 +847,27 @@ def _forbidden_basis(bundle) -> Dict[str, Any]:
     """
     subs, words = set(), set()
 
+    def norm(s):
+        return re.sub(r"[^a-z0-9]+", " ", str(s).lower()).strip()
+
     def add_name(name):
         if not isinstance(name, dict):
             return
         parts = list(name.get("given", []) or [])
         if name.get("family"):
             parts.append(name["family"])
+        # Only MULTI-token names go to subs (substring match). Single tokens are
+        # covered by the >=3-char whole-word set below — so a 2-char family name
+        # cannot substring-nuke a coded term like "cholangiocarcinoma" (NEW-6).
         full = " ".join(p for p in parts if p)
-        if full:
-            subs.add(re.sub(r"[^a-z0-9]+", " ", full.lower()).strip())
-        if name.get("text"):
-            subs.add(re.sub(r"[^a-z0-9]+", " ", str(name["text"]).lower()).strip())
-        for p in parts + [name.get("text")]:
+        if full and " " in full:
+            subs.add(norm(full))
+        text = name.get("text")
+        if text and " " in str(text):
+            subs.add(norm(text))
+        for p in parts + [text]:
             if p:
-                for tok in re.sub(r"[^a-z0-9]+", " ", str(p).lower()).split():
+                for tok in norm(p).split():
                     if len(tok) >= 3:
                         words.add(tok)
 
@@ -897,8 +923,8 @@ def _apply_leak_guard(bundle, proposals, never_extracted):
             reason = ("extracted value would carry a patient identifier"
                       if hit else
                       "free-text value could not be verified PHI-free — no "
-                      "Patient resource in the bundle to check against; enter "
-                      "this field manually")
+                      "verifiable patient identifiers in the bundle to check "
+                      "against; enter this field manually")
             never_extracted.append(
                 "%s (proposal dropped by leak-guard: %s)" % (p["field_id"], reason))
             continue
@@ -944,8 +970,8 @@ def extract_proposals(bundle_dict: Dict[str, Any], route: Dict[str, Any],
 
     _extract_patient(bundle_dict, proposals, never_extracted, as_of)
     _extract_practitioner(bundle_dict, proposals, never_extracted)
-    drug_name = _extract_drug(bundle_dict, proposals)
-    _extract_first_treatment(bundle_dict, proposals, drug_name, emergency)
+    drug_name, drug_code = _extract_drug(bundle_dict, proposals)
+    _extract_first_treatment(bundle_dict, proposals, drug_name, drug_code, emergency)
     _extract_site(bundle_dict, proposals)
     proposals.extend(_derived_proposals(bundle_dict, drug_name))
 

@@ -424,6 +424,34 @@ class TestImportEndpoint(unittest.TestCase):
         _, case = self._get("/api/case/%s" % case_id)
         self.assertEqual(case["intake"], {})
 
+    def test_named_confirmation_persists_and_is_phi_free(self):
+        # NEW-4: the named-actor + provenance substrate round-trips durably and
+        # records no chart value; a no-actor POST still works (backward compat).
+        _, created = self._post("/api/case", {})
+        cid = created["case_id"]
+        # named confirmation with chart provenance
+        status, _ = self._post("/api/case/%s/intake" % cid, {
+            "fields": {"patient.age": "58", "drug.name": "Cytoravir"},
+            "actor": "Dr. Jordan Rivera",
+            "provenance": {"patient.age": "chart-confirmed",
+                           "drug.name": "chart-confirmed"}})
+        self.assertEqual(status, 200)
+        _, case = self._get("/api/case/%s" % cid)
+        confs = case["confirmations"]
+        self.assertEqual(len(confs), 1)
+        self.assertEqual(confs[0]["actor"], "Dr. Jordan Rivera")
+        self.assertEqual(set(confs[0]["from_chart"]), {"patient.age", "drug.name"})
+        self.assertEqual(case["field_provenance"]["drug.name"], "chart-confirmed")
+        # the confirmation record carries no chart value (only field ids)
+        self.assertNotIn("Cytoravir", json.dumps(confs))
+        # no-actor POST still writes intake and records no confirmation
+        status, _ = self._post("/api/case/%s/intake" % cid,
+                               {"fields": {"site.name": "Fictional Onc"}})
+        self.assertEqual(status, 200)
+        _, case2 = self._get("/api/case/%s" % cid)
+        self.assertEqual(len(case2["confirmations"]), 1)  # unchanged
+        self.assertEqual(case2["field_provenance"].get("site.name"), "manual")
+
     def test_bad_payloads_rejected(self):
         _, created = self._post("/api/case", {})
         case_id = created["case_id"]
@@ -524,7 +552,7 @@ class TestLeakGuardHostile(unittest.TestCase):
         by = _ids(result)
         self.assertNotIn("drug.dose", by)
         self.assertNotIn("drug.name", by)
-        self.assertTrue(any("no Patient resource" in n
+        self.assertTrue(any("could not be verified PHI-free" in n
                             for n in result["never_extracted"]))
 
     def test_relatedperson_name_harvested_into_basis(self):
@@ -547,6 +575,34 @@ class TestLeakGuardHostile(unittest.TestCase):
              "code": {"text": "cholangiocarcinoma per Hiddenname chart"}},
         )
         self.assertNotIn("patient.diagnosis", _ids(_extract(bundle)))
+
+    def test_stage_observation_free_text_fails_closed(self):
+        # NEW-1: PHI in a STAGE observation's free text must be dropped like
+        # ECOG's is — no Patient basis -> fail closed.
+        bundle = _bundle(
+            _patient(gender="female"),   # no name/id -> has_basis False
+            _active_condition({"coding": [{"system": SNOMED, "code": "1",
+                                           "display": "Cholangiocarcinoma"}]}),
+            {"resourceType": "Observation", "status": "final",
+             "code": {"coding": [{"system": LOINC, "code": "21908-9"}]},
+             "valueCodeableConcept": {"text": "Stage IV - per note, "
+                                              "Harriet Quimby MRN 88-1234"},
+             "effectiveDateTime": "2026-06-01"},
+        )
+        result = _extract(bundle)
+        self.assertNotIn("patient.diagnosis", _ids(result))
+        self.assertNotIn("Quimby", json.dumps(result))
+
+    def test_two_char_surname_does_not_nuke_coded_term(self):
+        # NEW-6: a 2-char family name must not substring-drop "Cholangiocarcinoma".
+        bundle = _bundle(
+            _patient(name=[{"family": "Ng"}], gender="female"),
+            _active_condition({"coding": [{"system": SNOMED, "code": "1",
+                                           "display": "Cholangiocarcinoma"}]}),
+        )
+        by = _ids(_extract(bundle))
+        self.assertIn("patient.diagnosis", by)
+        self.assertIn("Cholangiocarcinoma", by["patient.diagnosis"]["value"])
 
     def test_clean_coded_diagnosis_survives(self):
         # A coding.display (controlled terminology, no free text) is NOT tainted
@@ -614,6 +670,40 @@ class TestDrugCandidateSafety(unittest.TestCase):
                          self._draft("morphine", rx="7052"))
         self.assertEqual(_ids(_extract(bundle))["drug.name"]["confidence"], "medium")
 
+    def _dead(self, name, status, intent="plan"):
+        return {"resourceType": "MedicationRequest", "status": status,
+                "intent": intent,
+                "medicationCodeableConcept": {"text": name},
+                "dosageInstruction": [{"route": {"coding": [
+                    {"system": SNOMED, "code": "26643006", "display": "Oral route"}]}}]}
+
+    def test_cancelled_plan_is_not_candidate(self):
+        # NEW-2: a cancelled/entered-in-error/completed plan must NOT resurrect
+        # as the investigational agent.
+        for status in ("cancelled", "entered-in-error", "completed", "stopped"):
+            bundle = _bundle(_patient(name=[{"family": "Zorp"}], gender="female"),
+                             self._dead("Abandoned-Agent", status))
+            self.assertNotIn("drug.name", _ids(_extract(bundle)), status)
+
+    def test_dead_plan_does_not_win_first_slot(self):
+        # NEW-2: a live draft must win over a cancelled plan listed before it.
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            self._dead("Abandoned-Agent", "cancelled"),
+            self._draft("Live-Draft"),
+        )
+        by = _ids(_extract(bundle))
+        self.assertIn("Live-Draft", by["drug.name"]["value"])
+        self.assertNotIn("Abandoned-Agent", by["drug.name"]["value"])
+
+    def test_active_plan_remains_candidate(self):
+        # Guard against over-narrowing: active+plan is still a legitimate stage.
+        bundle = _bundle(_patient(name=[{"family": "Zorp"}], gender="female"),
+                         {"resourceType": "MedicationRequest", "status": "active",
+                          "intent": "plan",
+                          "medicationCodeableConcept": {"text": "Staged-Agent"}})
+        self.assertIn("drug.name", _ids(_extract(bundle)))
+
     def test_multiple_candidates_cap_route_and_flag(self):
         bundle = _bundle(_patient(name=[{"family": "Zorp"}], gender="female"),
                          self._draft("Agent-A", route_code="26643006"),
@@ -652,6 +742,30 @@ class TestFirstTreatmentGating(unittest.TestCase):
                          self._draft("Cytoravir"), self._ma("Morphine sulfate"))
         self.assertNotIn("submission.first_treatment_date",
                          _ids(_extract(bundle, emergency=True)))
+
+    def test_shared_single_token_does_not_match(self):
+        # NEW-3: "sodium chloride" admin must NOT date "sodium bicarbonate" drug
+        # on the shared token "sodium" (containment, not intersection).
+        bundle = _bundle(_patient(name=[{"family": "Zorp"}], gender="female"),
+                         self._draft("sodium bicarbonate"),
+                         self._ma("sodium chloride 0.9% injection"))
+        self.assertNotIn("submission.first_treatment_date",
+                         _ids(_extract(bundle, emergency=True)))
+
+    def test_high_only_on_rxnorm_code_equality(self):
+        # NEW-3: a coded candidate + coded admin with the SAME RxNorm code earns
+        # high; a display-token overlap without code equality does not.
+        drug = {"resourceType": "MedicationRequest", "status": "draft",
+                "intent": "proposal",
+                "medicationCodeableConcept": {"coding": [
+                    {"system": RXNORM, "code": "999", "display": "Cytoravir"}]}}
+        ma = {"resourceType": "MedicationAdministration", "status": "completed",
+              "medicationCodeableConcept": {"coding": [
+                  {"system": RXNORM, "code": "999", "display": "Cytoravir 50mg"}]},
+              "effectiveDateTime": "2026-06-15"}
+        bundle = _bundle(_patient(name=[{"family": "Zorp"}], gender="female"), drug, ma)
+        p = _ids(_extract(bundle, emergency=True))["submission.first_treatment_date"]
+        self.assertEqual(p["confidence"], "high")
 
 
 class TestObservationRecency(unittest.TestCase):
