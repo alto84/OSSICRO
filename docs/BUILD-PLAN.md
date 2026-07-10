@@ -16,8 +16,8 @@ drafts only — OSSICRO never performs a non-delegable regulated act.
 |-----|---------|---------------------------|
 | **A** | INV-3 `commit_profile` (hard-gate, per-field re-confirmation) | **done** (built/reviewed/revised, 201 tests) |
 | **I-audit** | Append-only, hash-chained audit log + persistence hardening | **done** (built/reviewed/revised, 239 tests) |
-| **B** | INV-4 de-identified egress gateway | not built (safety substrate for C) |
-| **C** | Matching engine — diagnosis → candidate drugs / trials / manufacturers | not built (**marquee feature**) |
+| **B** | INV-4 de-identified egress gateway | **done** (closed struct, allow-list, live path disabled, hash-chained egress audit; built/reviewed/revised) |
+| **C** | Matching engine — registry-search organizer (trials + EA records) | **done** (criteria not scores, absence framing, mini-eval, /match gated; built/reviewed/revised, 282 tests) |
 | **D** | Fillable Form FDA 3926 PDF (AcroForm), replacing text render | not built (HITL-1) |
 | **E** | Pharma persona — manufacturer view of incoming LOA requests | not built |
 | **F** | Patient persona — patient-facing intake / status | not built |

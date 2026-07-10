@@ -27,6 +27,13 @@ SHARED API CONTRACT:
     POST /api/case/{id}/fhir/import     -> {proposals, never_extracted, summary}
                                            ({bundle:{...}} or {use_sample:true};
                                            MAPS ONLY — never writes intake)
+    POST /api/case/{id}/match           -> {candidates, absence, absence_message,
+                                           queried_registries, predicates_used, as_of}
+                                           (INV-3 gate: 409 unless committed; INV-4:
+                                           de-identified predicates via the egress
+                                           gateway to the MOCK registry adapter —
+                                           live egress disabled; a registry-search
+                                           ORGANIZER: criteria, never scores)
     GET  /api/case/{id}/package         -> manifest over ALL route documents + package digest
 
 The backend imports the engine (models / generate / pipeline / gates / routes /
@@ -64,6 +71,9 @@ from ossicro.ea_generators import (                              # noqa: E402
     compute_clocks,
     generate_route_documents,
 )
+from ossicro.egress import DeidentifiedPredicates               # noqa: E402
+from ossicro.matching import MockRegistryAdapter                 # noqa: E402
+from ossicro.matching import match as run_registry_match         # noqa: E402
 from ossicro.fhir_ingest import (                                # noqa: E402
     BundleError,
     bundle_sha256,
@@ -94,6 +104,12 @@ HOST, PORT = "127.0.0.1", 8765
 # Registries loaded once.
 DOC_REGISTRY = load_documents()
 GATE_REGISTRY = load_gates()
+
+# INV-4 / Wave 2: the /match flow runs against the fixture-backed MOCK
+# registry adapter only — live egress is DISABLED in the engine gateway
+# (ossicro.egress raises EgressDisabled on any live=True call; flipping the
+# greenlight flag is an explicit human act, never a server default).
+REGISTRY_ADAPTER = MockRegistryAdapter()
 
 # Intake schema, indexed by dotted field id.
 SCHEMA_FIELDS = {f["id"]: f for f in routes_mod.intake_fields()}
@@ -620,6 +636,30 @@ def _package_payload(case: dict) -> dict:
     return pkg
 
 
+def _match_payload(case: dict) -> dict:
+    """POST /api/case/{id}/match — the registry-search ORGANIZER (Wave 2 C).
+
+    INV-3 hard gate first: same fail-closed rule as /generate — matching
+    consumes the COMMITTED profile's de-identified predicates or nothing
+    (raises ProfileNotCommitted -> 409). The predicates are derived from a
+    B1 snapshot of the committed intake through the closed
+    ``DeidentifiedPredicates.from_profile`` builder (codes / band / sex /
+    route token only — no names, dates, or free text), and every registry
+    query writes an ``egress_query`` audit record through the INV-4 gateway.
+    Live egress is off: the mock adapter answers. The endpoint organizes
+    candidates with matched/unmatched/unverifiable CRITERIA — never a score,
+    never a recommendation, and it never mutates intake. Every candidate is
+    a physician-confirmed proposal.
+    """
+    intake = dict(case["intake"])   # B1: one snapshot for gate + predicates
+    require_committed(intake, case.get("committed_profile"))
+    predicates = DeidentifiedPredicates.from_profile(intake)
+    return run_registry_match(
+        predicates, REGISTRY_ADAPTER,
+        trail=case.setdefault("audit", []),
+        as_of=datetime.date.today().isoformat())
+
+
 def _record_signoff(case: dict, payload: dict):
     """Validate and persist a human sign-off record. Returns (obj, err, status)."""
     gate_id = str(payload.get("gate_id", "")).strip()
@@ -770,6 +810,7 @@ _CASE_PACKAGE = re.compile(r"^/api/case/([^/]+)/package$")
 _CASE_SIGNOFF = re.compile(r"^/api/case/([^/]+)/signoff$")
 _CASE_AUDIT = re.compile(r"^/api/case/([^/]+)/audit$")
 _CASE_FHIR_IMPORT = re.compile(r"^/api/case/([^/]+)/fhir/import$")
+_CASE_MATCH = re.compile(r"^/api/case/([^/]+)/match$")
 _CASE_PROFILE_COMMIT = re.compile(r"^/api/case/([^/]+)/profile/commit$")
 _CASE_PROFILE_CONFIRM = re.compile(r"^/api/case/([^/]+)/profile/confirm$")
 
@@ -911,8 +952,10 @@ class Handler(BaseHTTPRequestHandler):
             if case is None:
                 return self._send_json({"error": "unknown case"}, 404)
             # I-AUDIT read: copies of the immutable records, in order, plus the
-            # tamper-evidence verdict from the hash chain. The trail carries no
-            # chart values (INV-8), so it is safe to return verbatim.
+            # tamper-evidence verdict from the hash chain. The trail is
+            # identifier-free (INV-8): field ids, hashes, actors, timestamps,
+            # and — for egress records — the de-identified outbound facts
+            # (codes, bands, tokens), never raw chart text. Safe to return.
             try:
                 trail = case.get("audit", [])
                 broken = audit_mod.verify_chain(trail)
@@ -1037,6 +1080,25 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json({"error": str(exc), "field_id": exc.field_id}, 400)
             except Exception as exc:
                 return self._send_json({"error": type(exc).__name__, "detail": str(exc)}, 500)
+
+        m = _CASE_MATCH.match(path)
+        if m:
+            case_id = m.group(1)
+            case = self._case(case_id)
+            if case is None:
+                return self._send_json({"error": "unknown case"}, 404)
+            try:
+                with _LOCK:
+                    body = _match_payload(case)
+                    _save_case(case_id)   # persists the egress_query audit records
+                return self._send_json(body)
+            except ProfileNotCommitted as exc:  # INV-3 hard gate: fail closed —
+                # matching never runs on an unconfirmed input.
+                return self._send_json({"error": "profile not committed",
+                                        "pending": exc.pending,
+                                        "state": exc.state}, 409)
+            except Exception as exc:  # no chart content in error payloads
+                return self._send_json({"error": type(exc).__name__}, 500)
 
         m = _CASE_FHIR_IMPORT.match(path)
         if m:

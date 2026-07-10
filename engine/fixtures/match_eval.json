@@ -1,0 +1,38 @@
+{
+  "_comment": "Mini eval harness (GAP-6): labeled predicate -> expected-candidate cases against the mock registry fixture. The organizer must retrieve exactly the labeled candidate set (recall AND precision 1.0 on this synthetic benchmark) — no unbenchmarked quality claims. Expected ids are RETRIEVAL labels: a candidate with visibly unmatched criteria (e.g. a male-only trial for a female patient) is still expected, because the organizer shows the basis rather than silently filtering; the physician reviews it. All ids are fictional.",
+  "cases": [
+    {
+      "name": "cholangiocarcinoma-female-58-cytoravir",
+      "predicates": {
+        "condition_codes": ["70179006", "C22.1"],
+        "drug_name": "Cytoravir",
+        "age_band": "55-59",
+        "sex": "female",
+        "route_code": "26643006"
+      },
+      "expected_ids": ["NCT90000001", "NCT90000002", "NCT90000004",
+                       "EA-90000001", "EA-90000002"],
+      "must_not_return": ["NCT90000003", "NCT90000005", "DRUG-90000001"]
+    },
+    {
+      "name": "als-male-62",
+      "predicates": {
+        "condition_codes": ["86044005", "G12.21"],
+        "age_band": "60-64",
+        "sex": "male"
+      },
+      "expected_ids": ["NCT90000005"],
+      "must_not_return": ["NCT90000001", "EA-90000001", "DRUG-90000001"]
+    },
+    {
+      "name": "unrepresented-condition-yields-absence",
+      "predicates": {
+        "condition_codes": ["E10.9"],
+        "age_band": "20-24",
+        "sex": "female"
+      },
+      "expected_ids": [],
+      "must_not_return": ["NCT90000001", "NCT90000003", "NCT90000005"]
+    }
+  ]
+}

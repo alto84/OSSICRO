@@ -1066,29 +1066,47 @@ class TestSexUnattested(unittest.TestCase):
 
 
 class TestEngineEgressBoundary(unittest.TestCase):
-    """M7/INV-4: the ingestion path egresses nothing; ``review_claude`` is the
-    single sanctioned egress (the Anthropic API) and never sees chart data."""
+    """M7/INV-4: the ingestion path egresses nothing. Exactly TWO sanctioned
+    outbound-importing modules exist: ``review_claude.py`` (the Anthropic
+    API) and ``egress.py`` (the INV-4 de-identified registry gateway, Wave
+    2). Neither may ever import the PHI ingestion path — the gateways see a
+    closed predicate struct / review text, never chart data."""
 
-    def test_no_outbound_client_in_engine_except_reviewer(self):
+    SANCTIONED_EGRESS = ("egress.py", "review_claude.py")
+
+    def test_no_outbound_client_in_engine_except_sanctioned(self):
+        # Forbid the PARENT packages, so every spelling is caught — `import
+        # urllib`, `from urllib import request`, `from urllib.request import
+        # urlopen` all match (review MAJOR-3). Dynamic import via importlib is
+        # also flagged (a source-level check can't resolve it, so we refuse it).
         forbidden = re.compile(
-            r"^\s*(?:import|from)\s+(urllib\.request|socket|requests|httpx|"
-            r"httplib2|aiohttp|http\.client)\b", re.MULTILINE)
+            r"^\s*(?:import|from)\s+(urllib|socket|requests|httpx|httplib2|"
+            r"aiohttp|http|importlib)\b", re.MULTILINE)
         offenders = []
         swept = []
         for path in sorted((ENGINE_ROOT / "ossicro").glob("*.py")):
-            if path.name == "review_claude.py":
-                continue  # the one sanctioned egress (never imports the PHI path)
+            if path.name in self.SANCTIONED_EGRESS:
+                continue  # the sanctioned egress pair (never import the PHI path)
             swept.append(path.name)
             if forbidden.search(path.read_text(encoding="utf-8")):
                 offenders.append(path.name)
         self.assertEqual(offenders, [])
-        # INV-3: the profile module is part of the swept engine surface.
+        # INV-3 / Wave 2: profile + matching are part of the swept surface —
+        # the matching ENGINE has no outbound client; only the gateway does.
         self.assertIn("profile.py", swept)
+        self.assertIn("matching.py", swept)
 
-    def test_egress_module_never_imports_phi_path(self):
-        src = (ENGINE_ROOT / "ossicro" / "review_claude.py").read_text(
-            encoding="utf-8")
-        self.assertNotIn("fhir_ingest", src)
+    def test_sanctioned_egress_modules_exist(self):
+        for name in self.SANCTIONED_EGRESS:
+            self.assertTrue((ENGINE_ROOT / "ossicro" / name).is_file(), name)
+
+    def test_egress_modules_never_import_phi_path(self):
+        # Neither sanctioned outbound module may import the FHIR ingestion
+        # module (by any spelling): the gateways must be incapable of seeing
+        # chart data. Source-level assertion, deliberately blunt.
+        for name in self.SANCTIONED_EGRESS:
+            src = (ENGINE_ROOT / "ossicro" / name).read_text(encoding="utf-8")
+            self.assertNotIn("fhir_ingest", src, name)
 
 
 if __name__ == "__main__":

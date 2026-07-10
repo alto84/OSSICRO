@@ -1,0 +1,127 @@
+{
+  "_comment": "Synthetic registry records for the MOCK adapter (INV-4: live egress disabled). Entirely fictional NCT/EA ids and titles — no real trials, no real drugs, no PHI. Eligibility is structured: condition_codes (SNOMED CT / ICD-10-CM), optional age_min/age_max (years), optional sex (all/male/female), optional drug_name, and 'unstructured' criteria that can only ever render as unverifiable-from-structured-data. The 'drug_listing' record exists to prove the v1 scope filter (trials + expanded-access records only) actually fires.",
+  "records": [
+    {
+      "kind": "trial",
+      "id": "NCT90000001",
+      "title": "Phase 2 Study of Cytoravir in Advanced Biliary Tract Cancer (fictional)",
+      "source_registry": "clinicaltrials.gov",
+      "source_url": "https://clinicaltrials.gov/study/NCT90000001",
+      "status": "recruiting",
+      "eligibility": {
+        "condition_codes": ["70179006", "C22.1"],
+        "age_min": 18,
+        "age_max": null,
+        "sex": "all",
+        "unstructured": [
+          "ECOG performance status 0-1",
+          "adequate hepatic and renal function"
+        ]
+      }
+    },
+    {
+      "kind": "trial",
+      "id": "NCT90000002",
+      "title": "Targeted Therapy for FGFR2-Altered Cholangiocarcinoma (fictional)",
+      "source_registry": "clinicaltrials.gov",
+      "source_url": "https://clinicaltrials.gov/study/NCT90000002",
+      "status": "recruiting",
+      "eligibility": {
+        "condition_codes": ["C22.1"],
+        "age_min": 18,
+        "age_max": 75,
+        "sex": "all",
+        "unstructured": [
+          "FGFR2 fusion or rearrangement confirmed by molecular testing"
+        ]
+      }
+    },
+    {
+      "kind": "trial",
+      "id": "NCT90000003",
+      "title": "Chemotherapy Intensification in Pancreatic Adenocarcinoma (fictional)",
+      "source_registry": "clinicaltrials.gov",
+      "source_url": "https://clinicaltrials.gov/study/NCT90000003",
+      "status": "recruiting",
+      "eligibility": {
+        "condition_codes": ["C25.9", "700423003"],
+        "age_min": 18,
+        "age_max": 80,
+        "sex": "all",
+        "unstructured": []
+      }
+    },
+    {
+      "kind": "trial",
+      "id": "NCT90000004",
+      "title": "Hormone-Axis Study in Male Patients with Hepatobiliary Tumors (fictional)",
+      "source_registry": "clinicaltrials.gov",
+      "source_url": "https://clinicaltrials.gov/study/NCT90000004",
+      "status": "recruiting",
+      "eligibility": {
+        "condition_codes": ["C22.1"],
+        "age_min": 18,
+        "age_max": 99,
+        "sex": "male",
+        "unstructured": []
+      }
+    },
+    {
+      "kind": "trial",
+      "id": "NCT90000005",
+      "title": "Neuroprotection Trial in Amyotrophic Lateral Sclerosis (fictional)",
+      "source_registry": "clinicaltrials.gov",
+      "source_url": "https://clinicaltrials.gov/study/NCT90000005",
+      "status": "recruiting",
+      "eligibility": {
+        "condition_codes": ["86044005", "G12.21"],
+        "age_min": 18,
+        "age_max": 80,
+        "sex": "all",
+        "unstructured": ["symptom onset within 24 months"]
+      }
+    },
+    {
+      "kind": "ea_record",
+      "id": "EA-90000001",
+      "title": "Expanded Access: Cytoravir for Advanced Cholangiocarcinoma (fictional)",
+      "source_registry": "clinicaltrials.gov",
+      "source_url": "https://clinicaltrials.gov/study/EA-90000001",
+      "status": "available",
+      "eligibility": {
+        "condition_codes": ["70179006", "C22.1"],
+        "sex": "all",
+        "drug_name": "Cytoravir",
+        "unstructured": ["no remaining approved therapeutic option"]
+      }
+    },
+    {
+      "kind": "ea_record",
+      "id": "EA-90000002",
+      "title": "Expanded Access Program: Helixamab in Biliary Tract Cancers (fictional)",
+      "source_registry": "api.fda.gov",
+      "source_url": "https://api.fda.gov/drug/ea/EA-90000002",
+      "status": "available",
+      "eligibility": {
+        "condition_codes": ["C22.1"],
+        "age_min": 18,
+        "age_max": null,
+        "sex": "all",
+        "drug_name": "Helixamab",
+        "unstructured": []
+      }
+    },
+    {
+      "kind": "drug_listing",
+      "id": "DRUG-90000001",
+      "title": "Manufacturer drug listing: Cytoravir (fictional) — NOT in v1 scope",
+      "source_registry": "api.fda.gov",
+      "source_url": "https://api.fda.gov/drug/label/DRUG-90000001",
+      "status": "listed",
+      "eligibility": {
+        "condition_codes": ["70179006", "C22.1"],
+        "unstructured": []
+      }
+    }
+  ]
+}
