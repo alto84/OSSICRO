@@ -1,0 +1,1125 @@
+{
+  "resourceType": "Bundle",
+  "id": "ossicro-synthetic-ea-bundle-001",
+  "meta": {
+    "security": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+        "code": "HTEST",
+        "display": "test health data"
+      }
+    ],
+    "tag": [
+      {
+        "system": "http://example.org/ossicro/tags",
+        "code": "SYNTHETIC",
+        "display": "Synthetic, clearly-fictional test data - no real PHI. Mirrors engine/fixtures/ea_sample_case.json (Cytoravir / cholangiocarcinoma). All names, identifiers, and codings are illustrative."
+      }
+    ]
+  },
+  "type": "collection",
+  "timestamp": "2026-07-01T14:30:00-05:00",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000001",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "synthetic-patient-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+            "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-patient"
+          ],
+          "security": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex",
+            "valueCode": "F"
+          }
+        ],
+        "identifier": [
+          {
+            "use": "usual",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "MR",
+                  "display": "Medical Record Number"
+                }
+              ]
+            },
+            "system": "http://example-oncology.org/fhir/sid/mrn",
+            "value": "SYN-MRN-000914"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Fictionpatient",
+            "given": ["Avery", "Synthetic"]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1968-03-14",
+        "address": [
+          {
+            "line": ["100 Placeholder Lane"],
+            "city": "Rivertown",
+            "state": "IL",
+            "postalCode": "60000",
+            "country": "US"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000002",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "synthetic-practitioner-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitioner"
+          ]
+        },
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "1234567893"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Rivera",
+            "given": ["Jordan", "A."],
+            "suffix": ["MD"]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "(312) 555-0148",
+            "use": "work"
+          }
+        ],
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
+                  "code": "MD",
+                  "display": "Doctor of Medicine"
+                }
+              ],
+              "text": "MD"
+            }
+          },
+          {
+            "identifier": [
+              {
+                "system": "http://example.org/us-il/medical-license",
+                "value": "036-114520"
+              }
+            ],
+            "code": {
+              "text": "State medical license (IL)"
+            },
+            "issuer": {
+              "display": "Illinois Department of Financial and Professional Regulation"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000003",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "synthetic-organization-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-organization"
+          ]
+        },
+        "active": true,
+        "name": "Fictional Oncology Associates",
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "(312) 555-0148",
+            "use": "work"
+          }
+        ],
+        "address": [
+          {
+            "line": ["4120 Cedar Parkway", "Suite 300"],
+            "city": "Rivertown",
+            "state": "IL",
+            "postalCode": "60000",
+            "country": "US"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000004",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "synthetic-practitionerrole-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitionerrole"
+          ]
+        },
+        "active": true,
+        "practitioner": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000002",
+          "display": "Jordan A. Rivera, MD"
+        },
+        "organization": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000003",
+          "display": "Fictional Oncology Associates"
+        },
+        "specialty": [
+          {
+            "coding": [
+              {
+                "system": "http://nucc.org/provider-taxonomy",
+                "code": "207RX0202X",
+                "display": "Hematology & Oncology Physician"
+              }
+            ],
+            "text": "Medical Oncology"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "(312) 555-0148",
+            "use": "work"
+          },
+          {
+            "system": "email",
+            "value": "j.rivera@example-oncology.org",
+            "use": "work"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000005",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "synthetic-encounter-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-encounter"
+          ]
+        },
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "185347001",
+                "display": "Encounter for problem"
+              }
+            ],
+            "text": "Oncology follow-up visit"
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "participant": [
+          {
+            "individual": {
+              "reference": "urn:uuid:11111111-0000-0000-0000-000000000002",
+              "display": "Jordan A. Rivera, MD"
+            }
+          }
+        ],
+        "period": {
+          "start": "2026-07-01T13:00:00-05:00",
+          "end": "2026-07-01T14:30:00-05:00"
+        },
+        "reasonReference": [
+          {
+            "reference": "urn:uuid:11111111-0000-0000-0000-000000000006",
+            "display": "Cholangiocarcinoma, metastatic, refractory"
+          }
+        ],
+        "serviceProvider": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000003",
+          "display": "Fictional Oncology Associates"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000006",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "synthetic-condition-primary-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-primary-cancer-condition",
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns"
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "70179006",
+              "display": "Cholangiocarcinoma of biliary tract"
+            },
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "C22.1",
+              "display": "Intrahepatic bile duct carcinoma"
+            }
+          ],
+          "text": "Refractory metastatic intrahepatic cholangiocarcinoma"
+        },
+        "bodySite": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "16014003",
+                "display": "Intrahepatic bile duct structure"
+              }
+            ]
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "onsetDateTime": "2024-11-20",
+        "recordedDate": "2024-11-22",
+        "asserter": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000002",
+          "display": "Jordan A. Rivera, MD"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000007",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "synthetic-obs-stagegroup-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-stage-group"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "exam",
+                "display": "Exam"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "21908-9",
+              "display": "Stage group.clinical Cancer"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "effectiveDateTime": "2026-07-01",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "258228008",
+              "display": "Stage 4"
+            }
+          ],
+          "text": "Stage IV (metastatic)"
+        },
+        "focus": [
+          {
+            "reference": "urn:uuid:11111111-0000-0000-0000-000000000006"
+          }
+        ],
+        "method": {
+          "text": "AJCC 8th edition (synthetic illustrative staging)"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000008",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "synthetic-obs-ecog-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-ecog-performance-status"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "89247-1",
+              "display": "ECOG Performance Status score"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "effectiveDateTime": "2026-07-01",
+        "performer": [
+          {
+            "reference": "urn:uuid:11111111-0000-0000-0000-000000000002",
+            "display": "Jordan A. Rivera, MD"
+          }
+        ],
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "LA9623-5",
+              "display": "Restricted in physically strenuous activity but ambulatory and able to carry out work of a light or sedentary nature"
+            }
+          ],
+          "text": "ECOG 1"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000009",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "synthetic-obs-diseasestatus-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-disease-status"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "clinical-test",
+                "display": "Clinical Test"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "88040-1",
+              "display": "Response to cancer treatment"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "focus": [
+          {
+            "reference": "urn:uuid:11111111-0000-0000-0000-000000000006"
+          }
+        ],
+        "effectiveDateTime": "2025-11-30",
+        "performer": [
+          {
+            "reference": "urn:uuid:11111111-0000-0000-0000-000000000002",
+            "display": "Jordan A. Rivera, MD"
+          }
+        ],
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "271299001",
+              "display": "Patient's condition worsened"
+            }
+          ],
+          "text": "Progressive disease on FOLFOX (radiographic progression, RECIST 1.1)"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-00000000000a",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "synthetic-obs-hgb-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "718-7",
+              "display": "Hemoglobin [Mass/volume] in Blood"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "effectiveDateTime": "2026-07-01T13:15:00-05:00",
+        "valueQuantity": {
+          "value": 11.2,
+          "unit": "g/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "g/dL"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-00000000000b",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "synthetic-obs-wbc-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "6690-2",
+              "display": "Leukocytes [#/volume] in Blood by Automated count"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "effectiveDateTime": "2026-07-01T13:15:00-05:00",
+        "valueQuantity": {
+          "value": 5.4,
+          "unit": "10*3/uL",
+          "system": "http://unitsofmeasure.org",
+          "code": "10*3/uL"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-00000000000c",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "synthetic-obs-plt-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "777-3",
+              "display": "Platelets [#/volume] in Blood by Automated count"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "effectiveDateTime": "2026-07-01T13:15:00-05:00",
+        "valueQuantity": {
+          "value": 210,
+          "unit": "10*3/uL",
+          "system": "http://unitsofmeasure.org",
+          "code": "10*3/uL"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-00000000000d",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "synthetic-obs-alt-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "1742-6",
+              "display": "Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "effectiveDateTime": "2026-07-01T13:15:00-05:00",
+        "valueQuantity": {
+          "value": 48,
+          "unit": "U/L",
+          "system": "http://unitsofmeasure.org",
+          "code": "U/L"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-00000000000e",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "synthetic-obs-ast-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "1920-8",
+              "display": "Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "effectiveDateTime": "2026-07-01T13:15:00-05:00",
+        "valueQuantity": {
+          "value": 52,
+          "unit": "U/L",
+          "system": "http://unitsofmeasure.org",
+          "code": "U/L"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-00000000000f",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "synthetic-obs-tbili-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "1975-2",
+              "display": "Bilirubin.total [Mass/volume] in Serum or Plasma"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "effectiveDateTime": "2026-07-01T13:15:00-05:00",
+        "valueQuantity": {
+          "value": 1.1,
+          "unit": "mg/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "mg/dL"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000010",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "synthetic-obs-creat-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2160-0",
+              "display": "Creatinine [Mass/volume] in Serum or Plasma"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "effectiveDateTime": "2026-07-01T13:15:00-05:00",
+        "valueQuantity": {
+          "value": 0.9,
+          "unit": "mg/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "mg/dL"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000011",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "synthetic-medreq-gemcitabine-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest",
+            "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-related-medication-request"
+          ]
+        },
+        "status": "completed",
+        "intent": "order",
+        "reportedBoolean": false,
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "12574",
+              "display": "gemcitabine"
+            }
+          ],
+          "text": "Gemcitabine (with cisplatin, first-line)"
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "authoredOn": "2025-01-10",
+        "requester": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000002",
+          "display": "Jordan A. Rivera, MD"
+        },
+        "reasonReference": [
+          {
+            "reference": "urn:uuid:11111111-0000-0000-0000-000000000006"
+          }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "Gemcitabine 1000 mg/m2 IV days 1 and 8 of each 21-day cycle, 2025-01 through 2025-06; discontinued for radiographic progression.",
+            "timing": {
+              "repeat": {
+                "boundsPeriod": {
+                  "start": "2025-01-10",
+                  "end": "2025-06-20"
+                }
+              }
+            },
+            "route": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "47625008",
+                  "display": "Intravenous route"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000012",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "synthetic-medreq-cisplatin-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest",
+            "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-related-medication-request"
+          ]
+        },
+        "status": "completed",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "2555",
+              "display": "cisplatin"
+            }
+          ],
+          "text": "Cisplatin (with gemcitabine, first-line)"
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "authoredOn": "2025-01-10",
+        "requester": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000002",
+          "display": "Jordan A. Rivera, MD"
+        },
+        "reasonReference": [
+          {
+            "reference": "urn:uuid:11111111-0000-0000-0000-000000000006"
+          }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "Cisplatin 25 mg/m2 IV days 1 and 8 of each 21-day cycle, 2025-01 through 2025-06; discontinued for radiographic progression.",
+            "timing": {
+              "repeat": {
+                "boundsPeriod": {
+                  "start": "2025-01-10",
+                  "end": "2025-06-20"
+                }
+              }
+            },
+            "route": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "47625008",
+                  "display": "Intravenous route"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000013",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "synthetic-medreq-oxaliplatin-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest",
+            "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-related-medication-request"
+          ]
+        },
+        "status": "completed",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "32592",
+              "display": "oxaliplatin"
+            }
+          ],
+          "text": "Oxaliplatin (FOLFOX, second-line)"
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "authoredOn": "2025-07-08",
+        "requester": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000002",
+          "display": "Jordan A. Rivera, MD"
+        },
+        "reasonReference": [
+          {
+            "reference": "urn:uuid:11111111-0000-0000-0000-000000000006"
+          }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "FOLFOX: oxaliplatin 85 mg/m2 IV every 14 days, 2025-07 through 2025-11; discontinued for radiographic progression.",
+            "timing": {
+              "repeat": {
+                "boundsPeriod": {
+                  "start": "2025-07-08",
+                  "end": "2025-11-25"
+                }
+              }
+            },
+            "route": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "47625008",
+                  "display": "Intravenous route"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000014",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "synthetic-medreq-fluorouracil-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest",
+            "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-related-medication-request"
+          ]
+        },
+        "status": "completed",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "4492",
+              "display": "fluorouracil"
+            }
+          ],
+          "text": "Fluorouracil (FOLFOX, second-line)"
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "authoredOn": "2025-07-08",
+        "requester": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000002",
+          "display": "Jordan A. Rivera, MD"
+        },
+        "reasonReference": [
+          {
+            "reference": "urn:uuid:11111111-0000-0000-0000-000000000006"
+          }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "FOLFOX: fluorouracil 400 mg/m2 IV bolus then 2400 mg/m2 over 46 h every 14 days, 2025-07 through 2025-11; discontinued for radiographic progression.",
+            "timing": {
+              "repeat": {
+                "boundsPeriod": {
+                  "start": "2025-07-08",
+                  "end": "2025-11-25"
+                }
+              }
+            },
+            "route": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "47625008",
+                  "display": "Intravenous route"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11111111-0000-0000-0000-000000000015",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "synthetic-medreq-cytoravir-001",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest",
+            "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-related-medication-request"
+          ]
+        },
+        "status": "draft",
+        "intent": "proposal",
+        "medicationCodeableConcept": {
+          "text": "Cytoravir (investigational; no RxNorm code — fictional agent, expanded-access candidate)"
+        },
+        "subject": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000001"
+        },
+        "authoredOn": "2026-07-01",
+        "requester": {
+          "reference": "urn:uuid:11111111-0000-0000-0000-000000000002",
+          "display": "Jordan A. Rivera, MD"
+        },
+        "reasonReference": [
+          {
+            "reference": "urn:uuid:11111111-0000-0000-0000-000000000006"
+          }
+        ],
+        "dosageInstruction": [
+          {
+            "text": "240 mg orally twice daily; continuous 28-day cycles until progression or unacceptable toxicity",
+            "timing": {
+              "repeat": {
+                "boundsDuration": {
+                  "value": 28,
+                  "unit": "d",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "d"
+                }
+              }
+            },
+            "route": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "26643006",
+                  "display": "Oral route"
+                }
+              ]
+            },
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 240,
+                  "unit": "mg",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "mg"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
