@@ -36,6 +36,13 @@ _PLACEHOLDER = re.compile(r"\{\{([A-Za-z0-9_]+)\}\}")
 MISSING_MARKER = "[[MISSING: %s]]"
 
 
+class _Optional(str):
+    """A literal whose value is legitimately allowed to be empty — it renders
+    as-is (empty = nothing) instead of the MISSING marker. Used for computed
+    connective text like the credential suffix, which is *absent*, not *missing*
+    (distinct from an unanswered attestation, which must render MISSING)."""
+
+
 # ---------------------------------------------------------------------------
 # Study construction from flat, dotted intake keys
 # ---------------------------------------------------------------------------
@@ -277,7 +284,7 @@ def _render(
         name = match.group(1)
         if name in literals:
             value, citation, source_label = literals[name]
-            if value is None or str(value).strip() == "":
+            if value is None or (str(value).strip() == "" and not isinstance(value, _Optional)):
                 return MISSING_MARKER % name
             value = str(value)
             if name not in fields:
@@ -341,8 +348,8 @@ Dear Sir or Madam:
 1. STATEMENT OF REQUEST. I, {{investigator_name}}{{degrees_suffix}}, a licensed
    physician, request authorization under 21 CFR 312.310 to treat one patient
    ({{patient_initials_coded}}) who has a serious or immediately life-threatening
-   condition — {{diagnosis}} — for which there is no comparable or satisfactory
-   alternative therapy.
+   condition for which there is no comparable or satisfactory alternative
+   therapy. Diagnosis: {{diagnosis}}
 
 2. §312.305(a) CRITERIA.
    (a) Serious/life-threatening + no alternative: {{no_alternative_basis}}
@@ -374,6 +381,23 @@ ______________________________________________  Date: __________
     letter; only the sponsor-investigator signs and files it. 21 CFR 312.20,
     312.23, 312.40.]
 """
+
+
+def _degrees_suffix(name: Optional[str], degrees: Optional[str]) -> str:
+    """Return ", {degrees}" — unless the name already carries the credential.
+
+    ``investigator.name`` comes from ``Practitioner.name`` including its suffix
+    (e.g. "Jordan A. Rivera, MD"), while ``investigator.degrees`` is a separate
+    field ("MD"). Appending unconditionally produced "…Rivera, MD, MD" in the
+    cover letter, signature block, and LOA request (UI-QA F1). Dedupe here.
+    """
+    if not degrees:
+        return _Optional("")
+    n = (name or "").lower().replace(".", "").rstrip()
+    d = degrees.strip().lower().replace(".", "")
+    if d and n.endswith(d):
+        return _Optional("")
+    return _Optional(", " + degrees)
 
 
 def gen_cover_letter(study: Study, doc_registry: Dict[str, dict],
@@ -431,7 +455,9 @@ def gen_cover_letter(study: Study, doc_registry: Dict[str, dict],
     literals = {
         "cover_date": _anchor_literal(as_of, "21 CFR 312.23(a)(1)"),
         "submission_kind": (submission_kind, "Form FDA 3926", "computed from submission.* intake"),
-        "degrees_suffix": ((", " + degrees) if degrees else "", "21 CFR 312.310(a)", "computed from investigator.degrees"),
+        "degrees_suffix": (_degrees_suffix(study.resolve("investigator.name"), degrees),
+                           "21 CFR 312.310(a)",
+                           "computed from investigator.degrees; omitted if the name already carries the credential"),
         "clock_statement": (clock_statement, clock_cite, "computed clock (HC3)"),
     }
     sources = {
@@ -520,7 +546,9 @@ def gen_form_3926(study: Study, doc_registry: Dict[str, dict],
     literals = {
         "submission_date": _anchor_literal(as_of, "Form FDA 3926 field 1"),
         "submission_kind": (kind, "Form FDA 3926 field 2; 21 CFR 312.310(d)", "computed from submission.* intake"),
-        "degrees_suffix": ((", " + degrees) if degrees else "", "21 CFR 312.310(a)", "computed from investigator.degrees"),
+        "degrees_suffix": (_degrees_suffix(study.resolve("investigator.name"), degrees),
+                           "21 CFR 312.310(a)",
+                           "computed from investigator.degrees; omitted if the name already carries the credential"),
         "waiver_10a": (_bool_label(study, "waiver_10a"), "21 CFR 312.10", "physician attestation: waiver_10a"),
         "waiver_10b": (_bool_label(study, "waiver_10b"), "21 CFR 56.105", "physician attestation: waiver_10b"),
     }
@@ -708,9 +736,9 @@ From: {{investigator_name}}{{degrees_suffix}}, {{investigator_address}}
 
 Re: Single-patient expanded access request — {{drug_name}}
 
-1. I am treating a patient ({{patient_initials_coded}}) with {{diagnosis}}, a
-   serious or immediately life-threatening condition with no comparable or
-   satisfactory alternative therapy.
+1. I am treating a patient ({{patient_initials_coded}}) with a serious or
+   immediately life-threatening condition for which there is no comparable or
+   satisfactory alternative therapy. Diagnosis: {{diagnosis}}
 
 2. I request that {{manufacturer_name}} SUPPLY {{drug_name}} for single-patient
    treatment use under its expanded access policy (FDCA 561A).
@@ -736,7 +764,9 @@ def gen_loa_request(study: Study, doc_registry: Dict[str, dict],
     degrees = study.resolve("investigator.degrees")
     literals = {
         "request_date": _anchor_literal(as_of, "FDCA 561A"),
-        "degrees_suffix": ((", " + degrees) if degrees else "", "21 CFR 312.310(a)", "computed from investigator.degrees"),
+        "degrees_suffix": (_degrees_suffix(study.resolve("investigator.name"), degrees),
+                           "21 CFR 312.310(a)",
+                           "computed from investigator.degrees; omitted if the name already carries the credential"),
     }
     sources = {
         "manufacturer_name": ("manufacturer.name", "FDCA 561A"),

@@ -211,5 +211,43 @@ class ManifestHashTests(unittest.TestCase):
             self.assertEqual(recomputed, entry["sha256"], entry["doc_id"])
 
 
+class RendererHygieneTests(unittest.TestCase):
+    """UI-QA F1/F2: no duplicated credential, no mid-sentence diagnosis seam."""
+
+    def _render(self, gen, fields):
+        route = routes.route_for_emergency(False)
+        study = build_study(dict(fields), route)
+        return getattr(ea_generators, gen)(study, load_documents(), as_of=D(2026, 7, 10)).rendered
+
+    def test_no_duplicated_degree_when_name_carries_credential(self):
+        # investigator.name from Practitioner.name already ends ", MD" and
+        # investigator.degrees is a separate "MD" -> must not render "MD, MD".
+        fields = dict(_load_sample_fields())
+        fields["investigator.name"] = "Jordan A. Rivera, MD"
+        fields["investigator.degrees"] = "MD"
+        for gen in ("gen_cover_letter", "gen_loa_request", "gen_form_3926"):
+            r = self._render(gen, fields)
+            self.assertNotIn("MD, MD", r, gen)
+            self.assertNotIn("[[MISSING: degrees_suffix]]", r, gen)
+
+    def test_separate_degree_is_appended_when_absent_from_name(self):
+        fields = dict(_load_sample_fields())
+        fields["investigator.name"] = "Alex Kim"
+        fields["investigator.degrees"] = "DO"
+        r = self._render("gen_cover_letter", fields)
+        self.assertIn("Alex Kim, DO", r)
+        self.assertNotIn("[[MISSING: degrees_suffix]]", r)
+
+    def test_diagnosis_not_spliced_mid_sentence(self):
+        # The diagnosis narrative ends in a period; it must sit at sentence-end
+        # ("Diagnosis: ...."), never mid-clause producing "...1., a serious".
+        fields = dict(_load_sample_fields())
+        for gen in ("gen_cover_letter", "gen_loa_request"):
+            r = self._render(gen, fields)
+            self.assertIn("Diagnosis:", r, gen)
+            self.assertNotIn("., a serious", r, gen)
+            self.assertNotIn(". — for which", r, gen)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
