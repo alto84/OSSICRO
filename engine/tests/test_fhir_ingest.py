@@ -617,6 +617,93 @@ class TestLeakGuardHostile(unittest.TestCase):
         self.assertIn("Cholangiocarcinoma", by["patient.diagnosis"]["value"])
 
 
+class TestSubjectScoping(unittest.TestCase):
+    """NEW-5: a resource whose subject names a Patient other than the target
+    belongs to someone else and must never feed this patient's proposals —
+    the external-subject chimera hole. An absent subject keeps the existing
+    keep-it behavior (covered throughout this file); these tests plant an
+    explicit external subject."""
+
+    _CANCER = {"coding": [{"system": SNOMED, "code": "70179006",
+                           "display": "Cholangiocarcinoma"}]}
+
+    def test_external_subject_condition_never_feeds_diagnosis(self):
+        cond = _active_condition(self._CANCER)
+        cond["subject"] = {"reference": "Patient/P2-external"}
+        bundle = _bundle(
+            _patient(id="p1", name=[{"family": "Zorp"}], gender="female"),
+            cond)
+        result = _extract(bundle)
+        self.assertNotIn("patient.diagnosis", _ids(result))
+        self.assertNotIn("Cholangiocarcinoma", json.dumps(result))
+
+    def test_subject_matching_target_by_local_id_is_kept(self):
+        cond = _active_condition(self._CANCER)
+        cond["subject"] = {"reference": "Patient/p1"}
+        bundle = _bundle(
+            _patient(id="p1", name=[{"family": "Zorp"}], gender="female"),
+            cond)
+        self.assertIn("patient.diagnosis", _ids(_extract(bundle)))
+
+    def test_external_subject_observation_never_feeds_diagnosis(self):
+        # The patient's own Condition is kept, but an ECOG belonging to
+        # Patient/P2-external must not decorate the narrative.
+        obs = {"resourceType": "Observation", "status": "final",
+               "code": {"coding": [{"system": LOINC, "code": "89247-1"}]},
+               "valueCodeableConcept": {"coding": [
+                   {"system": SNOMED, "code": "x", "display": "ECOG 4"}]},
+               "effectiveDateTime": "2026-06-01",
+               "subject": {"reference": "Patient/P2-external"}}
+        bundle = _bundle(
+            _patient(id="p1", name=[{"family": "Zorp"}], gender="female"),
+            _active_condition(self._CANCER), obs)
+        dx = _ids(_extract(bundle))["patient.diagnosis"]["value"]
+        self.assertNotIn("ECOG 4", dx)
+
+    def test_external_subject_medicationrequest_excluded(self):
+        # Neither a prior therapy nor a drug candidate may come from another
+        # patient's orders.
+        prior = {"resourceType": "MedicationRequest", "status": "completed",
+                 "intent": "order",
+                 "medicationCodeableConcept": {"coding": [
+                     {"system": RXNORM, "code": "12574",
+                      "display": "gemcitabine"}]},
+                 "subject": {"reference": "Patient/P2-external"}}
+        draft = {"resourceType": "MedicationRequest", "status": "draft",
+                 "intent": "proposal",
+                 "medicationCodeableConcept": {"text": "Other-Pt-Agent"},
+                 "subject": {"reference": "Patient/P2-external"}}
+        bundle = _bundle(
+            _patient(id="p1", name=[{"family": "Zorp"}], gender="female"),
+            prior, draft)
+        by = _ids(_extract(bundle))
+        self.assertNotIn("patient.prior_therapies", by)
+        self.assertNotIn("drug.name", by)
+
+    def test_external_subject_administration_never_dates_first_treatment(self):
+        drug = {"resourceType": "MedicationRequest", "status": "draft",
+                "intent": "proposal",
+                "medicationCodeableConcept": {"text": "Cytoravir"}}
+        ma = {"resourceType": "MedicationAdministration", "status": "completed",
+              "medicationCodeableConcept": {"text": "Cytoravir"},
+              "effectiveDateTime": "2026-06-15T09:00:00Z",
+              "subject": {"reference": "Patient/P2-external"}}
+        bundle = _bundle(
+            _patient(id="p1", name=[{"family": "Zorp"}], gender="female"),
+            drug, ma)
+        self.assertNotIn("submission.first_treatment_date",
+                         _ids(_extract(bundle, emergency=True)))
+
+    def test_non_patient_subject_kept(self):
+        # A Group subject is out of scope for the patient filter: kept.
+        cond = _active_condition(self._CANCER)
+        cond["subject"] = {"reference": "Group/cohort-9"}
+        bundle = _bundle(
+            _patient(id="p1", name=[{"family": "Zorp"}], gender="female"),
+            cond)
+        self.assertIn("patient.diagnosis", _ids(_extract(bundle)))
+
+
 class TestMultiPatientRefusal(unittest.TestCase):
     """M1: a multi-subject bundle is refused, not silently chimera-mapped."""
 
@@ -816,6 +903,83 @@ class TestConditionStatusFiltering(unittest.TestCase):
         self.assertNotIn("patient.diagnosis", _ids(_extract(bundle)))
 
 
+class TestProblemListPreference(unittest.TestCase):
+    """MIN2: in the non-mCODE fallback, curated problem-list-item Conditions
+    with a coded (SNOMED/ICD-10-CM) diagnosis are preferred over the full
+    active dump, and the narrowing is disclosed in the provenance path."""
+
+    CAT = fhir_ingest.CONDITION_CATEGORY_SYS
+
+    def _cond(self, code, category_code=None):
+        c = _active_condition(code)
+        if category_code:
+            c["category"] = [{"coding": [
+                {"system": self.CAT, "code": category_code}]}]
+        return c
+
+    def test_problem_list_cancer_preferred_over_encounter_diagnosis(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            self._cond({"coding": [{"system": SNOMED, "code": "34095006",
+                                    "display": "Dehydration"}]},
+                       category_code="encounter-diagnosis"),
+            self._cond({"coding": [{"system": SNOMED, "code": "70179006",
+                                    "display": "Cholangiocarcinoma"}]},
+                       category_code="problem-list-item"),
+        )
+        dx = _ids(_extract(bundle))["patient.diagnosis"]
+        self.assertIn("Cholangiocarcinoma", dx["value"])
+        self.assertNotIn("Dehydration", dx["value"])
+        self.assertIn("problem-list-item", dx["source"]["path"])
+
+    def test_uncoded_problem_list_item_does_not_win_preference(self):
+        # A text-only problem-list entry has no cancer-adjacent code system:
+        # no narrowing happens, the full active list is shown.
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            self._cond({"coding": [{"system": SNOMED, "code": "34095006",
+                                    "display": "Dehydration"}]},
+                       category_code="encounter-diagnosis"),
+            self._cond({"text": "metastatic biliary tract cancer"},
+                       category_code="problem-list-item"),  # uncoded
+        )
+        dx = _ids(_extract(bundle))["patient.diagnosis"]
+        self.assertIn("metastatic biliary tract cancer", dx["value"])
+        self.assertIn("Dehydration", dx["value"])
+        self.assertNotIn("problem-list-item", dx["source"]["path"])
+
+    def test_no_problem_list_items_falls_back_to_full_active_list(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            self._cond({"coding": [{"system": SNOMED, "code": "1",
+                                    "display": "Condition-A"}]}),
+            self._cond({"coding": [{"system": SNOMED, "code": "2",
+                                    "display": "Condition-B"}]}),
+        )
+        dx = _ids(_extract(bundle))["patient.diagnosis"]
+        self.assertIn("Condition-A", dx["value"])
+        self.assertIn("Condition-B", dx["value"])
+        self.assertIn("multiple active Conditions", dx["source"]["path"])
+
+    def test_mcode_profile_still_wins_outright(self):
+        mcode = _active_condition({"coding": [
+            {"system": SNOMED, "code": "70179006",
+             "display": "Cholangiocarcinoma"}]})
+        mcode["meta"] = {"profile": [
+            "http://hl7.org/fhir/us/mcode/StructureDefinition/"
+            "mcode-primary-cancer-condition"]}
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            self._cond({"coding": [{"system": SNOMED, "code": "34095006",
+                                    "display": "Dehydration"}]},
+                       category_code="problem-list-item"),
+            mcode,
+        )
+        dx = _ids(_extract(bundle))["patient.diagnosis"]
+        self.assertIn("Cholangiocarcinoma", dx["value"])
+        self.assertNotIn("Dehydration", dx["value"])
+
+
 class TestProvenanceAccuracy(unittest.TestCase):
     """M6/HC4: the source stamp names the element the value was read from."""
 
@@ -840,6 +1004,57 @@ class TestProvenanceAccuracy(unittest.TestCase):
         addr = _ids(_extract(bundle))["investigator.address"]["source"]
         self.assertEqual(addr["resource"], "Practitioner")
         self.assertIn("fallback", addr["path"])
+
+
+class TestPractitionerSelection(unittest.TestCase):
+    """MIN4: the practitioner tied to the care (Encounter.participant.
+    individual, then Condition.asserter) is preferred over bundle order; the
+    selection basis is disclosed; upload-mode stays capped at medium."""
+
+    def _practitioner(self, pid, family, given):
+        return {"resourceType": "Practitioner", "id": pid,
+                "name": [{"family": family, "given": [given]}]}
+
+    def test_encounter_participant_beats_bundle_order(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            self._practitioner("pr-first", "Coverdoc", "Casey"),   # listed first
+            self._practitioner("pr-attending", "Attending", "Alex"),
+            {"resourceType": "Encounter", "status": "finished",
+             "participant": [{"individual":
+                              {"reference": "Practitioner/pr-attending"}}]},
+        )
+        name = _ids(_extract(bundle))["investigator.name"]
+        self.assertIn("Attending", name["value"])
+        self.assertNotIn("Coverdoc", name["value"])
+        self.assertIn("Encounter.participant.individual",
+                      name["source"]["path"])
+        self.assertEqual(name["confidence"], "medium")  # cap unchanged
+
+    def test_condition_asserter_beats_bundle_order_when_no_encounter(self):
+        cond = _active_condition({"coding": [
+            {"system": SNOMED, "code": "70179006",
+             "display": "Cholangiocarcinoma"}]})
+        cond["asserter"] = {"reference": "Practitioner/pr-asserter"}
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            self._practitioner("pr-first", "Coverdoc", "Casey"),
+            self._practitioner("pr-asserter", "Asserter", "Avery"),
+            cond,
+        )
+        name = _ids(_extract(bundle))["investigator.name"]
+        self.assertIn("Asserter", name["value"])
+        self.assertIn("Condition.asserter", name["source"]["path"])
+        self.assertEqual(name["confidence"], "medium")
+
+    def test_fallback_to_first_practitioner_undisclosed_basis(self):
+        bundle = _bundle(
+            _patient(name=[{"family": "Zorp"}], gender="female"),
+            self._practitioner("pr-first", "Onlydoc", "Ona"),
+        )
+        name = _ids(_extract(bundle))["investigator.name"]
+        self.assertIn("Onlydoc", name["value"])
+        self.assertNotIn("selected via", name["source"]["path"])
 
 
 class TestSexUnattested(unittest.TestCase):

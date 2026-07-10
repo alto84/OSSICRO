@@ -70,6 +70,12 @@ MCODE_PRIMARY_CANCER = "mcode-primary-cancer-condition"
 
 CLINICAL_STATUS_SYS = "http://terminology.hl7.org/CodeSystem/condition-clinical"
 VERIFICATION_STATUS_SYS = "http://terminology.hl7.org/CodeSystem/condition-ver-status"
+CONDITION_CATEGORY_SYS = "http://terminology.hl7.org/CodeSystem/condition-category"
+
+# Code systems a cancer diagnosis is realistically coded in (MIN2). Presence of
+# one of these on Condition.code marks a curated, coded diagnosis — NOT a
+# guarantee of malignancy; the physician still confirms.
+_CANCER_ADJACENT_CODE_SYSTEMS = (SNOMED, ICD10CM)
 
 LOINC_STAGE_GROUP = "21908-9"
 LOINC_ECOG = "89247-1"
@@ -202,6 +208,41 @@ def _coding_summary(codeable: Optional[Dict[str, Any]]) -> Optional[str]:
 def _has_profile(resource: Dict[str, Any], fragment: str) -> bool:
     profiles = (resource.get("meta") or {}).get("profile", []) or []
     return any(fragment in p for p in profiles)
+
+
+# A subject reference that explicitly NAMES a Patient: '.../Patient/{id}'.
+# Opaque references (urn:uuid:..., '#contained') are not Patient-shaped.
+_PATIENT_REF_RE = re.compile(r"(?:^|/)Patient/[^/?#]+$")
+
+
+def _subject_ok(bundle: Dict[str, Any], resource: Dict[str, Any]) -> bool:
+    """NEW-5: False when the resource's ``subject`` names a Patient other than
+    the single target patient — such a resource belongs to someone else and
+    must never feed this patient's proposals (the external-subject chimera
+    hole). An absent subject, a subject that resolves to a non-Patient (e.g. a
+    Group), or an opaque unresolvable reference is KEPT — the pre-existing
+    behavior (refusal already guarantees at most one top-level Patient).
+    """
+    subject = resource.get("subject")
+    if not isinstance(subject, dict) or not subject.get("reference"):
+        return True  # absent subject: keep (existing behavior)
+    resolved = _resolve(bundle, subject)
+    if resolved is not None:
+        if resolved.get("resourceType") != "Patient":
+            return True  # subject is a Group/etc. — out of scope here
+        patients = _of_type(bundle, "Patient")
+        return bool(patients) and resolved is patients[0]
+    # Unresolved in-bundle: a Patient-shaped reference points at a patient we
+    # do NOT have — an external subject; exclude. Anything else stays
+    # unresolvable-keep (existing behavior).
+    return not _PATIENT_REF_RE.search(str(subject["reference"]))
+
+
+def _scoped(bundle: Dict[str, Any], resource_type: str) -> List[Dict[str, Any]]:
+    """``_of_type`` restricted to resources whose subject is (or may be) the
+    target patient (NEW-5). Used for the four patient-scoped clinical types:
+    Condition / Observation / MedicationRequest / MedicationAdministration."""
+    return [r for r in _of_type(bundle, resource_type) if _subject_ok(bundle, r)]
 
 
 def bundle_sha256(bundle: Dict[str, Any]) -> str:
@@ -338,21 +379,49 @@ def _condition_ok(cond: Dict[str, Any]) -> bool:
     return True
 
 
-def _primary_conditions(bundle) -> List[Dict[str, Any]]:
-    conditions = [c for c in _of_type(bundle, "Condition") if _condition_ok(c)]
+def _is_problem_list_item(cond: Dict[str, Any]) -> bool:
+    """True when a Condition.category coding says 'problem-list-item' — a
+    curated problem-list entry, not a transient encounter diagnosis (MIN2)."""
+    for cat in cond.get("category", []) or []:
+        if _coding_in(cat, CONDITION_CATEGORY_SYS, "problem-list-item"):
+            return True
+    return False
+
+
+def _has_cancer_adjacent_code(cond: Dict[str, Any]) -> bool:
+    return any(_coding_in(cond.get("code"), s)
+               for s in _CANCER_ADJACENT_CODE_SYSTEMS)
+
+
+def _primary_conditions(bundle) -> Tuple[List[Dict[str, Any]], str]:
+    """(candidate Conditions, disclosure note for the provenance path).
+
+    mCODE primary-cancer profile wins outright. Otherwise (MIN2), among the
+    active Conditions prefer curated problem-list-item entries that carry a
+    cancer-adjacent code system (SNOMED / ICD-10-CM) before dumping the full
+    active list — an active 'encounter-diagnosis: dehydration' should not
+    dilute the diagnosis narrative when a coded problem-list cancer exists.
+    The narrowing is disclosed; the physician still confirms.
+    """
+    conditions = [c for c in _scoped(bundle, "Condition") if _condition_ok(c)]
     mcode = [c for c in conditions if _has_profile(c, MCODE_PRIMARY_CANCER)]
     if mcode:
-        return mcode
+        return mcode, ""
     active = []
     for c in conditions:
         status = _coding_in(c.get("clinicalStatus"), CLINICAL_STATUS_SYS)
         if status is not None and status.get("code") == "active":
             active.append(c)
-    return active
+    preferred = [c for c in active
+                 if _is_problem_list_item(c) and _has_cancer_adjacent_code(c)]
+    if preferred and len(preferred) < len(active):
+        return preferred, ("problem-list-item Conditions with coded diagnoses "
+                           "preferred over the full active list; ")
+    return active, ""
 
 
 def _extract_diagnosis(bundle, proposals):
-    candidates = _primary_conditions(bundle)
+    candidates, preference_note = _primary_conditions(bundle)
     if not candidates:
         return
     parts, codings, tainted = [], [], False
@@ -378,8 +447,8 @@ def _extract_diagnosis(bundle, proposals):
         bits.append("Stage: %s%s" % (stage, (" (as of %s)" % stage_dt) if stage_dt else ""))
     if ecog:
         bits.append("Performance status: %s%s" % (ecog, (" (as of %s)" % ecog_dt) if ecog_dt else ""))
-    note = ("multiple active Conditions — all candidates shown; "
-            if len(parts) > 1 else "")
+    note = preference_note + ("multiple active Conditions — all candidates "
+                              "shown; " if len(parts) > 1 else "")
     proposals.append(_proposal(
         "patient.diagnosis", ". ".join(bits) + ".",
         "Condition",
@@ -397,7 +466,7 @@ def _latest_observation(bundle, loinc_code: str) -> Tuple[Optional[str], Optiona
     misrepresentation; we sort by effective date descending and disclose it.
     """
     matches = []
-    for obs in _of_type(bundle, "Observation"):
+    for obs in _scoped(bundle, "Observation"):
         if obs.get("status") not in _FINAL_OBS_STATUS:
             continue
         if _coding_in(obs.get("code"), LOINC, loinc_code) is None:
@@ -414,7 +483,7 @@ def _latest_observation(bundle, loinc_code: str) -> Tuple[Optional[str], Optiona
 
 def _extract_prior_therapies(bundle, proposals):
     lines, codings, tainted, seen_rx = [], [], False, set()
-    for mr in _of_type(bundle, "MedicationRequest"):
+    for mr in _scoped(bundle, "MedicationRequest"):
         if mr.get("status") not in ("completed", "stopped"):
             continue
         med = mr.get("medicationCodeableConcept")
@@ -465,11 +534,39 @@ _INVESTIGATOR_CAP_NOTE = (
     "(upload mode, no fhirUser) — capped at medium")
 
 
-def _extract_practitioner(bundle, proposals, never_extracted):
+def _select_practitioner(bundle) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """(practitioner, selection-basis path or None) — MIN4.
+
+    Prefer the Practitioner the chart actually ties to this care: the one
+    referenced by ``Encounter.participant.individual``, then by
+    ``Condition.asserter``. Only when neither exists fall back to the first
+    Practitioner in the bundle (the pre-existing behavior — bundle order is
+    not clinical meaning). The basis is disclosed in the provenance path;
+    upload-mode confidence stays capped at medium either way.
+    """
     practitioners = _of_type(bundle, "Practitioner")
     if not practitioners:
+        return None, None
+    for enc in _of_type(bundle, "Encounter"):
+        for part in enc.get("participant", []) or []:
+            if not isinstance(part, dict):
+                continue
+            ind = _resolve(bundle, part.get("individual"))
+            if isinstance(ind, dict) and ind.get("resourceType") == "Practitioner":
+                return ind, "Encounter.participant.individual"
+    for cond in _scoped(bundle, "Condition"):
+        asserter = _resolve(bundle, cond.get("asserter"))
+        if isinstance(asserter, dict) and asserter.get("resourceType") == "Practitioner":
+            return asserter, "Condition.asserter"
+    return practitioners[0], None
+
+
+def _extract_practitioner(bundle, proposals, never_extracted):
+    pr, selection_basis = _select_practitioner(bundle)
+    if pr is None:
         return
-    pr = practitioners[0]
+    basis_note = ((" (selected via %s)" % selection_basis)
+                  if selection_basis else "")
 
     # NPI is never a license number (mapping spec §3) and is skipped entirely.
     if any(i.get("system") == NPI_SYSTEM for i in pr.get("identifier", []) or []):
@@ -482,7 +579,8 @@ def _extract_practitioner(bundle, proposals, never_extracted):
     if name:
         proposals.append(_proposal(
             "investigator.name", name, "Practitioner",
-            "Practitioner.name — " + _INVESTIGATOR_CAP_NOTE, None, "medium"))
+            "Practitioner.name%s — %s" % (basis_note, _INVESTIGATOR_CAP_NOTE),
+            None, "medium"))
 
     # investigator.degrees
     degrees, degrees_coded = [], False
@@ -601,7 +699,7 @@ _CLOSED_MR_STATUSES = frozenset({"completed", "stopped", "cancelled",
 # must never be mistaken for the investigational agent (B2).
 def _candidate_drug_requests(bundle) -> List[Dict[str, Any]]:
     out = []
-    for mr in _of_type(bundle, "MedicationRequest"):
+    for mr in _scoped(bundle, "MedicationRequest"):
         status = mr.get("status")
         intent = mr.get("intent")
         # A staged order (draft/on-hold), OR a plan/proposal that has NOT been
@@ -723,7 +821,7 @@ def _extract_first_treatment(bundle, proposals, drug_name: Optional[str],
     if not emergency or not drug_name:
         return
     drug_tokens = _norm_tokens(drug_name)
-    for ma in _of_type(bundle, "MedicationAdministration"):
+    for ma in _scoped(bundle, "MedicationAdministration"):
         if ma.get("status") != "completed":
             continue
         med = ma.get("medicationCodeableConcept")

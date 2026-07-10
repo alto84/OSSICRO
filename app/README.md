@@ -25,4 +25,4 @@ Open **http://127.0.0.1:8765** in a browser and walk: **Start a case → Intake 
 
 ## Boundaries
 
-Cases are held in memory; no real PHI. Not medical, legal, or regulatory advice. The submission spec that governs this MVP is `docs/route-3926-submission-spec.md`. Known cleanup: `ea_generators.py` carries an inline clock; it should be reconciled to the canonical `engine/ossicro/clocks.py`.
+Cases are held in memory; no real PHI. Not medical, legal, or regulatory advice. The submission spec that governs this MVP is `docs/route-3926-submission-spec.md`. Clock arithmetic is single-sourced: `ea_generators.py` delegates all working-day/deadline computation to the canonical `engine/ossicro/clocks.py` (verified by `engine/tests/test_ea_features.py::ClockReconciliationTests` and `ComputeClocksCanonicalTests`).

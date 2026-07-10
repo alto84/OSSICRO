@@ -115,6 +115,88 @@ class ClockReconciliationTests(unittest.TestCase):
         self.assertIsNone(ea_generators.compute_deadline(None, 15, "working"))
 
 
+class ComputeClocksCanonicalTests(unittest.TestCase):
+    """The route-declared clocks must agree, date for date, with the canonical
+    named constructors in ossicro.clocks — proving the registry constants
+    (15/5 working days, 30 calendar days) and the engine are one truth."""
+
+    def _clocks_for(self, emergency, fields, as_of=None):
+        route = routes.route_for_emergency(emergency)
+        study = build_study(dict(fields), route)
+        return ea_generators.compute_clocks(study, route, as_of=as_of), route
+
+    def test_unanchored_clocks_are_unarmed_never_fabricated(self):
+        # HC3: no trigger date entered -> armed False, null deadline, a
+        # resolving question naming the trigger field — never a guessed date.
+        for emergency in (True, False):
+            out, route = self._clocks_for(emergency, {})
+            self.assertEqual(len(out), len(route["clocks"]))
+            for c in out:
+                self.assertFalse(c["armed"], c["id"])
+                self.assertIsNone(c["deadline"], c["id"])
+                self.assertIsNone(c["days_remaining"], c["id"])
+                self.assertIn(c["trigger_field"], c["resolving_question"], c["id"])
+
+    def test_emergency_route_clocks_match_canonical_constructors(self):
+        # Both emergency clocks anchored to Wed 2026-07-01 (observed July-3
+        # holiday + weekends in range) must equal the canonical pair.
+        out, _ = self._clocks_for(True, {
+            "submission.emergency_auth_datetime": "2026-07-01",
+            "submission.first_treatment_date": "2026-07-01",
+        })
+        by_id = {c["id"]: c for c in out}
+        written, irb = clocks.expanded_access_emergency_deadlines(D(2026, 7, 1))
+        self.assertEqual(by_id["written-3926-15-working-day"]["deadline"],
+                         written.due.isoformat())
+        self.assertEqual(by_id["irb-notify-5-working-day"]["deadline"],
+                         irb.due.isoformat())
+
+    def test_nonemergency_route_clock_matches_ind_30_day_deadline(self):
+        out, _ = self._clocks_for(False, {"submission.fda_receipt_date": "2026-06-15"})
+        by_id = {c["id"]: c for c in out}
+        canonical = clocks.ind_30_day_deadline(D(2026, 6, 15))
+        self.assertEqual(by_id["ind-effective-30-day"]["deadline"],
+                         canonical.due.isoformat())
+        self.assertTrue(by_id["ind-effective-30-day"]["armed"])
+
+    def test_days_remaining_matches_canonical_deadline_arithmetic(self):
+        # Working-day clocks count working days; calendar clocks plain days —
+        # exactly as clocks.Deadline.days_remaining computes them.
+        as_of = D(2026, 7, 6)
+        out, _ = self._clocks_for(True, {
+            "submission.emergency_auth_datetime": "2026-07-01",
+            "submission.first_treatment_date": "2026-07-01",
+        }, as_of=as_of)
+        by_id = {c["id"]: c for c in out}
+        written, irb = clocks.expanded_access_emergency_deadlines(D(2026, 7, 1))
+        self.assertEqual(by_id["written-3926-15-working-day"]["days_remaining"],
+                         written.days_remaining(as_of))
+        self.assertEqual(by_id["irb-notify-5-working-day"]["days_remaining"],
+                         irb.days_remaining(as_of))
+        out, _ = self._clocks_for(False, {"submission.fda_receipt_date": "2026-06-15"},
+                                  as_of=as_of)
+        canonical = clocks.ind_30_day_deadline(D(2026, 6, 15))
+        self.assertEqual(out[0]["days_remaining"], canonical.days_remaining(as_of))
+
+    def test_garbled_trigger_raises_never_silently_unarmed(self):
+        # HC2: a present-but-unparseable date is an error to surface, not an
+        # absence to swallow (which would silently disarm a statutory clock).
+        with self.assertRaises(ea_generators.TriggerDateError):
+            self._clocks_for(True, {"submission.emergency_auth_datetime": "July 1, 2026"})
+
+    def test_cover_letter_emergency_clock_carries_canonical_date(self):
+        # The rendered cover letter's clock statement must state the canonical
+        # 15-working-day deadline (21 CFR 312.310(d)(2)), not a recomputation.
+        route = routes.route_for_emergency(True)
+        study = build_study({
+            "submission.emergency": "true",
+            "submission.emergency_auth_datetime": "2026-07-01",
+        }, route)
+        doc = ea_generators.gen_cover_letter(study, load_documents())
+        written = clocks.expanded_access_emergency_deadlines(D(2026, 7, 1))[0]
+        self.assertIn(written.due.isoformat(), doc.rendered)
+
+
 class ManifestHashTests(unittest.TestCase):
     def test_manifest_sha256_equals_sha256_of_rendered(self):
         study, documents, route, docreg = _assemble_sample()

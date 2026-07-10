@@ -44,3 +44,6 @@ sources/download-log.tsv
 
 # App case store (disk-backed drafts; coded identifiers only, still never committed)
 app/data/
+
+# Browser-automation QA artifacts (Playwright MCP)
+.playwright-mcp/
