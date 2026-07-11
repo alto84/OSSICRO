@@ -2,9 +2,14 @@
 
 Synthesized 2026-07-11 from the persona reviews in `docs/review/`: **physician, manufacturer,
 regulator (FDA reviewer), ethics (IRB), compliance (legal), developer**.
-**persona-patient.md had not been delivered at synthesis time** — this synthesis covers the
-six delivered reviews; integrate the patient review when it lands (the patient-facing surface
-is partially covered here via the ethics review's patient-page findings).
+**persona-patient.md landed after synthesis and is now integrated** (2026-07-11). Its findings:
+6 SMALL-FIX applied (incl. the BLOCKER-severity one the other reviewers missed — a third,
+hardcoded "Still in draft." lead that still showed at the *enrolled* stage, contradicting the
+stage-correct notice; plus voluntariness-of-consent language, a link-privacy note, the
+`"draft": True` flag now stage-aware, and a dead pre-fix string removed) and its one MAJOR
+(consent disappeared from the enrolled patient view) resolved by a conditional, consent-status-
+agnostic line in `patient_remaining_enrolled`. Its MINOR (physician/doctor register split) is
+recorded for the copy pass. So the patient surface's real defects are now closed.
 
 All six reviewers ran the suite read-only (336 passed) and reviewed the same tree.
 Raw findings across the six files: **76** (26 [SMALL-FIX], 50 [LARGER-ISSUE]).

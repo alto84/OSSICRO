@@ -241,7 +241,8 @@ STRINGS = {
         "The FDA must allow the treatment to go ahead.",
         "An ethics review board (called an IRB) must agree.",
         "Before any treatment, you will be asked for your written "
-        "permission (informed consent).",
+        "permission (informed consent). Saying yes or no is always "
+        "your choice.",
     ],
     "patient_stage_committed": (
         "Your doctor has confirmed the details of the request. The "
@@ -251,7 +252,8 @@ STRINGS = {
         "The FDA must allow the treatment to go ahead.",
         "An ethics review board (called an IRB) must agree.",
         "Before any treatment, you will be asked for your written "
-        "permission (informed consent).",
+        "permission (informed consent). Saying yes or no is always "
+        "your choice.",
     ],
     "patient_stage_released": (
         "Your doctor has shared a draft of the request with the company "
@@ -263,13 +265,20 @@ STRINGS = {
         "The FDA must allow the treatment to go ahead.",
         "An ethics review board (called an IRB) must agree.",
         "Before any treatment, you will be asked for your written "
-        "permission (informed consent).",
+        "permission (informed consent). Saying yes or no is always "
+        "your choice.",
     ],
     "patient_stage_enrolled": (
         "Your doctor has recorded that you are enrolled in this treatment "
         "plan. From now on your doctor is responsible for watching your "
         "safety and sending required reports."),
     "patient_remaining_enrolled": [
+        # OSSICRO cannot verify consent was signed (HC1). Stated conditionally so
+        # it is honest either way, and never drops the voluntariness thread
+        # (patient review #5).
+        "If you have not already given your written permission (informed "
+        "consent), you will be asked before treatment starts, and it is "
+        "still your choice.",
         "Your doctor must report certain side effects to the FDA within "
         "fixed deadlines.",
         "Your doctor must send the FDA the required follow-up and yearly "
@@ -1177,7 +1186,7 @@ def _patient_view(case: dict) -> dict:
         "notice": STRINGS.get("patient_notice_" + stage, STRINGS["patient_notice"]),
         "patient_coded_id": str(intake.get("patient.coded_id", "") or ""),
         "drug": str(intake.get("drug.name", "") or ""),
-        "draft": True,
+        "draft": stage != "enrolled",   # not a draft once enrolled (patient review #4)
     }
 
 

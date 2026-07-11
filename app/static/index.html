@@ -1061,11 +1061,9 @@ const STRINGS = {
     pageTitle: "Your status page",
     loading: "One moment…",
     draftBarLead: "Still in draft.",
-    draftBar: "Nothing has been sent to the FDA yet. Everything shown here is still being " +
-      "prepared by your physician's office.",
     eyebrow: "Your status page",
     title: "An update from your physician's office",
-    lead1: "Your physician is preparing a request to the FDA that would allow you to be treated with",
+    lead1: "This page follows your physician's request to the FDA for permission to treat you with",
     lead2: "under the FDA's “expanded access” program. Expanded access is a way to ask " +
       "permission to use a medicine that is still being studied.",
     theMedicine: "the requested medicine",
@@ -1075,6 +1073,7 @@ const STRINGS = {
     remainingNone: "Your physician's office will explain the next steps when you talk with them.",
     refCode: "Your reference code on this page is",
     refCodeNote: "— this page never shows your name, your medical record, or any test result.",
+    linkPrivacyNote: "This link is for you. Anyone who has it can open this page, so share it only with people you trust.",
     readOnlyNote: "This page is read-only. It changes as your physician's office makes " +
       "progress; nothing here asks you to do anything or agree to anything.",
     adviceNote: "This page is not medical advice, and it is not a promise that treatment will " +
@@ -3215,13 +3214,14 @@ function renderPatientView(d){
       <div class="eyebrow">${esc(T.eyebrow)}</div>
       <h2>${esc(T.title)}</h2>
       <p style="max-width:62ch">${esc(T.lead1)} <b>${esc(drug || T.theMedicine)}</b> ${esc(T.lead2)}</p>
-      <div class="ptnotice"><b>${esc(T.draftBarLead)}</b> ${esc(asText(d.notice || d.draft_notice) || T.draftNotice)}</div>
+      <div class="ptnotice">${String(d.stage).toLowerCase() === "enrolled" ? "" : `<b>${esc(T.draftBarLead)}</b> `}${esc(asText(d.notice || d.draft_notice) || T.draftNotice)}</div>
       <h3 style="margin-top:18px">${esc(T.nowHeading)}</h3>
       <div class="ptnow">${esc(layStageLabel(d))}</div>
       <h3 style="margin-top:20px">${esc(T.remainingHeading)}</h3>
       ${remHtml}
       <div class="ptfoot">
         <p>${esc(T.readOnlyNote)}</p>
+        <p>${esc(T.linkPrivacyNote)}</p>
         <p><b>${esc(T.adviceNote)}</b></p>
         ${codedId ? `<p class="small">${esc(T.refCode)}
           <span class="mono">${esc(codedId)}</span> ${esc(T.refCodeNote)}</p>` : ""}
