@@ -461,7 +461,6 @@ window.OSSICRO_CLAIMS = null;
 
   /* ---------- coordinator (CRO) board — read-only, no acting affordances ---------- */
   .gatecells{display:inline-flex;gap:5px;flex-wrap:wrap}
-  .clockchips{display:flex;gap:5px;flex-wrap:wrap}
   .clockchip{font-family:var(--mono);font-size:.7rem;background:var(--surface2);
     border:1px solid var(--line);border-radius:6px;padding:1px 7px;white-space:nowrap}
   .clockchip.red{background:var(--red-soft);color:var(--red);
@@ -1548,6 +1547,17 @@ function gotoField(fid){
     wrap.classList.remove("flash"); void wrap.offsetWidth; wrap.classList.add("flash");
   }, 60);
 }
+// Wire a "fix in intake" jump link so it works by mouse AND keyboard (the FDF
+// link already uses this role/tabindex + keydown pattern).
+function wireFixlink(a){
+  a.setAttribute("role", "button");
+  a.setAttribute("tabindex", "0");
+  const go = () => gotoField(a.dataset.fid);
+  a.addEventListener("click", go);
+  a.addEventListener("keydown", ev => {
+    if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); go(); }
+  });
+}
 
 /* ---------------- missing-required tracking ---------------- */
 function requiredMissing(){
@@ -2202,8 +2212,7 @@ function wireCommitPanel(){
   if (cb) cb.addEventListener("click", commitProfile);
   $$("#commitBody [data-reconfirm]").forEach(b =>
     b.addEventListener("click", () => confirmFields([b.dataset.reconfirm], b)));
-  $$("#commitBody .fixlink").forEach(a =>
-    a.addEventListener("click", () => gotoField(a.dataset.fid)));
+  $$("#commitBody .fixlink").forEach(wireFixlink);
   $$("#commitBody .sha").forEach(el => el.addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(el.dataset.sha); toast("Profile hash copied."); }
     catch { toast(el.dataset.sha); }
@@ -2345,7 +2354,7 @@ function renderClocks(){
     let cls, state;
     if (c.error){ cls = "red"; state = "Invalid trigger"; }
     else if (!c.armed){ cls = "amber"; state = "Unarmed"; }
-    else if (c.days_remaining <= 3){ cls = "red"; state = c.days_remaining < 0 ? "Overdue" : "Due imminently"; }
+    else if (c.days_remaining != null && c.days_remaining <= 3){ cls = "red"; state = c.days_remaining < 0 ? "Overdue" : "Due imminently"; }
     else { cls = "green"; state = "Armed"; }
     const fix = c.trigger_field
       ? ` <a class="fixlink" data-fid="${esc(c.trigger_field)}">Fix in intake →</a>` : "";
@@ -2362,8 +2371,7 @@ function renderClocks(){
       ${q}
     </div>`;
   }).join("");
-  $$("#clocksGrid .fixlink").forEach(a =>
-    a.addEventListener("click", () => gotoField(a.dataset.fid)));
+  $$("#clocksGrid .fixlink").forEach(wireFixlink);
 }
 
 /* ---------------- sign-off: record the human act ----------------
@@ -2649,8 +2657,7 @@ function renderLedger(){
       ${voiceReviewHtml(item.doc_id)}
     </div>`;
   }).join("") || "<p class='muted'>Ledger is empty.</p>";
-  $$("#ledgerList .fixlink").forEach(a =>
-    a.addEventListener("click", () => gotoField(a.dataset.fid)));
+  $$("#ledgerList .fixlink").forEach(wireFixlink);
   $$("#ledgerList [data-signoff]").forEach(b =>
     b.addEventListener("click", () => openSignoff(b.dataset.signoff, b.dataset.doc)));
   $$("#ledgerList .vdisp-name").forEach(inp =>

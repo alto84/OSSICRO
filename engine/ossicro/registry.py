@@ -61,16 +61,26 @@ def load_documents() -> Dict[str, Dict[str, Any]]:
     """
     with open(REGISTRY_DIR / "documents.json", encoding="utf-8") as f:
         entries = json.load(f)
+    docs: Dict[str, Dict[str, Any]] = {}
     for entry in entries:
         _require_author_party(entry)
-    return {e["id"]: e for e in entries}
+        if entry["id"] in docs:
+            raise RegistryError("documents.json: duplicate document id %r "
+                                "(silent last-wins would hide a row)." % entry["id"])
+        docs[entry["id"]] = entry
+    return docs
 
 
 def load_gates() -> Dict[str, Gate]:
     """Return the non-delegable gate registry keyed by gate id."""
     with open(REGISTRY_DIR / "gates.json", encoding="utf-8") as f:
         entries = json.load(f)
-    return {e["id"]: Gate(**e) for e in entries}
+    gates: Dict[str, Gate] = {}
+    for entry in entries:
+        if entry["id"] in gates:
+            raise RegistryError("gates.json: duplicate gate id %r." % entry["id"])
+        gates[entry["id"]] = Gate(**entry)
+    return gates
 
 
 def _validate_claim_entry(entry: Dict[str, Any]) -> None:

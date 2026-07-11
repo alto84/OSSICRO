@@ -402,7 +402,7 @@
     "title": "Site Initiation Visit Report",
     "category": "monitoring",
     "lifecycle_phase": "startup",
-    "governing_citations": ["21 CFR 312.53(b)", "ICH E6(R3) 3.11"],
+    "governing_citations": ["21 CFR 312.56(a)", "ICH E6(R3) 3.11"],
     "owner": "cro",
     "receiver": "sponsor",
     "required_fields": ["visit_date", "attendees", "topics_covered", "action_items"],

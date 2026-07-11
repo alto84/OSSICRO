@@ -29,7 +29,7 @@ from __future__ import annotations
 import abc
 import datetime
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List
 
 from .generate import VERBATIM_SPANS
 from .register_linter import lint_text

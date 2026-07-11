@@ -155,7 +155,7 @@ def build_ledger(
             )
             continue
 
-        title = entry["title"]
+        title = entry.get("title", doc_id)
         gate_id = entry.get("gate")
         citations = entry.get("governing_citations", [])
         first_citation = citations[0] if citations else "governing authority"

@@ -2,6 +2,13 @@
 
 6 reviews · 56 findings — high=18 medium=23 low=15
 
+> **Re-triaged 2026-07-11.** Most of these were already remediated in the
+> overhaul: of the 41 high/medium findings, about 28 are fixed. Two concrete
+> citation corrections remained — the registry site-initiation citation is now
+> fixed (`312.53(b)` → `312.56(a)`); the Form FDA 1571 field numbers are flagged
+> for human verification. The rest are structural design judgments. See the
+> current-state summary and the human-verify list in `docs/HANDOFF.md` §7.
+
 | Sev | Persona | File | Issue |
 |---|---|---|---|
 | high | legal | wiki/03-documents/transfer-of-regulatory-obligations-toro.md | Confirmed factual error, repeated four times (lines 8, 18, 42, 72): the page states the CRO transfer-of-obligations disclosure is 'Field 16 of Form FDA 1571.' Per FDA's own 1571 instructions, Field 14 |

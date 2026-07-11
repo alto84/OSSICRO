@@ -886,7 +886,8 @@ def _derived_proposals(bundle, drug_name: Optional[str]) -> List[Dict[str, Any]]
                      "identifier)", None, "low")]
     slug = None
     if drug_name:
-        token = "".join(ch for ch in drug_name.split()[0] if ch.isalnum()).upper()
+        toks = drug_name.split()
+        token = "".join(ch for ch in toks[0] if ch.isalnum()).upper() if toks else ""
         slug = token or None
     plan_id = "TP-%s-%s" % (slug, coded_id) if slug else "TP-%s" % coded_id
     out.append(_proposal("treatment.plan_id", plan_id, "(none)",

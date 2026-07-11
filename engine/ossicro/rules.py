@@ -117,6 +117,17 @@ def _check_field_equals_study(study: Study, doc: Optional[Document], spec: RuleS
     if value and reference is not None and value == reference:
         pass_message = spec.params.get("pass_message", "Field '{field}' matches the study record: {value}")
         return True, pass_message.format(field=name, value=value), None
+    if value and reference is None:
+        # The document carries a value but the study record has nothing at this
+        # path to check it against — report the absence, not a None-valued
+        # "mismatch" (which reads as if the study said None).
+        absent_message = spec.params.get(
+            "absent_message",
+            "Field '{field}' is set to {value!r}, but the study record has no value "
+            "at '{path}' to check it against.",
+        )
+        question = spec.params.get("absent_question") or spec.resolving_question or None
+        return False, absent_message.format(field=name, value=value, path=path), question
     if value:
         mismatch_message = spec.params.get(
             "mismatch_message",
