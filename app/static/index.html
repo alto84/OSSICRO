@@ -503,9 +503,10 @@
 
 <div class="draftbar">
   <div class="wrap">
-    <b>DRAFTING AID.</b> Every artifact on this page is a <b>draft</b> for qualified human review.
+    <b>Drafting aid.</b> Every document on this page is a <b>draft</b> for qualified human review.
     OSSICRO never obtains consent, never approves for an IRB, never determines causality, never signs,
-    and never submits to FDA. Those acts belong to the named humans — the gates below fail closed.
+    and never submits to FDA. Each of those acts is a gate: a step owned by a named person, where
+    the system stops and waits until that person acts.
   </div>
 </div>
 
@@ -517,7 +518,7 @@
     <button class="step" data-screen="intake" disabled><span class="n">2</span>
       <span class="steplbl">Physician intake<small>chart import · field-by-field confirm</small></span></button>
     <button class="step" data-screen="check" disabled><span class="n">3</span>
-      <span class="steplbl">Commit, generate &amp; ledger<small>commit profile · drafts · clocks · gates</small></span></button>
+      <span class="steplbl">Commit, generate &amp; ledger<small>commit profile · drafts · deadlines · sign-offs</small></span></button>
     <button class="step" data-screen="package" disabled><span class="n">4</span>
       <span class="steplbl">Package review<small>FDA + manufacturer views</small></span></button>
     <button class="step" data-screen="match" disabled><span class="n">5</span>
@@ -532,13 +533,13 @@
       <p class="muted" style="max-width:70ch">
         Treatment, not research (21 CFR 312.305(a)): one named patient, a serious or immediately
         life-threatening disease, no comparable or satisfactory alternative therapy. OSSICRO drafts the
-        complete package the <b>FDA reviewer receives</b> and the request the <b>manufacturer acts on</b>;
-        four independent parties own the four decisions, and OSSICRO owns none of them.
+        complete package the <b>FDA reviewer receives</b> and the request the <b>manufacturer acts on</b>.
+        Four independent parties own the four decisions. OSSICRO owns none of them.
       </p>
 
       <div class="hardline">
-        <b>The hard line.</b> Authorization requires four independent concurrences. OSSICRO drafts,
-        computes clocks, and assembles — it never decides.
+        <b>Four decisions, four owners.</b> Authorization requires four independent concurrences.
+        OSSICRO drafts, computes deadlines, and assembles documents. It never decides.
         <div class="fourparty">
           <div class="party"><b>Treating physician</b><span class="owns">Risk determination · submits · consents — 21 CFR 312.310(a)</span></div>
           <div class="party"><b>Manufacturer</b><span class="owns">Whether to supply · LOA signature — FDCA §561A</span></div>
@@ -561,8 +562,8 @@
       <h2 style="margin-bottom:2px">Physician intake</h2>
       <p class="muted small" style="margin-top:0">
         Each field is labeled with its governing citation and feeds specific documents in the package.
-        Leave anything unknown blank — an empty field is recorded as <i>honestly unattested</i>, never fabricated.
-        Attestation booleans are never defaulted or pre-checked by OSSICRO; they are the physician's to set.
+        Leave anything unknown blank. A blank field is recorded as unanswered; OSSICRO never invents a value.
+        OSSICRO never pre-checks or defaults an attestation; each one is the physician's to set.
       </p>
       <div class="btnrow" style="margin-top:10px">
         <button type="button" class="btn" id="loadExampleBtn">Load example case</button>
@@ -577,8 +578,8 @@
       <p class="muted small" style="margin-top:0;max-width:80ch">
         Pull the clinical fields from a FHIR R4 bundle instead of retyping them. Only fields with a real
         chart source are ever proposed; regulatory, attestation, and process fields have no chart source
-        and stay manual by design. Identifying details (name, MRN, address, birth date) are on a hard
-        never-extract list.
+        and stay manual by design. Identifying details (name, MRN, address, birth date) are never
+        extracted.
       </p>
       <div class="privacynote"><b>Local, preparatory review only.</b>
         Your chart data is parsed locally and never leaves this machine; nothing here becomes part of
@@ -620,7 +621,7 @@
   <section class="screen" id="screen-check">
     <div class="stalebanner" id="staleBanner3">
       <span><b>Stale drafts.</b> The intake has changed since these documents were generated.
-        The ledger, clocks, and package below no longer reflect the saved intake — regenerate first.</span>
+        The ledger, deadlines, and package below no longer reflect the saved intake. Regenerate first.</span>
       <button class="btn primary" id="staleRegenBtn">Regenerate now</button>
     </div>
 
@@ -631,14 +632,14 @@
         <span class="pill amber" id="profilePill" style="vertical-align:2px"><span class="dot"></span>…</span></h3>
       <p class="muted small" style="margin-top:0;max-width:86ch">
         Before any draft is generated, a named clinician <b>commits</b> the confirmed intake as the
-        input of record — an attribution of <i>who confirmed what data these drafts are generated
-        from</i>. It is <b>not a signature</b> and executes no regulatory act: consent, IRB
-        concurrence, causality, and submission to FDA remain their humans' non-delegable gates.
-        The commit stores your name, the time, and SHA-256 fingerprints of each confirmed value —
-        never the values themselves.
+        input of record. The commit records who confirmed the data these drafts are generated from.
+        It is <b>not a signature</b> and performs no regulatory act: consent, IRB concurrence,
+        causality, and submission to FDA remain acts only their named humans can perform.
+        The commit stores your name, the time, and a SHA-256 fingerprint of each confirmed value.
+        The values themselves are never stored.
       </p>
       <div id="commitBody"><p class="muted small" style="margin:6px 0 0">
-        The profile state loads with the case — save the intake or run a check.</p></div>
+        The profile state loads with the case. Save the intake or run a check.</p></div>
     </div>
 
     <div class="card tight">
@@ -653,9 +654,10 @@
       <div class="card" id="clocksCard" style="display:none">
         <h3>Statutory clocks</h3>
         <p class="muted small" style="margin-top:-4px">
-          Deterministic working-day / calendar-day arithmetic (weekends + observed federal holidays)
-          from <b>physician-entered trigger dates</b>. A clock with no trigger date stays unarmed —
-          OSSICRO never assumes &ldquo;today&rdquo;.
+          Each deadline is computed from a <b>physician-entered trigger date</b>, counted in working
+          days or calendar days (weekends and observed federal holidays included). If no trigger
+          date has been entered, no deadline is shown, because OSSICRO never assumes
+          today&rsquo;s date.
         </p>
         <div class="clockgrid" id="clocksGrid"></div>
       </div>
@@ -663,8 +665,8 @@
       <h2>Completeness ledger</h2>
       <p class="muted small" style="margin-top:-4px">
         Green = complete. Amber = drafted but awaiting a named human act (the gate shown). Red = missing
-        or invalid. A clean concept review never promotes amber to green — only the responsible human's
-        recorded sign-off does.
+        or invalid. Only the responsible person's recorded sign-off moves an item from amber to green;
+        an automated review never does.
       </p>
       <div class="totals" id="totals"></div>
       <div id="ledgerList"></div>
@@ -675,10 +677,11 @@
       </div>
 
       <div class="card" id="gatePacketCard" style="display:none">
-        <h3>Who must act — gate packet</h3>
+        <h3>Who must act</h3>
         <p class="muted small" style="margin-top:-4px">
-          Each gate is a non-delegable human act. OSSICRO routes the draft to the named role and stops;
-          nothing advances to <code>final</code> without the recorded sign-off (GateViolation otherwise).
+          Each gate is an act only the named person may perform. OSSICRO routes the draft to that role
+          and stops. Nothing advances to <code>final</code> without the recorded sign-off; the server
+          refuses the attempt.
         </p>
         <div class="tblwrap"><table id="gateTable">
           <thead><tr><th>Gate</th><th>Responsible human</th><th>Document</th></tr></thead>
@@ -697,7 +700,7 @@
           <button class="btn" id="toMatchBtn" disabled
             title="Opens once a named clinician has committed the profile">Find candidates →</button>
           <span class="muted small">Assembly builds the FDA-reviewer view and the manufacturer packet. It does not submit anything.
-            Find candidates organizes a registry search from the committed profile — it recommends nothing.</span>
+            Find candidates organizes a registry search from the committed profile; it recommends nothing.</span>
         </div>
       </div>
     </div>
@@ -724,12 +727,12 @@
       <div class="tabpane" id="tab-regulator">
         <div class="card">
           <div class="eyebrow">eCTD module map</div>
-          <h3>Where each artifact lands</h3>
+          <h3>Where each document goes</h3>
           <p class="muted small" style="margin-top:-2px">
-            eCTD is not mandatory for an individual-patient 3926 — FDA accepts a paper/PDF package.
+            eCTD is not mandatory for an individual-patient 3926; FDA accepts a paper or PDF package.
             This map governs electronic filing or a serial amendment to an existing eCTD IND.
-            CMC (M3), nonclinical (M4), and the IB are cross-references to the manufacturer's IND via
-            the LOA — never physician-authored.
+            CMC (M3), nonclinical (M4), and the Investigator's Brochure are cross-references to the
+            manufacturer's IND via the LOA. The physician does not author them.
           </p>
           <div class="tblwrap"><table id="ectdTable">
             <thead><tr><th>Module</th><th>Section / content</th><th>Documents</th></tr></thead>
@@ -740,15 +743,15 @@
         <div class="card">
           <div class="eyebrow">Cover letter</div>
           <h3>Draft cover letter <span class="draftstamp">DRAFT</span></h3>
-          <p class="muted small" style="margin-top:-2px">Signed and filed by the physician — the <code>submission-to-fda</code> gate. OSSICRO never files.</p>
+          <p class="muted small" style="margin-top:-2px">Signed and filed by the physician (the <code>submission-to-fda</code> gate). OSSICRO never files.</p>
           <pre class="render open" id="coverLetter"></pre>
         </div>
 
         <div class="card">
           <div class="eyebrow">Assembled package</div>
           <h3>Document manifest</h3>
-          <p class="muted small" style="margin-top:-2px">SHA-256 fingerprints anchor each draft's exact content — all route documents are listed,
-            with any missing one marked absent rather than omitted. Click a hash to copy.</p>
+          <p class="muted small" style="margin-top:-2px">Each draft's exact content is fingerprinted with SHA-256. All route documents are listed;
+            a missing one is marked absent rather than left out. Click a hash to copy it.</p>
           <div class="tblwrap"><table id="manifestTable">
             <thead><tr><th>#</th><th>Document</th><th>Registry id</th><th>SHA-256</th></tr></thead>
             <tbody></tbody>
@@ -763,7 +766,7 @@
           <div class="eyebrow">Letter-of-Authorization request</div>
           <h3>LOA request to the manufacturer <span class="draftstamp">DRAFT</span></h3>
           <p class="muted small" style="margin-top:-2px">
-            The physician sends this — OSSICRO never auto-sends. It asks the manufacturer to (1) supply
+            The physician sends this; OSSICRO never sends it automatically. It asks the manufacturer to (1) supply
             the drug for single-patient treatment use and (2) issue an LOA cross-referencing its IND/DMF
             to FDA (21 CFR 312.305(b)(1), 312.23(b)). FDA authorization does <b>not</b> obligate supply;
             the decision and the LOA signature are the manufacturer's alone (FDCA §561A).
@@ -815,21 +818,21 @@
       <div class="eyebrow">Registry search organizer</div>
       <h2>Find candidates — open trials &amp; expanded-access records</h2>
       <div class="matchframe">
-        <b>OSSICRO organizes a registry search for you to review — it does not recommend.</b>
-        You decide which candidates fit; confirm the basis of each against the source.
-        Every candidate below is a proposal for your independent review — there is no ranking and
-        no confidence score anywhere, by design.
+        <b>OSSICRO organizes a registry search for you to review. It does not recommend.</b>
+        You decide which candidates fit; confirm the basis of each against the source record.
+        Every candidate below is a proposal for your independent review. By design there is no
+        ranking and no confidence score anywhere.
       </div>
       <p class="muted small" style="max-width:86ch">
-        The search consumes only the <b>committed profile's de-identified predicates</b> — condition
-        codes, drug, age band, sex, coded route. Names, dates, geography, identifiers, and free text
-        never leave this machine. Scope: <b>open trials and expanded-access records only</b>; matched,
-        unmatched, and unverifiable-from-structured-data criteria are shown so you can review the basis,
-        never a score.
+        The search uses only <b>de-identified terms from the committed profile</b>: condition codes,
+        drug, age band, sex, and coded route. Names, dates, geography, identifiers, and free text
+        never leave this machine. Scope: <b>open trials and expanded-access records only</b>. For each
+        candidate you see which criteria matched, which did not, and which could not be verified from
+        structured data, so you can review the basis yourself. No score is computed.
       </p>
       <p style="margin:8px 0 12px"><span class="mockcaption"><span class="mdot"></span>
-        Live registry queries are disabled in this build — results come from a mock registry adapter
-        (fixture data), pending greenlight.</span></p>
+        Live registry queries are disabled in this build. Results come from a built-in sample
+        registry until live queries are approved.</span></p>
       <div class="btnrow">
         <button class="btn primary" id="matchBtn">Search registries</button>
         <span class="muted small" id="matchStatus"></span>
@@ -842,9 +845,9 @@
       <div class="card tight">
         <p class="muted small" style="margin:0">
           Candidates are drawn from the queried registries as of the timestamp shown. A result here is
-          not eligibility, suitability, or a recommendation — and absence of results speaks only to
-          these registries at that time, never to what exists elsewhere. Contact with any sponsor,
-          site, or manufacturer remains the physician's own act; OSSICRO contacts no one.
+          not a finding of eligibility or suitability, and it is not a recommendation. An empty result
+          speaks only to these registries at that time; options may exist elsewhere. Contact with any
+          sponsor, site, or manufacturer remains the physician's own act. OSSICRO contacts no one.
         </p>
       </div>
     </div>
@@ -967,16 +970,16 @@ const STRINGS = {
     eyebrow: "Form FDA 3926",
     title: "Filled Form 3926 — draft PDF",
     downloadBtn: "Download Form 3926 (draft PDF)",
-    fdfLink: "FDF field-map",
-    caption: "This PDF is a DRAFT for qualified human review — the DRAFT watermark stays " +
-      "until the gates clear. The FDF field names require verification against the official " +
-      "FDA form before any real use; OSSICRO renders its own faithful layout and never " +
-      "fetches or fills the official form.",
+    fdfLink: "Form-fill data (FDF)",
+    caption: "This PDF is a draft for qualified human review. The DRAFT watermark stays " +
+      "until every gate clears. The FDF file holds the field values that would fill the " +
+      "official FDA form; check every field name against that form before any real use. " +
+      "OSSICRO draws its own layout and never fetches or fills the official form.",
     preparing: "Preparing…",
-    pdfDownloaded: "Draft Form 3926 PDF downloaded — DRAFT watermark retained; for qualified human review only.",
-    fdfDownloaded: "FDF field-map downloaded — verify every field name against the official FDA form before use.",
-    noCase: "Start a case first — the draft form is filled from an open case.",
-    stale: "Intake changed since generation — regenerate before downloading the draft form.",
+    pdfDownloaded: "Draft Form 3926 PDF downloaded. The DRAFT watermark stays on; the file is for qualified human review only.",
+    fdfDownloaded: "Form-fill data (FDF) downloaded. Check every field name against the official FDA form before use.",
+    noCase: "Start a case first. The draft form is filled from an open case.",
+    stale: "The intake changed after these drafts were generated. Regenerate before downloading the draft form.",
     unreachable: "Backend unreachable — is the OSSICRO server running?",
     downloadFailed: "Could not download the draft:"
   },
@@ -990,27 +993,27 @@ const STRINGS = {
     namePlaceholder: "Your name",
     btn: "Release to manufacturer view",
     busy: "Recording release…",
-    needName: "Enter the releasing clinician's name — release is a named-human act.",
-    auditNote: "Release is a named-human act, recorded in the case audit trail. It is not a " +
-      "signature and clears no gate; it changes visibility only.",
-    done: "Release recorded — this case's request is now visible in the manufacturer view. Nothing was sent.",
+    needName: "Enter the releasing clinician's name. The release is recorded under that name.",
+    auditNote: "The release is recorded in the case audit trail under the clinician's name. It is " +
+      "not a signature and clears no gate; it changes visibility only.",
+    done: "Release recorded. This case's request is now visible in the manufacturer view. Nothing was sent.",
     releasedPill: "released",
     releasedBy: "Released by",
     at: "at",
     releasedNote: "This case's manufacturer-facing request is visible in the manufacturer " +
       "view. OSSICRO sent no message; the supply and LOA decision remain the manufacturer's " +
       "alone (FDCA §561A).",
-    stale: "Intake changed since generation — regenerate before releasing."
+    stale: "The intake changed after these drafts were generated. Regenerate before releasing."
   },
   pharma: {
     eyebrow: "Pharma persona",
     title: "Manufacturer view — released requests",
     intro: "A case appears here only after a named clinician explicitly released it from the " +
-      "physician workspace — cross-persona visibility is a send, and it is audit-logged. " +
-      "Synthetic cases only through the pilot; no patient identifiers appear in this view.",
+      "physician workspace; every release is recorded in the audit trail. " +
+      "Synthetic cases only through the pilot. No patient identifiers appear in this view.",
     decisionLead: "No decision happens here.",
-    decisionNote: "The supply/authorize decision and the LOA signature are the " +
-      "manufacturer's — OSSICRO drafts, it does not decide or send (FDCA §561A). There is " +
+    decisionNote: "The decision to supply the drug and the LOA signature belong to the " +
+      "manufacturer (FDCA §561A). OSSICRO drafts; it does not decide or send. There is " +
       "deliberately no approve, deny, or reply control anywhere in this view.",
     refresh: "Refresh inbox",
     loading: "Loading released requests…",
@@ -1024,29 +1027,29 @@ const STRINGS = {
     indicationLabel: "Indication:",
     loaHeading: "LOA request (draft — the physician sends it; OSSICRO does not)",
     noLoaText: "(LOA request text not provided by the inbox)",
-    cardNote: "Draft for the manufacturer's own review. The supply/authorize decision and " +
-      "LOA signature are the manufacturer's — OSSICRO drafts, it does not decide or send."
+    cardNote: "Draft for the manufacturer's own review. The decision to supply the drug and " +
+      "the LOA signature belong to the manufacturer; OSSICRO drafts and does not decide or send."
   },
   /* ---- Wave 4 F: patient status link (physician side — a named act) ---- */
   patientLink: {
     eyebrow: "Patient status link",
     title: "Share a status link with the patient",
-    framing: "Creates a private, read-only status page for this patient — plain-language " +
+    framing: "Creates a private, read-only status page for this patient. It shows plain-language " +
       "progress only, with no clinical detail, no documents, and nothing to act on. You share " +
       "the link yourself; OSSICRO sends nothing to anyone.",
     actorLabel: "Requesting clinician",
     namePlaceholder: "Your name",
     btn: "Create patient status link",
     busy: "Creating link…",
-    needName: "Enter the requesting clinician's name — creating a patient link is a named act.",
-    done: "Patient status link ready — copy it below and share it yourself. OSSICRO sent nothing.",
+    needName: "Enter the requesting clinician's name. Creating the link is recorded under that name.",
+    done: "Patient status link ready. Copy it below and share it yourself; OSSICRO sent nothing.",
     readyPill: "link ready",
-    urlLabel: "Private link — treat it like a password; anyone holding it can open the status page:",
+    urlLabel: "This link is private; treat it like a password. Anyone who has it can open the status page:",
     copyBtn: "Copy link",
     copied: "Patient status link copied.",
     caption: "The page behind this link is read-only and shows no clinical detail the patient " +
-      "does not already hold — only plain-language progress. Creating it is recorded in the " +
-      "case audit trail.",
+      "does not already have; it shows plain-language progress only. Creating it is recorded " +
+      "in the case audit trail.",
     createdBy: "Created by",
     failed: "Could not create the patient link:"
   },
@@ -1057,13 +1060,13 @@ const STRINGS = {
     pageTitle: "Your status page",
     loading: "One moment…",
     draftBarLead: "Still in draft.",
-    draftBar: "Nothing has been sent to the FDA yet — everything shown here is still being " +
+    draftBar: "Nothing has been sent to the FDA yet. Everything shown here is still being " +
       "prepared by your physician's office.",
     eyebrow: "Your status page",
     title: "An update from your physician's office",
     lead1: "Your physician is preparing a request to the FDA that would allow you to be treated with",
-    lead2: "under the FDA's “expanded access” pathway — a way to ask permission to use " +
-      "a medicine that is still being studied.",
+    lead2: "under the FDA's “expanded access” program. Expanded access is a way to ask " +
+      "permission to use a medicine that is still being studied.",
     theMedicine: "the requested medicine",
     draftNotice: "This is a draft — nothing has been submitted to the FDA yet.",
     nowHeading: "Where things stand",
@@ -1075,7 +1078,7 @@ const STRINGS = {
       "progress; nothing here asks you to do anything or agree to anything.",
     adviceNote: "This page is not medical advice, and it is not a promise that treatment will " +
       "be approved or available. Please talk with your physician about what any of this means " +
-      "for you — they are the right person for every question about your care.",
+      "for you. They are the right person for every question about your care.",
     stages: {
       "draft": "Your physician's office is preparing the request",
       "start": "Your physician has opened a request file",
@@ -1100,42 +1103,42 @@ const STRINGS = {
   },
   /* ---- Wave 4 H: INV-5 promote() — enrollment records the legal basis ---- */
   promote: {
-    eyebrow: "Enrollment — INV-5",
+    eyebrow: "Enrollment",
     title: "Enroll (record the legal basis)",
     framing: "Enrollment records the legal basis and the ongoing sponsor-investigator duties " +
-      "it creates — OSSICRO tracks the deadlines; you perform the acts.",
+      "it creates. OSSICRO tracks the deadlines; you perform the acts.",
     explain: "Moving this case from preparatory review to enrollment is the legal moment the " +
       "HIPAA basis for using the patient's information changes. Recording it requires a " +
-      "committed profile, a named actor, and the one legal basis that actually occurred. It " +
-      "arms the post-enrollment obligation clocks — 21 CFR 312.32 safety reports, 312.310(d) " +
-      "follow-up, 312.33 annual report — and emits the checklist below. The act is " +
-      "audit-logged; it is a record of your decision, never a decision OSSICRO makes.",
-    basisLegend: "Legal basis for the disclosure — choose the one that actually happened",
+      "committed profile, a named physician, and the one legal basis that actually occurred. " +
+      "It starts the post-enrollment deadline clocks (21 CFR 312.32 safety reports, 312.310(d) " +
+      "follow-up, 312.33 annual report) and produces the checklist below. The entry goes in " +
+      "the audit trail. It records your decision; OSSICRO makes no decision.",
+    basisLegend: "Legal basis for the disclosure. Choose the one that actually happened.",
     actorLabel: "Enrolling physician",
     namePlaceholder: "Your name",
     btn: "Record enrollment",
     busy: "Recording enrollment…",
-    needName: "Enter the enrolling physician's name — enrollment is a named act.",
-    needBasis: "Choose the legal basis that actually occurred — enrollment records it; it never assumes one.",
-    done: "Enrollment recorded — the obligation clocks are armed. OSSICRO tracks the " +
+    needName: "Enter the enrolling physician's name. The enrollment is recorded under that name.",
+    needBasis: "Choose the legal basis that actually occurred. Enrollment records your choice; it never assumes one.",
+    done: "Enrollment recorded. The obligation clocks are now running. OSSICRO tracks the " +
       "deadlines; performing the acts remains yours.",
     enrolledPill: "enrolled",
     enrolledBy: "Enrolled by",
     at: "at",
     basisLabel: "Legal basis",
-    checklistTitle: "Post-enrollment obligations — OSSICRO tracks; you act",
+    checklistTitle: "Post-enrollment obligations",
     checklistNote: "Each row is a duty the enrollment creates for the sponsor-investigator. " +
-      "OSSICRO computes and tracks each deadline; performing the act — and signing anything — " +
-      "belongs to the named owner. An unarmed clock is waiting for its trigger date; it is " +
-      "never assumed.",
+      "OSSICRO computes and tracks each deadline. Performing the act, and signing anything, " +
+      "belongs to the named owner. A clock shown as unarmed is waiting for its trigger date; " +
+      "OSSICRO never fills in a date it was not given.",
     colObligation: "Obligation",
     colCitation: "Citation",
     colDue: "Due",
     colOwner: "Owner",
-    colArmed: "Armed",
-    armedYes: "armed",
-    armedNo: "unarmed",
-    dueUnarmed: "— awaiting trigger",
+    colArmed: "Deadline",
+    armedYes: "date set",
+    armedNo: "no date yet",
+    dueUnarmed: "waiting for a trigger date",
     failed: "Could not record the enrollment:",
     bases: [
       // values are the server's canonical _LEGAL_BASES keys — never renamed here
@@ -1143,7 +1146,7 @@ const STRINGS = {
         title: "Patient authorization — 45 CFR 164.508",
         desc: "The patient (or their legally authorized representative) signed a written HIPAA " +
           "authorization for this use and disclosure, alongside 21 CFR Part 50 informed " +
-          "consent. OSSICRO never obtains either — it records that you did." },
+          "consent. OSSICRO never obtains either; it records that you did." },
       { value: "waiver-164.512",
         title: "IRB / Privacy Board waiver — 45 CFR 164.512(i)(1)(i)",
         desc: "An IRB or privacy board approved a waiver of authorization and documented that " +
@@ -1160,15 +1163,15 @@ const STRINGS = {
     btn: "Coordinator view",
     toPhysician: "← Physician view",
     btnTitle: "Read-only coordinating status board across this workspace's cases",
-    eyebrow: "Micro-CRO persona",
+    eyebrow: "Coordinator view",
     title: "Coordinator board — read-only",
     intro: "The physician's own coordinating view across cases: where each stands, which " +
       "gates are open, which clocks are armed, and what has been released or enrolled. " +
       "Synthetic cases only through the pilot; coded identifiers only.",
     noActLead: "Nothing can be done from here.",
-    noActNote: "This board deliberately has no action buttons. Every act — commit, sign-off, " +
-      "release, enrollment, submission — happens in its owning workspace, by its named human. " +
-      "A status board that could act would be a coordinator; this one only reports.",
+    noActNote: "This board deliberately has no action buttons. Every act (commit, sign-off, " +
+      "release, enrollment, submission) happens in its own workspace, performed by its named " +
+      "person. The board only reports status.",
     refresh: "Refresh board",
     loading: "Loading the case board…",
     loadError: "Could not load the coordinator board:",
@@ -1182,8 +1185,8 @@ const STRINGS = {
     colProfile: "Profile",
     colLedger: "Ledger",
     colGates: "Gates signed",
-    colClocks: "Clocks armed",
-    colObligations: "Duties armed",
+    colClocks: "Deadlines set",
+    colObligations: "Duties with a date",
     colReleased: "Released",
     colEnrolled: "Enrolled",
     rollupUnavailable: "rollup unavailable",
@@ -1453,7 +1456,7 @@ function fieldControl(f){
         <button type="button" data-v="true">Yes</button>
         <button type="button" data-v="false">No</button>
       </div>
-      <span class="unattested">Attestation is the physician's — OSSICRO never pre-checks it.</span>`;
+      <span class="unattested">The physician sets each attestation; OSSICRO never pre-checks it.</span>`;
   }
   if (t === "select" || t === "enum" || t === "choice"){
     const opts = (f.options || f.choices || []).map(o => {
@@ -1462,7 +1465,7 @@ function fieldControl(f){
       return `<option value="${esc(v)}">${esc(l)}</option>`;
     }).join("");
     return `<select ${attrs}>
-      <option value="">— unattested —</option>${opts}</select>`;
+      <option value="">— not answered —</option>${opts}</select>`;
   }
   if (t === "date") return `<input type="date" ${attrs}>`;
   if (t === "datetime" || t === "datetime-local")
@@ -1618,7 +1621,7 @@ function propRowHtml(p){
   return `<div class="prop${confirmed ? " confirmed" : ""}" data-prop="${esc(fid)}">
     <div class="prophead">
       <span class="proplabel">${esc(p.label || (sf && sf.label) || fid)} <code>${esc(fid)}</code></span>
-      <span class="conf ${esc(conf)}" title="Confidence is display metadata for the confirming physician — it grants nothing">${esc(conf)}</span>
+      <span class="conf ${esc(conf)}" title="Confidence describes the chart mapping only; every value still needs your confirmation">${esc(conf)}</span>
       <label class="ptoggle"><input type="checkbox" data-confirm="${esc(fid)}"${confirmed ? " checked" : ""}>Confirm</label>
     </div>
     <div class="propval">${ctl}</div>
@@ -1671,17 +1674,17 @@ function renderImportResult(){
       <button type="button" class="btn" id="clearImportBtn">Discard import</button>
     </div>
     <p class="muted small" style="margin-top:8px">
-      Review each value against the chart, edit where needed, and confirm field-by-field.
-      A high badge grants nothing — every value, high or medium, needs your explicit confirmation
-      before it enters the intake. There is deliberately no bulk-accept: the confirming clinician
-      reads each proposed value. Unconfirmed proposals are discarded, never written.</p>`;
+      Review each value against the chart, edit where needed, and confirm field by field.
+      A high-confidence badge does not skip review; every value needs your explicit confirmation
+      before it enters the intake. There is deliberately no accept-all button, so the confirming
+      clinician reads each proposed value. Unconfirmed proposals are discarded and never written.</p>`;
   for (const sec of secs){
     html += `<div class="propsec">${esc(sec)}</div>`;
     html += bySec.get(sec).map(propRowHtml).join("");
   }
   if ((F.neverExtracted || []).length){
     html += `<details class="neverx">
-      <summary>Deliberately never extracted — privacy hard-exclusions (${F.neverExtracted.length})</summary>
+      <summary>Never extracted, to protect privacy (${F.neverExtracted.length})</summary>
       <ul class="qlist">${F.neverExtracted.map(x => `<li class="mono small">${esc(asText(x))}</li>`).join("")}</ul>
     </details>`;
   }
@@ -1695,8 +1698,8 @@ function renderImportResult(){
     <button type="button" class="btn primary" id="applyConfirmedBtn" disabled>Apply confirmed to intake</button>
   </div>
   <p class="muted small" style="margin-top:6px">The confirming clinician's name is recorded with the
-  confirmation (who attested which values, and that they came from the chart) — it is not a signature and
-  executes no gate.</p>`;
+  confirmation: who attested which values, and that they came from the chart. It is not a signature and
+  clears no gate.</p>`;
   box.innerHTML = html;
 
   $$("#importResult [data-confirm]").forEach(cb => cb.addEventListener("change", () => {
@@ -1781,7 +1784,7 @@ async function applyConfirmed(){
 }
 
 async function runImport(payload, btn, busy){
-  if (!S.caseId){ toast("Start a case first — the import maps into an open case.", true); return; }
+  if (!S.caseId){ toast("Start a case first. The import maps into an open case.", true); return; }
   const orig = btn ? btn.textContent : "";
   if (btn){ btn.disabled = true; btn.innerHTML = `<span class="spin"></span>${busy || "Mapping chart…"}`; }
   try {
@@ -1889,10 +1892,10 @@ async function saveIntake(opts){
     updateStaleUI();
     const n = Object.keys(fields).length, total = S.schema.length;
     $("#intakeStatus").textContent =
-      `Saved ${n} of ${total} fields — ${total - n} left honestly unattested.`;
+      `Saved ${n} of ${total} fields. ${total - n} left blank. The system records blank fields as unanswered and never guesses.`;
     markDone("intake"); enableStep("check");
     toast(staleNow()
-      ? "Intake saved — the existing drafts are now stale; regenerate them."
+      ? "Intake saved. The existing drafts are now stale; regenerate them."
       : "Intake saved with provenance.");
     return true;
   } catch (e) {
@@ -1972,7 +1975,7 @@ function renderCommitPanel(){
     pill.className = "pill amber";
     pill.innerHTML = '<span class="dot"></span>not loaded';
     box.innerHTML = '<p class="muted small" style="margin:6px 0 0">' +
-      'The profile state loads with the case — save the intake or run a check.</p>';
+      'The profile state loads with the case. Save the intake or run a check.</p>';
     return;
   }
   const st = String(p.state || "UNCOMMITTED").toUpperCase();
@@ -1994,7 +1997,7 @@ function renderCommitPanel(){
           : ""}
       </div>
       <p class="muted small" style="margin:4px 0 0">Drafts may be generated. Editing any intake field
-        re-opens confirmation for exactly that field — nothing is generated from an unconfirmed input.</p>`;
+        re-opens confirmation for that field; nothing is generated from an unconfirmed input.</p>`;
   } else if (st === "CONFIRMING"){
     const pend = p.pending || [];
     pill.className = "pill amber";
@@ -2004,7 +2007,7 @@ function renderCommitPanel(){
       // staged/reverted) — the only next action is a plain recommit.
       box.innerHTML = `
         <p class="small" style="margin:8px 0 4px">The confirmed changes are staged, but the profile
-          hasn't been recommitted yet — generation stays closed until a named clinician recommits it
+          has not been recommitted yet. Generation stays closed until a named clinician recommits it
           under the new fingerprint.</p>
         <div class="btnrow" style="margin-top:6px">
           ${actorBox}
@@ -2025,14 +2028,14 @@ function renderCommitPanel(){
             <button type="button" class="btn" data-reconfirm="${esc(fid)}" disabled>Re-confirm</button>
           </div>`).join("")}
         <p class="muted small" style="margin:8px 0 0">Re-confirming records your name against the field's
-          new value fingerprint — it is an attribution, not a signature, and clears no gate.</p>`;
+          new value fingerprint. It is not a signature and clears no gate.</p>`;
     }
   } else {  // UNCOMMITTED
     pill.className = "pill amber";
     pill.innerHTML = '<span class="dot"></span>uncommitted';
     box.innerHTML = `
       <p class="small" style="margin:8px 0 4px">No committed profile yet. A named clinician must commit
-        the confirmed intake before any draft is generated — the generate and package actions stay
+        the confirmed intake before any draft is generated. The generate and package actions stay
         closed until then.</p>
       <div class="btnrow" style="margin-top:6px">
         ${actorBox}
@@ -2066,7 +2069,7 @@ function wireCommitPanel(){
 
 async function commitProfile(){
   const actor = (P.actor || "").trim();
-  if (!actor){ toast("Enter the confirming clinician's name — commit is a named attribution.", true); return; }
+  if (!actor){ toast("Enter the confirming clinician's name. The commit is recorded under that name.", true); return; }
   const btn = $("#commitBtn");
   if (btn){ btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Committing…'; }
   try {
@@ -2075,7 +2078,7 @@ async function commitProfile(){
       body: JSON.stringify({ actor })
     });
     setProfile((res && res.profile) || { state:"COMMITTED", committed_by: actor, pending: [] });
-    toast(`Profile committed by ${actor} — the input of record now carries this attribution.`);
+    toast(`Profile committed by ${actor}. Drafts can now be generated from the confirmed data.`);
   } catch (e) {
     if (e.status === 409 && e.body && (e.body.pending || e.body.state)) setProfileFrom409(e.body);
     else renderCommitPanel();                       // restore the button state
@@ -2095,7 +2098,7 @@ async function confirmFields(fieldIds, btn){
     const prof = (res && res.profile) || null;
     setProfile(prof);
     if (prof && String(prof.state).toUpperCase() === "COMMITTED")
-      toast("All changed fields re-confirmed — profile recommitted under a new hash. Regenerate to pick it up.");
+      toast("All changed fields re-confirmed; the profile is recommitted under a new fingerprint. Regenerate the drafts to use it.");
     else
       toast(`Re-confirmed ${fieldIds.map(fieldLabel).join(", ")} — ` +
             `${((prof && prof.pending) || []).length} field(s) still pending.`);
@@ -2120,7 +2123,7 @@ function gotoCommitPanel(){
 function explainCommitGate(){
   const confirming = S.profile && String(S.profile.state).toUpperCase() === "CONFIRMING";
   toast(confirming
-    ? "Fields changed since the last commit — a named clinician must re-confirm them before drafts are generated."
+    ? "Fields changed since the last commit. A named clinician must re-confirm them before drafts are generated."
     : "A named clinician must commit the confirmed profile before drafts are generated.");
   gotoCommitPanel();
 }
@@ -2188,7 +2191,7 @@ function gateInfo(gateId){
 function clockDaysLabel(c){
   if (c.days_remaining == null) return "—";
   const unit = c.basis === "working-day" ? "working day" : "calendar day";
-  if (c.days_remaining < 0) return `OVERDUE by ${-c.days_remaining} ${unit}${c.days_remaining === -1 ? "" : "s"}`;
+  if (c.days_remaining < 0) return `Overdue by ${-c.days_remaining} ${unit}${c.days_remaining === -1 ? "" : "s"}`;
   return `${c.days_remaining} ${unit}${c.days_remaining === 1 ? "" : "s"} remaining`;
 }
 function renderClocks(){
@@ -2250,7 +2253,7 @@ function openSignoff(gateId, docId){
   box.querySelector(".so-submit").addEventListener("click", async () => {
     const name = box.querySelector(".so-name").value.trim();
     const date = box.querySelector(".so-date").value;
-    if (!name){ toast("Enter the signer's name — a gate is executed by a named human.", true); return; }
+    if (!name){ toast("Enter the signer's name. The sign-off records the person who acted.", true); return; }
     if (!date){ toast("Enter the date the act was performed.", true); return; }
     const btn = box.querySelector(".so-submit");
     btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Recording…';
@@ -2298,8 +2301,8 @@ function voiceReviewHtml(docId){
   }).join("");
   return `<div class="voice">
     <div class="voicehead">Voice review
-      <span class="muted">— advisory input to the human reviewer${cv.model ? ` · reviewer <code>${esc(cv.model)}</code>` : ""};
-      findings escalate only and never clear a gate</span></div>
+      <span class="muted">— advisory notes for the human reviewer${cv.model ? ` · reviewer <code>${esc(cv.model)}</code>` : ""};
+      findings can only flag problems and never clear a gate</span></div>
     ${rows}
   </div>`;
 }
@@ -2333,7 +2336,7 @@ function renderLedger(){
       const pending = st === "amber" && g;   // gate still awaiting its human
       gateHtml = `<div class="gatecall"><b>Awaiting human act:</b> ${esc(gname)}
         ${role ? ` — <span class="rolechip">${esc(role)}</span> must act` : ""}
-        <span class="muted small"> · this gate fails closed; OSSICRO cannot perform this step.</span>
+        <span class="muted small"> · OSSICRO cannot perform this step, and nothing proceeds until the named person does.</span>
         ${pending ? `<div class="btnrow" style="margin-top:8px">
           <button type="button" class="btn" data-signoff="${esc(item.gate_id)}" data-doc="${esc(item.doc_id)}">Record the human act</button>
           <span class="muted small">Records that the ${esc(role)} performed it outside OSSICRO — it does not perform it.</span>
@@ -2402,8 +2405,8 @@ async function loadPackage(){
     if (e.status === 409 && e.body && (e.body.state || e.body.pending)){
       setProfileFrom409(e.body);
       $("#pkgLoading").innerHTML = `<p class="muted" style="margin:0">
-        A named clinician must commit the confirmed profile before the package is assembled —
-        nothing is drafted from an unconfirmed input.
+        A named clinician must commit the confirmed profile before the package is assembled.
+        Nothing is drafted from an unconfirmed input.
         <button type="button" class="btn primary" id="pkgGotoCommit" style="margin-left:10px">Go to the commit panel</button></p>`;
       const b = $("#pkgGotoCommit");
       if (b) b.addEventListener("click", gotoCommitPanel);
@@ -2425,11 +2428,11 @@ function renderPackage(){
   if (p.submission_ready){
     $("#readyBanner").innerHTML = `<div class="ready yes">
       <b>Package assembly complete.</b> Every draft is validated and internally consistent.
-      What remains is exactly what must remain: the physician's review, signatures, and the physician's
+      What remains: the physician's review, the required signatures, and the physician's
       own act of submission to FDA. OSSICRO does not file.</div>`;
   } else {
     $("#readyBanner").innerHTML = `<div class="ready no">
-      <b>Not submission-ready.</b> The following items block assembly — each names the human or fact required:
+      <b>Not submission-ready.</b> The following items block assembly. Each names the person or fact required:
       <ul>${blocking.map(b => `<li>${esc(asText(b))}</li>`).join("") || "<li>(unspecified)</li>"}</ul></div>`;
   }
 
@@ -2542,8 +2545,8 @@ function candidateHtml(c){
       ${critColHtml("unverifiable", "Unverifiable from structured data", c.unverifiable_criteria,
                     "none — every criterion was checkable")}
     </div>
-    <div class="candfoot">Proposal for physician review — confirm each criterion against the source
-      record before acting on it. OSSICRO ranks nothing, scores nothing, and contacts no one.</div>
+    <div class="candfoot">Proposal for physician review. Confirm each criterion against the source
+      record before acting on it. OSSICRO does not rank or score candidates, and it contacts no one.</div>
   </div>`;
 }
 
@@ -2569,8 +2572,8 @@ function renderMatch(){
       <span class="spacer"></span>
       <span class="muted small mono">as of ${esc(asText(m.as_of) || "—")}</span>
     </div>
-    <p class="muted small" style="margin:8px 0 0"><b>De-identified predicates sent</b> — this closed
-      struct is everything that left the case; no names, dates, geography, or identifiers:</p>
+    <p class="muted small" style="margin:8px 0 0"><b>De-identified search terms sent.</b> Everything
+      that left the case is shown below; it contains no names, dates, geography, or identifiers:</p>
     <div class="predchips">${predChips(m.predicates_used) ||
       '<span class="muted small">(none reported)</span>'}</div>`;
   const cands = m.candidates || [];
@@ -2581,7 +2584,7 @@ function renderMatch(){
       <div class="amsg">${esc(asText(m.absence_message) ||
         ("no candidates found in the queried registries" + (m.as_of ? " as of " + asText(m.as_of) : "")))}</div>
       <p class="muted small" style="margin:7px 0 0">This speaks only to the registries queried, at that
-        time, from the coded predicates — it is not a statement that no options exist.</p>
+        time, from the coded search terms. It does not mean that no options exist.</p>
     </div>`;
   } else {
     $("#matchResults").innerHTML =
@@ -2593,22 +2596,22 @@ function renderMatch(){
 }
 
 async function runMatch(){
-  if (!S.caseId){ toast("Start a case first — the search runs from an open case's committed profile.", true); return; }
+  if (!S.caseId){ toast("Start a case first. The search runs from an open case's committed profile.", true); return; }
   if (S.profile && String(S.profile.state || "").toUpperCase() !== "COMMITTED"){
     explainCommitGate();                       // friendly gate, not a raw 409
     return;
   }
   const btn = $("#matchBtn");
   btn.disabled = true;
-  $("#matchStatus").innerHTML = '<span class="spin"></span>Searching the registries (mock adapter — live egress disabled)…';
+  $("#matchStatus").innerHTML = '<span class="spin"></span>Searching the registries (sample data; live queries are disabled in this build)…';
   try {
     S.match = await api(`/api/case/${S.caseId}/match`, { method:"POST" });
     renderMatch();
     markDone("match");
     const n = (S.match.candidates || []).length;
     $("#matchStatus").textContent = n
-      ? `${n} candidate${n === 1 ? "" : "s"} organized for your review — none is a recommendation.`
-      : "Search complete — the registries' answer is below.";
+      ? `${n} candidate${n === 1 ? "" : "s"} organized for your review; none is a recommendation.`
+      : "Search complete. The registries' answer is below.";
   } catch (e) {
     $("#matchStatus").textContent = "";
     if (e.status === 409){
@@ -3264,7 +3267,7 @@ async function enterPatientMode(token){
 
 /* ---------------- export ---------------- */
 $("#exportJsonBtn").addEventListener("click", () => {
-  if (staleNow()){ toast("Intake changed since generation — regenerate before exporting.", true); return; }
+  if (staleNow()){ toast("The intake changed after these drafts were generated. Regenerate before exporting.", true); return; }
   if (!S.pkg){ toast("Assemble the package first.", true); return; }
   const payload = {
     _notice: "OSSICRO DRAFT PACKAGE — for qualified human review. Not signed. Not submitted to FDA.",
@@ -3288,7 +3291,7 @@ $("#exportJsonBtn").addEventListener("click", () => {
    and open the standalone verifier, which recomputes each SHA-256 with no
    server and no OSSICRO trust. */
 $("#verifyPkgBtn").addEventListener("click", () => {
-  if (staleNow()){ toast("Intake changed since generation — regenerate before verifying.", true); return; }
+  if (staleNow()){ toast("The intake changed after these drafts were generated. Regenerate before verifying.", true); return; }
   if (!S.pkg){ toast("Assemble the package first.", true); return; }
   const blob = new Blob([JSON.stringify(S.pkg, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
@@ -3301,7 +3304,7 @@ $("#verifyPkgBtn").addEventListener("click", () => {
 });
 
 $("#printBtn").addEventListener("click", () => {
-  if (staleNow()){ toast("Intake changed since generation — regenerate before printing.", true); return; }
+  if (staleNow()){ toast("The intake changed after these drafts were generated. Regenerate before printing.", true); return; }
   if (!S.pkg){ toast("Assemble the package first.", true); return; }
   const p = S.pkg;
   const docs = S.documents || [];
@@ -3326,8 +3329,9 @@ $("#printBtn").addEventListener("click", () => {
     </style></head><body>
     <div class="stamp">DRAFT</div>
     <h1>OSSICRO — Route-3926 Individual-Patient Expanded Access · Case ${esc(S.caseId)}</h1>
-    <div class="notice">DRAFT FOR QUALIFIED HUMAN REVIEW — unsigned, unsubmitted. Consent, IRB
-      concurrence, causality, signatures, and submission to FDA are non-delegable human acts.</div>
+    <div class="notice">DRAFT — for qualified human review. Unsigned and unsubmitted. Consent, IRB
+      concurrence, causality, signatures, and submission to FDA are non-delegable human acts;
+      software never performs them.</div>
     <h2>Cover letter (draft — physician signs and files)</h2>${pre(p.cover_letter)}
     <h2>eCTD module map</h2>
     <table><tr><th>Module</th><th>Content</th><th>Documents</th></tr>

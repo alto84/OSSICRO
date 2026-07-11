@@ -25,7 +25,7 @@ drafts only — OSSICRO never performs a non-delegable regulated act.
 | **H** | INV-5 `promote()` — preparatory-review → enrollment legal transition | **done** (legal-basis gate, arms the 312.32/56.104(c)/312.310(d)/312.33 duty clocks; built/reviewed/revised, 336 tests) |
 | **I** | Hardening — append-only audit log (GAP-3), case-persistence robustness (GAP-7), wire the last wiki rule (GAP-1) | not built |
 | **J** | Timed pilot (HITL-3) — one real end-to-end run | gated by HITL-2 (Alton's hours) |
-| **K** | Jargon-cleaning pass — de-jargon UI + docs for real users | deferred to end (Alton) |
+| **K** | Jargon-cleaning pass — plain reader-first prose for user-facing + outward text | **done** (UI copy + Constitution + README rewritten, measured by `tools/prose_lint.py`, fresh-reader verified; internal notes left as-is by design) |
 
 ## Dependencies (what must precede what)
 
