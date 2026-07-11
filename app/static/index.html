@@ -421,6 +421,48 @@
   .soform input[readonly]{background:var(--surface2);color:var(--muted)}
   .soform .disclaimer{font-size:.78rem;color:var(--muted);font-style:italic;margin:4px 0 0}
 
+  /* ---------- patient status link + enrollment (Wave 4) ---------- */
+  .linkbox{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  .linkbox input{flex:1;min-width:240px;font-family:var(--mono);font-size:.78rem;padding:8px 11px;
+    border:1px solid var(--line);border-radius:8px;background:var(--surface2);color:var(--ink)}
+  .legalopt{display:flex;gap:11px;border:1px solid var(--line);border-radius:10px;padding:11px 14px;
+    margin:7px 0;cursor:pointer;align-items:flex-start;background:var(--surface);transition:all .12s}
+  .legalopt:hover{border-color:var(--brand)}
+  .legalopt.sel{border-color:var(--brand);background:var(--brand-soft)}
+  .legalopt input{margin-top:3px;flex:0 0 auto}
+  .legalopt .lb-title{font-weight:700;font-size:.88rem;display:block}
+  .legalopt .lb-desc{font-size:.82rem;color:var(--muted);margin:2px 0 0;display:block}
+
+  /* ---------- coordinator (CRO) board — read-only, no acting affordances ---------- */
+  .gatecells{display:inline-flex;gap:5px;flex-wrap:wrap}
+  .clockchips{display:flex;gap:5px;flex-wrap:wrap}
+  .clockchip{font-family:var(--mono);font-size:.7rem;background:var(--surface2);
+    border:1px solid var(--line);border-radius:6px;padding:1px 7px;white-space:nowrap}
+  .clockchip.red{background:var(--red-soft);color:var(--red);
+    border-color:color-mix(in srgb,var(--red) 30%,transparent)}
+
+  /* ---------- patient view (Wave 4 — plain language, read-only, opaque token) ---------- */
+  body.patient-mode{font-size:16px}
+  body.patient-mode .stepper,body.patient-mode #personaBtn,body.patient-mode #croBtn,
+  body.patient-mode .routechip,body.patient-mode #caseChip,body.patient-mode footer,
+  /* MAJOR-2: hide the standing draft bar in patient mode — the patient card's
+     own notice is stage-conditional and server-driven, so it is always correct;
+     the bar was hardcoded "nothing sent to the FDA", false once enrolled. */
+  body.patient-mode .draftbar{display:none}
+  .ptcard{max-width:740px;margin:26px auto}
+  .ptnotice{border:1px solid color-mix(in srgb,var(--amber) 40%,transparent);background:var(--amber-soft);
+    border-radius:11px;padding:11px 15px;font-size:.95rem;margin:12px 0}
+  .ptnotice b{color:var(--amber)}
+  .ptnow{border:1px solid color-mix(in srgb,var(--brand) 35%,var(--line));background:var(--brand-soft);
+    border-radius:11px;padding:12px 15px;font-size:1rem;font-weight:700;color:var(--brand-deep)}
+  .ptsteps{list-style:none;margin:10px 0 0;padding:0}
+  .ptsteps li{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .ptsteps li:last-child{border-bottom:0}
+  .ptsteps .ptdot{width:25px;height:25px;border-radius:50%;background:var(--surface2);
+    border:1px solid var(--line);color:var(--muted);display:inline-flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:.78rem;flex:0 0 auto;margin-top:1px}
+  .ptfoot{border-top:1px solid var(--line);margin-top:18px;padding-top:14px;font-size:.88rem;color:var(--muted)}
+
   /* ---------- misc ---------- */
   .hardline{border:1px dashed color-mix(in srgb,var(--brand) 45%,var(--line));border-radius:12px;
     background:var(--brand-soft);padding:14px 18px;font-size:.88rem}
@@ -454,6 +496,7 @@
     <span class="casechip" id="caseChip">no case open</span>
     <span class="spacer"></span>
     <button class="iconbtn" id="personaBtn"></button>
+    <button class="iconbtn" id="croBtn"></button>
     <button class="iconbtn" id="themeBtn" title="Toggle light/dark">Theme</button>
   </div>
 </header>
@@ -740,6 +783,14 @@
       <!-- Wave 3: cross-persona release — a named-human act (strings from STRINGS.release) -->
       <div class="card" id="releaseCard"></div>
 
+      <!-- Wave 4: patient status link — a named act; the opaque token is the ONLY path to the
+           patient view (no case enumeration, no case_id-as-capability). Strings from STRINGS.patientLink. -->
+      <div class="card" id="patientLinkCard"></div>
+
+      <!-- Wave 4: INV-5 promote() — enrollment records the legal basis and arms the
+           post-enrollment obligation clocks. Strings from STRINGS.promote. -->
+      <div class="card" id="promoteCard"></div>
+
       <div class="card tight">
         <div class="btnrow">
           <button class="btn accent" id="exportJsonBtn">Download package JSON</button>
@@ -817,6 +868,35 @@
     <div id="inboxList"></div>
   </section>
 
+  <!-- ================= CRO PERSONA : COORDINATOR BOARD (Wave 4 G) =================
+       GET /api/cro/board — the physician's own READ-ONLY coordinating view across
+       cases. Deliberately NO acting affordances: every act (commit, sign-off,
+       release, enrollment) happens in its owning workspace by its named human.
+       All text injected from STRINGS.cro. -->
+  <section class="screen" id="screen-cro">
+    <div class="card">
+      <div class="eyebrow" id="croEyebrow"></div>
+      <h2 id="croTitle"></h2>
+      <p class="muted small" id="croIntro" style="max-width:86ch"></p>
+      <div class="hardline" id="croNoActNote"></div>
+      <div class="btnrow" style="margin-top:12px">
+        <button class="btn" id="croRefreshBtn"></button>
+        <span class="muted small" id="croStatus"></span>
+      </div>
+    </div>
+    <div id="croBoard"></div>
+  </section>
+
+  <!-- ================= PATIENT VIEW (Wave 4 F) =================
+       Reached ONLY via the opaque per-case patient token in the URL hash
+       (#patient=<token>) — never by case id, never by enumeration. Read-only,
+       plain-language status (21 CFR Part 50 "understandable to the subject");
+       shows no clinical PHI the patient would not already hold. Rendered
+       entirely from STRINGS.patientView + GET /api/patient/{token}. -->
+  <section class="screen" id="screen-patient">
+    <div id="patientBody"></div>
+  </section>
+
   <footer>
     OSSICRO — Open Source Sponsor-Investigator CRO · Route-3926 MVP ·
     Governed by the OSSICRO Constitution: complete documentation drafted for qualified human review;
@@ -842,6 +922,13 @@
      POST /api/case/{id}/match         (registry-search organizer — 409 unless COMMITTED;
                                         consumes de-identified predicates only; returns
                                         matched/unmatched/unverifiable CRITERIA, never a score)
+     POST /api/case/{id}/patient-link  {actor} -> {token,url}  (opaque per-case patient token —
+                                        the ONLY path to the patient view; named act, audited)
+     GET  /api/patient/{token}         (read-only plain-language status; bad token -> 404)
+     POST /api/case/{id}/promote       {actor, legal_basis} (INV-5 preparatory-review -> enrollment;
+                                        409 uncommitted, 400 missing actor/legal_basis; arms the
+                                        post-enrollment obligation clocks + emits the checklist)
+     GET  /api/cro/board               (read-only coordinator board — no acting affordances)
    GET /api/case/{id} and /check both return a "profile" block:
      {state:"UNCOMMITTED"|"COMMITTED"|"CONFIRMING", profile_hash, pending:[field_ids],
       committed_by, committed_at}
@@ -858,7 +945,10 @@ const S = {           // client state
   intakeRev: 0,       // server revision of the saved intake
   generatedRev: null, // intake revision the current drafts were generated from
   profile: null,      // {state,profile_hash,pending,committed_by,committed_at} | null = not yet reported
-  release: null       // {released_by,released_at,to} | null = not released (Wave 3 cross-persona send)
+  release: null,      // {released_by,released_at,to} | null = not released (Wave 3 cross-persona send)
+  patientLink: null,  // {token,url,actor} | null — opaque patient status link (Wave 4 F)
+  enrollment: null,   // enrollment record from promote() | null = preparatory review (Wave 4 H)
+  obligations: []     // obligations checklist emitted by promote() (Wave 4 H)
 };
 
 /* ============================================================
@@ -936,6 +1026,169 @@ const STRINGS = {
     noLoaText: "(LOA request text not provided by the inbox)",
     cardNote: "Draft for the manufacturer's own review. The supply/authorize decision and " +
       "LOA signature are the manufacturer's — OSSICRO drafts, it does not decide or send."
+  },
+  /* ---- Wave 4 F: patient status link (physician side — a named act) ---- */
+  patientLink: {
+    eyebrow: "Patient status link",
+    title: "Share a status link with the patient",
+    framing: "Creates a private, read-only status page for this patient — plain-language " +
+      "progress only, with no clinical detail, no documents, and nothing to act on. You share " +
+      "the link yourself; OSSICRO sends nothing to anyone.",
+    actorLabel: "Requesting clinician",
+    namePlaceholder: "Your name",
+    btn: "Create patient status link",
+    busy: "Creating link…",
+    needName: "Enter the requesting clinician's name — creating a patient link is a named act.",
+    done: "Patient status link ready — copy it below and share it yourself. OSSICRO sent nothing.",
+    readyPill: "link ready",
+    urlLabel: "Private link — treat it like a password; anyone holding it can open the status page:",
+    copyBtn: "Copy link",
+    copied: "Patient status link copied.",
+    caption: "The page behind this link is read-only and shows no clinical detail the patient " +
+      "does not already hold — only plain-language progress. Creating it is recorded in the " +
+      "case audit trail.",
+    createdBy: "Created by",
+    failed: "Could not create the patient link:"
+  },
+  /* ---- Wave 4 F: the patient-facing view itself. PLAIN LANGUAGE authored here
+     at build time (21 CFR Part 50 "understandable to the subject") — not
+     deferred to the Wave-5 jargon pass. ---- */
+  patientView: {
+    pageTitle: "Your status page",
+    loading: "One moment…",
+    draftBarLead: "Still in draft.",
+    draftBar: "Nothing has been sent to the FDA yet — everything shown here is still being " +
+      "prepared by your physician's office.",
+    eyebrow: "Your status page",
+    title: "An update from your physician's office",
+    lead1: "Your physician is preparing a request to the FDA that would allow you to be treated with",
+    lead2: "under the FDA's “expanded access” pathway — a way to ask permission to use " +
+      "a medicine that is still being studied.",
+    theMedicine: "the requested medicine",
+    draftNotice: "This is a draft — nothing has been submitted to the FDA yet.",
+    nowHeading: "Where things stand",
+    remainingHeading: "What still has to happen",
+    remainingNone: "Your physician's office will explain the next steps when you talk with them.",
+    refCode: "Your reference code on this page is",
+    refCodeNote: "— this page never shows your name, your medical record, or any test result.",
+    readOnlyNote: "This page is read-only. It changes as your physician's office makes " +
+      "progress; nothing here asks you to do anything or agree to anything.",
+    adviceNote: "This page is not medical advice, and it is not a promise that treatment will " +
+      "be approved or available. Please talk with your physician about what any of this means " +
+      "for you — they are the right person for every question about your care.",
+    stages: {
+      "draft": "Your physician's office is preparing the request",
+      "start": "Your physician has opened a request file",
+      "intake": "Your physician's office is gathering the medical details",
+      "preparatory-review": "Your physician is reviewing your records to prepare the request",
+      "committed": "Your physician has confirmed the medical details",
+      "generated": "The paperwork is being written",
+      "drafted": "The paperwork is being written",
+      "check": "The paperwork is being checked for completeness",
+      "package": "The request package is being put together",
+      "packaged": "The request package is being put together",
+      "released": "The request was shared with the medicine's maker",
+      "enrollment": "The formal treatment process has begun",
+      "enrolled": "The formal treatment process has begun"
+    },
+    stageUnknown: "Your physician's office is working on the request",
+    invalidTitle: "This link is not valid.",
+    invalidBody: "Please check that you copied the whole link, or ask your physician's office " +
+      "to share it again.",
+    loadFailTitle: "We hit a snag.",
+    loadFail: "We could not load this page right now. Please try again in a few minutes."
+  },
+  /* ---- Wave 4 H: INV-5 promote() — enrollment records the legal basis ---- */
+  promote: {
+    eyebrow: "Enrollment — INV-5",
+    title: "Enroll (record the legal basis)",
+    framing: "Enrollment records the legal basis and the ongoing sponsor-investigator duties " +
+      "it creates — OSSICRO tracks the deadlines; you perform the acts.",
+    explain: "Moving this case from preparatory review to enrollment is the legal moment the " +
+      "HIPAA basis for using the patient's information changes. Recording it requires a " +
+      "committed profile, a named actor, and the one legal basis that actually occurred. It " +
+      "arms the post-enrollment obligation clocks — 21 CFR 312.32 safety reports, 312.310(d) " +
+      "follow-up, 312.33 annual report — and emits the checklist below. The act is " +
+      "audit-logged; it is a record of your decision, never a decision OSSICRO makes.",
+    basisLegend: "Legal basis for the disclosure — choose the one that actually happened",
+    actorLabel: "Enrolling physician",
+    namePlaceholder: "Your name",
+    btn: "Record enrollment",
+    busy: "Recording enrollment…",
+    needName: "Enter the enrolling physician's name — enrollment is a named act.",
+    needBasis: "Choose the legal basis that actually occurred — enrollment records it; it never assumes one.",
+    done: "Enrollment recorded — the obligation clocks are armed. OSSICRO tracks the " +
+      "deadlines; performing the acts remains yours.",
+    enrolledPill: "enrolled",
+    enrolledBy: "Enrolled by",
+    at: "at",
+    basisLabel: "Legal basis",
+    checklistTitle: "Post-enrollment obligations — OSSICRO tracks; you act",
+    checklistNote: "Each row is a duty the enrollment creates for the sponsor-investigator. " +
+      "OSSICRO computes and tracks each deadline; performing the act — and signing anything — " +
+      "belongs to the named owner. An unarmed clock is waiting for its trigger date; it is " +
+      "never assumed.",
+    colObligation: "Obligation",
+    colCitation: "Citation",
+    colDue: "Due",
+    colOwner: "Owner",
+    colArmed: "Armed",
+    armedYes: "armed",
+    armedNo: "unarmed",
+    dueUnarmed: "— awaiting trigger",
+    failed: "Could not record the enrollment:",
+    bases: [
+      // values are the server's canonical _LEGAL_BASES keys — never renamed here
+      { value: "authorization-164.508",
+        title: "Patient authorization — 45 CFR 164.508",
+        desc: "The patient (or their legally authorized representative) signed a written HIPAA " +
+          "authorization for this use and disclosure, alongside 21 CFR Part 50 informed " +
+          "consent. OSSICRO never obtains either — it records that you did." },
+      { value: "waiver-164.512",
+        title: "IRB / Privacy Board waiver — 45 CFR 164.512(i)(1)(i)",
+        desc: "An IRB or privacy board approved a waiver of authorization and documented that " +
+          "the waiver criteria are satisfied. The approval is the board's act; OSSICRO only " +
+          "records that it exists." },
+      { value: "treatment-disclosure",
+        title: "Treatment disclosure — 45 CFR 164.506(c)",
+        desc: "The use or disclosure occurs as part of the patient's own treatment under this " +
+          "expanded-access use. You are attesting that the treatment framing genuinely applies." }
+    ]
+  },
+  /* ---- Wave 4 G: coordinator (micro-CRO) persona — read-only board ---- */
+  cro: {
+    btn: "Coordinator view",
+    toPhysician: "← Physician view",
+    btnTitle: "Read-only coordinating status board across this workspace's cases",
+    eyebrow: "Micro-CRO persona",
+    title: "Coordinator board — read-only",
+    intro: "The physician's own coordinating view across cases: where each stands, which " +
+      "gates are open, which clocks are armed, and what has been released or enrolled. " +
+      "Synthetic cases only through the pilot; coded identifiers only.",
+    noActLead: "Nothing can be done from here.",
+    noActNote: "This board deliberately has no action buttons. Every act — commit, sign-off, " +
+      "release, enrollment, submission — happens in its owning workspace, by its named human. " +
+      "A status board that could act would be a coordinator; this one only reports.",
+    refresh: "Refresh board",
+    loading: "Loading the case board…",
+    loadError: "Could not load the coordinator board:",
+    empty: "No cases on the board yet.",
+    emptyNote: "Cases appear as they are created in the physician workspace.",
+    countOne: "1 case on the board.",
+    countMany: "{n} cases on the board.",
+    colCase: "Case (coded)",
+    colDrug: "Drug",
+    colStage: "Stage",
+    colProfile: "Profile",
+    colLedger: "Ledger",
+    colGates: "Gates signed",
+    colClocks: "Clocks armed",
+    colObligations: "Duties armed",
+    colReleased: "Released",
+    colEnrolled: "Enrolled",
+    rollupUnavailable: "rollup unavailable",
+    yes: "yes",
+    no: "—"
   }
 };
 
@@ -990,14 +1243,15 @@ $("#themeBtn").addEventListener("click", () => {
 
 /* ---------------- stepper / screens ---------------- */
 const STEPS = ["start","intake","check","package","match"];
-let personaMode = "physician";   // "physician" | "manufacturer" — top-level view mode
-let lastScreen = "start";        // last physician screen; persona toggle returns here
+let personaMode = "physician";   // "physician" | "manufacturer" | "cro" — top-level view mode
+let lastScreen = "start";        // last physician screen; persona toggles return here
 function show(screen, noScroll){
-  lastScreen = screen;                       // persona toggle returns here
-  if (personaMode === "manufacturer"){       // any physician navigation exits pharma mode
+  lastScreen = screen;                       // persona toggles return here
+  if (personaMode !== "physician"){          // any physician navigation exits pharma/CRO mode
     personaMode = "physician";
     const st = $("#stepper"); if (st) st.style.display = "";
     const pb = $("#personaBtn"); if (pb) pb.textContent = STRINGS.persona.toManufacturer;
+    const cb = $("#croBtn"); if (cb) cb.textContent = STRINGS.cro.btn;
   }
   $$(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-"+screen));
   $$("#stepper .step").forEach(b => b.classList.toggle("active", b.dataset.screen === screen));
@@ -1034,6 +1288,7 @@ $("#startBtn").addEventListener("click", async () => {
     S.intakeRev = 0; S.generatedRev = null;
     setProfile(caseRes.profile || { state:"UNCOMMITTED", pending:[] });  // fresh case = uncommitted
     S.release = extractRelease(caseRes);       // fresh case = not released
+    S.patientLink = null; S.enrollment = null; S.obligations = [];   // Wave 4 — fresh case
     location.hash = S.caseId;                  // resumable URL — survives restarts
     $("#caseChip").textContent = "case " + S.caseId;
     renderIntake();
@@ -1078,6 +1333,14 @@ async function resumeCase(cid){
     S.generatedRev = caseRes.generated_rev ?? null;
     setProfile(caseRes.profile || null);
     S.release = extractRelease(caseRes);
+    S.enrollment = extractEnrollment(caseRes);          // Wave 4 — case may carry these
+    const obl = caseRes.obligations_checklist || caseRes.obligations;
+    if (Array.isArray(obl)) S.obligations = obl;
+    if (caseRes.patient_link && typeof caseRes.patient_link === "object")
+      S.patientLink = caseRes.patient_link;
+    else if (caseRes.patient_token)   // the case view returns the bare token
+      S.patientLink = { token: caseRes.patient_token,
+        url: location.origin + location.pathname + "#patient=" + caseRes.patient_token };
     $("#caseChip").textContent = "case " + cid;
     renderIntake();
     const serverIntake = caseRes.intake || {};
@@ -1686,6 +1949,18 @@ async function refreshProfile(){
     if (res && res.profile !== undefined) setProfile(res.profile);
     const rel = extractRelease(res);
     if (rel) { S.release = rel; renderReleaseCard(); }
+    const en = extractEnrollment(res);
+    if (en){
+      S.enrollment = en;
+      const obl = res.obligations_checklist || res.obligations;
+      if (Array.isArray(obl)) S.obligations = obl;
+      renderPromoteCard();
+    }
+    if (!S.patientLink && res && res.patient_token){
+      S.patientLink = { token: res.patient_token,
+        url: location.origin + location.pathname + "#patient=" + res.patient_token };
+      renderPatientLinkCard();
+    }
   } catch {}   // panel keeps its last honest state; next check refreshes it
 }
 
@@ -2199,6 +2474,21 @@ function renderPackage(){
   if (rel) S.release = rel;              // package payload may carry the release record
   renderForm3926Card();
   renderReleaseCard();
+
+  // Wave 4: patient status link + enrollment (the payload may carry either record)
+  const pl = p.patient_link
+    || (p.patient_token ? { token: p.patient_token, url: p.patient_url } : null);
+  if (pl && (pl.url || pl.token)){
+    if (!pl.url) pl.url = location.origin + location.pathname + "#patient=" + pl.token;
+    S.patientLink = pl;
+  }
+  const en = extractEnrollment(p);
+  if (en){
+    S.enrollment = en;
+    if (Array.isArray(p.obligations_checklist)) S.obligations = p.obligations_checklist;
+  }
+  renderPatientLinkCard();
+  renderPromoteCard();
 }
 
 /* tabs */
@@ -2489,20 +2779,28 @@ async function releaseToManufacturer(){
   }
 }
 
-/* ---- E: pharma persona — the manufacturer view (top-level mode) ---- */
+/* ---- E + Wave 4 G: persona switching (physician / manufacturer / coordinator) ---- */
 function setPersona(mode){
   personaMode = mode;
-  const pharma = mode === "manufacturer";
-  const st = $("#stepper"); if (st) st.style.display = pharma ? "none" : "";
+  const away = mode !== "physician";
+  const st = $("#stepper"); if (st) st.style.display = away ? "none" : "";
   const pb = $("#personaBtn");
-  if (pb) pb.textContent = pharma ? STRINGS.persona.toPhysician : STRINGS.persona.toManufacturer;
+  if (pb) pb.textContent = mode === "manufacturer"
+    ? STRINGS.persona.toPhysician : STRINGS.persona.toManufacturer;
+  const cb = $("#croBtn");
+  if (cb) cb.textContent = mode === "cro" ? STRINGS.cro.toPhysician : STRINGS.cro.btn;
   $$(".screen").forEach(s => s.classList.toggle("active",
-    pharma ? s.id === "screen-pharma" : s.id === "screen-" + lastScreen));
-  if (pharma) loadInbox();
+    mode === "manufacturer" ? s.id === "screen-pharma"
+    : mode === "cro"        ? s.id === "screen-cro"
+    :                         s.id === "screen-" + lastScreen));
+  if (mode === "manufacturer") loadInbox();
+  if (mode === "cro") loadCroBoard();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 $("#personaBtn").addEventListener("click", () =>
   setPersona(personaMode === "manufacturer" ? "physician" : "manufacturer"));
+$("#croBtn").addEventListener("click", () =>
+  setPersona(personaMode === "cro" ? "physician" : "cro"));
 
 function inboxItemHtml(it){
   const T = STRINGS.pharma;
@@ -2557,7 +2855,389 @@ async function loadInbox(){
   }
 }
 
-/* one-time injection of the pharma screen's static strings */
+/* ============================================================
+   Wave 4 — F + G + H. All strings from STRINGS (see the table above).
+
+   F: POST /api/case/{id}/patient-link {actor} -> {token,url} — a NAMED act
+      (the confirming-clinician pattern) that mints the OPAQUE per-case
+      patient token. The token is the ONLY way to reach the patient view:
+      no case enumeration, no case_id-as-capability. The patient view
+      (GET /api/patient/{token}) is READ-ONLY plain-language status —
+      "understandable to the subject" (21 CFR Part 50) — and shows no
+      clinical PHI the patient would not already hold. Bad token -> a
+      neutral not-valid page with no enumeration hint.
+
+   H: POST /api/case/{id}/promote {actor, legal_basis} — INV-5. The
+      preparatory-review -> enrollment transition is the legal moment the
+      HIPAA disclosure basis changes; it REQUIRES a committed profile, a
+      named actor, and a recorded legal basis, arms the post-enrollment
+      sponsor-investigator obligation clocks (21 CFR 312.32 / 312.310(d) /
+      312.33) via ossicro.clocks, and emits the obligations checklist —
+      the system must not walk a physician into duties it then ignores.
+      Audit-logged server-side as 'promote'. 409 uncommitted -> commit
+      panel; 400 missing actor/legal_basis -> honest error.
+
+   G: GET /api/cro/board — the micro-CRO persona is a READ-ONLY status
+      board (the physician's own coordinating view). Deliberately no
+      acting affordances anywhere in it.
+   ============================================================ */
+
+/* ---- F: patient status link (physician side — a named act) ---- */
+const PL = { actor: "" };   // requesting clinician — persists across re-renders
+
+function renderPatientLinkCard(){
+  const box = $("#patientLinkCard"); if (!box) return;
+  const T = STRINGS.patientLink;
+  const pl = S.patientLink;
+  if (pl && pl.url){
+    box.innerHTML = `
+      <div class="eyebrow">${esc(T.eyebrow)}</div>
+      <h3>${esc(T.title)}
+        <span class="pill green" style="vertical-align:2px"><span class="dot"></span>${esc(T.readyPill)}</span></h3>
+      ${pl.actor ? `<div class="commitmeta"><span>${esc(T.createdBy)} <b>${esc(pl.actor)}</b></span></div>` : ""}
+      <p class="muted small" style="margin:4px 0 0;max-width:86ch">${esc(T.urlLabel)}</p>
+      <div class="linkbox">
+        <input type="text" readonly id="patientLinkUrl" value="${esc(pl.url)}"
+               aria-label="Patient status link — read-only">
+        <button type="button" class="btn" id="copyPatientLink">${esc(T.copyBtn)}</button>
+      </div>
+      <p class="muted small" style="margin:8px 0 0;max-width:86ch">${esc(T.caption)}</p>`;
+    $("#copyPatientLink").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(pl.url); toast(T.copied); }
+      catch { const i = $("#patientLinkUrl"); if (i) i.select(); toast(pl.url); }
+    });
+    return;
+  }
+  box.innerHTML = `
+    <div class="eyebrow">${esc(T.eyebrow)}</div>
+    <h3>${esc(T.title)}</h3>
+    <p class="small" style="margin:4px 0 8px;max-width:86ch">${esc(T.framing)}</p>
+    <div class="btnrow">
+      <label class="confirmclin">${esc(T.actorLabel)}
+        <input type="text" id="plActor" placeholder="${esc(T.namePlaceholder)}"
+               autocomplete="off" value="${esc(PL.actor)}">
+      </label>
+      <button type="button" class="btn primary" id="plBtn" disabled>${esc(T.btn)}</button>
+    </div>
+    <p class="muted small" style="margin:8px 0 0;max-width:86ch">${esc(T.caption)}</p>`;
+  const nameEl = $("#plActor"), btn = $("#plBtn");
+  const sync = () => { btn.disabled = !(PL.actor && PL.actor.trim()); };
+  nameEl.addEventListener("input", () => { PL.actor = nameEl.value; sync(); });
+  btn.addEventListener("click", createPatientLink);
+  sync();
+}
+
+async function createPatientLink(){
+  const T = STRINGS.patientLink;
+  const actor = (PL.actor || "").trim();
+  if (!actor){ toast(T.needName, true); return; }
+  const btn = $("#plBtn");
+  if (btn){ btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + esc(T.busy); }
+  try {
+    const res = await api(`/api/case/${S.caseId}/patient-link`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ actor })
+    });
+    const token = res && (res.token || res.patient_token);
+    // The share URL is THIS page with the token in the hash — the server's
+    // "link" field is the JSON API path, never what a patient should open.
+    const url = token
+      ? location.origin + location.pathname + "#patient=" + token
+      : ((res && res.url && /^https?:/i.test(res.url)) ? res.url : "");
+    if (!url) throw new Error("no link returned");
+    S.patientLink = { token, url, actor };
+    renderPatientLinkCard();
+    toast(T.done);
+  } catch (e) {
+    if (e.status === 409 && e.body && (e.body.state || e.body.pending)){
+      setProfileFrom409(e.body);
+      explainCommitGate();               // profile re-opened — route to the commit panel
+      renderPatientLinkCard();
+    } else {
+      renderPatientLinkCard();           // restore the form's button state
+      toast(T.failed + " " + e.message, true);
+    }
+  }
+}
+
+/* ---- H: INV-5 promote() — enrollment records the legal basis ---- */
+const EN = { actor: "", basis: "" };   // persists across re-renders
+
+function extractEnrollment(obj){
+  if (!obj || typeof obj !== "object") return null;
+  if (obj.enrollment && typeof obj.enrollment === "object") return obj.enrollment;
+  return null;
+}
+function basisTitle(value){
+  const b = (STRINGS.promote.bases || []).find(x => x.value === value);
+  return b ? b.title : value;
+}
+function obligationsTableHtml(list){
+  const T = STRINGS.promote;
+  const rows = (list || []).map(o => {
+    const armed = !!o.armed;
+    const window = (o.days != null && o.basis)
+      ? `<br><span class="muted small">${esc(o.days + " " + o.basis + "s")}</span>` : "";
+    // An unarmed clock shows its resolving question (HC3 honesty) — never a
+    // fabricated date and never a bare dash when the server explains itself.
+    const due = o.due
+      ? `<span class="mono small">${esc(asText(o.due))}</span>`
+      : `<span class="muted small">${esc(asText(o.resolving_question) || T.dueUnarmed)}</span>`;
+    return `<tr>
+      <td><b>${esc(asText(o.obligation))}</b>${window}</td>
+      <td><span class="cite">${esc(asText(o.citation))}</span></td>
+      <td>${due}</td>
+      <td><span class="rolechip">${esc(asText(o.owner))}</span></td>
+      <td><span class="pill ${armed ? "green" : "amber"}"><span class="dot"></span>${esc(armed ? T.armedYes : T.armedNo)}</span></td>
+    </tr>`;
+  }).join("");
+  return `<div class="tblwrap" style="margin-top:10px"><table>
+    <thead><tr><th>${esc(T.colObligation)}</th><th>${esc(T.colCitation)}</th>
+      <th>${esc(T.colDue)}</th><th>${esc(T.colOwner)}</th><th>${esc(T.colArmed)}</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+function renderPromoteCard(){
+  const box = $("#promoteCard"); if (!box) return;
+  const T = STRINGS.promote;
+  const en = S.enrollment;
+  if (en){
+    const by = en.enrolled_by || en.actor || en.by || "—";
+    const at = en.enrolled_at || en.at || en.when || null;
+    const basis = en.legal_basis || en.basis || "";
+    box.innerHTML = `
+      <div class="eyebrow">${esc(T.eyebrow)}</div>
+      <h3>${esc(T.title)}
+        <span class="pill green" style="vertical-align:2px"><span class="dot"></span>${esc(T.enrolledPill)}</span></h3>
+      <div class="commitmeta">
+        <span>${esc(T.enrolledBy)} <b>${esc(asText(by))}</b></span>
+        <span class="muted">${esc(T.at)} <span class="mono">${esc(fmtWhen(at))}</span></span>
+        ${basis ? `<span>${esc(T.basisLabel)}: <b>${esc(basisTitle(String(basis)))}</b></span>` : ""}
+      </div>
+      <p class="small" style="margin:8px 0 0;max-width:86ch">${esc(T.framing)}</p>
+      ${(S.obligations || []).length ? `
+        <h4 style="margin:14px 0 2px">${esc(T.checklistTitle)}</h4>
+        <p class="muted small" style="margin:0;max-width:86ch">${esc(T.checklistNote)}</p>
+        ${obligationsTableHtml(S.obligations)}` : ""}`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="eyebrow">${esc(T.eyebrow)}</div>
+    <h3>${esc(T.title)}</h3>
+    <p class="small" style="margin:4px 0 6px;max-width:86ch"><b>${esc(T.framing)}</b></p>
+    <p class="muted small" style="margin:0 0 10px;max-width:86ch">${esc(T.explain)}</p>
+    <fieldset style="border:0;padding:0;margin:0">
+      <legend class="small" style="font-weight:700;padding:0">${esc(T.basisLegend)}</legend>
+      ${T.bases.map(b => `
+        <label class="legalopt" data-basis="${esc(b.value)}">
+          <input type="radio" name="legalBasis" value="${esc(b.value)}">
+          <span><span class="lb-title">${esc(b.title)}</span>
+            <span class="lb-desc">${esc(b.desc)}</span></span>
+        </label>`).join("")}
+    </fieldset>
+    <div class="btnrow" style="margin-top:10px">
+      <label class="confirmclin">${esc(T.actorLabel)}
+        <input type="text" id="enActor" placeholder="${esc(T.namePlaceholder)}"
+               autocomplete="off" value="${esc(EN.actor)}">
+      </label>
+      <button type="button" class="btn primary" id="enBtn" disabled>${esc(T.btn)}</button>
+    </div>`;
+  const nameEl = $("#enActor"), btn = $("#enBtn");
+  const sync = () => { btn.disabled = !((EN.actor && EN.actor.trim()) && EN.basis); };
+  nameEl.addEventListener("input", () => { EN.actor = nameEl.value; sync(); });
+  $$("#promoteCard input[name=legalBasis]").forEach(r => r.addEventListener("change", () => {
+    EN.basis = r.value;
+    $$("#promoteCard .legalopt").forEach(l => l.classList.toggle("sel", l.dataset.basis === r.value));
+    sync();
+  }));
+  if (EN.basis){   // restore a prior choice across re-renders
+    const r = box.querySelector(`input[name=legalBasis][value="${CSS.escape(EN.basis)}"]`);
+    if (r){ r.checked = true; const l = r.closest(".legalopt"); if (l) l.classList.add("sel"); }
+  }
+  btn.addEventListener("click", recordEnrollment);
+  sync();
+}
+
+async function recordEnrollment(){
+  const T = STRINGS.promote;
+  const actor = (EN.actor || "").trim();
+  if (!actor){ toast(T.needName, true); return; }
+  if (!EN.basis){ toast(T.needBasis, true); return; }
+  const btn = $("#enBtn");
+  if (btn){ btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + esc(T.busy); }
+  try {
+    const res = await api(`/api/case/${S.caseId}/promote`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ actor, legal_basis: EN.basis })
+    });
+    S.enrollment = (res && res.enrollment)
+      || { enrolled_by: actor, enrolled_at: new Date().toISOString(), legal_basis: EN.basis };
+    S.obligations = (res && res.obligations_checklist) || [];
+    renderPromoteCard();
+    toast(T.done);
+  } catch (e) {
+    if (e.status === 409 && e.body && e.body.enrollment){
+      // Already enrolled — adopt the standing record (append-only history;
+      // the server refuses a silent re-recording and returns what stands).
+      S.enrollment = e.body.enrollment;
+      renderPromoteCard();
+      refreshProfile();                  // picks up the live obligations checklist
+      toast(e.message, true);
+    } else if (e.status === 409 && e.body && (e.body.state || e.body.pending)){
+      setProfileFrom409(e.body);
+      explainCommitGate();               // uncommitted — route to the commit panel
+      renderPromoteCard();
+    } else {
+      renderPromoteCard();               // restore the form's button state (incl. 400s)
+      toast(T.failed + " " + e.message, true);
+    }
+  }
+}
+
+/* ---- G: coordinator (micro-CRO) board — read-only, no acting affordances ----
+   GET /api/cro/board -> {board:[...], count, note}. Each row carries a
+   best-effort ledger rollup {green,amber,red} (or rollup_error — a case whose
+   data cannot render reports the failure honestly instead of vanishing),
+   gates {required,signed}, clocks {armed,total}, obligations {total,armed},
+   released / enrolled flags. Read-only cells only — never a button. */
+function croLedgerCells(c){
+  const T = STRINGS.cro;
+  const led = c.ledger;
+  if (!led){
+    return `<span class="muted small">${esc(T.rollupUnavailable)}${
+      c.rollup_error ? esc(" (" + asText(c.rollup_error) + ")") : ""}</span>`;
+  }
+  return `<span class="gatecells">
+    <span class="pill green"><span class="dot"></span>${Number(led.green) || 0}</span>
+    <span class="pill amber"><span class="dot"></span>${Number(led.amber) || 0}</span>
+    <span class="pill red"><span class="dot"></span>${Number(led.red) || 0}</span></span>`;
+}
+function croRatioChip(obj, armedKey, totalKey, emptyText){
+  if (!obj || obj[totalKey] == null)
+    return `<span class="muted small">${esc(emptyText)}</span>`;
+  const a = Number(obj[armedKey]) || 0, t = Number(obj[totalKey]) || 0;
+  return `<span class="clockchip">${a}/${t}</span>`;
+}
+function croRowHtml(c){
+  const T = STRINGS.cro;
+  const gates = c.gates || {};
+  return `<tr>
+    <td class="mono small">${esc(asText(c.patient_coded_id || c.coded_id) || "—")}</td>
+    <td>${esc(asText(c.drug) || "—")}</td>
+    <td>${esc(asText(c.stage) || "—")}</td>
+    <td><span class="rolechip">${esc(asText(c.profile_state) || "—")}</span></td>
+    <td>${croLedgerCells(c)}</td>
+    <td><span class="clockchip">${gates.required != null
+      ? (Number(gates.signed) || 0) + "/" + (Number(gates.required) || 0) : "—"}</span></td>
+    <td>${croRatioChip(c.clocks, "armed", "total", T.rollupUnavailable)}</td>
+    <td>${croRatioChip(c.obligations, "armed", "total", T.no)}</td>
+    <td>${c.released ? `<span class="pill green"><span class="dot"></span>${esc(T.yes)}</span>` : esc(T.no)}</td>
+    <td>${c.enrolled ? `<span class="pill green"><span class="dot"></span>${esc(T.yes)}</span>` : esc(T.no)}</td>
+  </tr>`;
+}
+async function loadCroBoard(){
+  const T = STRINGS.cro;
+  const box = $("#croBoard"); if (!box) return;
+  const status = $("#croStatus");
+  box.innerHTML = `<div class="card tight"><p class="muted" style="margin:0">
+    <span class="spin"></span>${esc(T.loading)}</p></div>`;
+  if (status) status.textContent = "";
+  try {
+    const res = await api("/api/cro/board");
+    const cases = (res && (res.board || res.cases)) || [];
+    if (!cases.length){
+      box.innerHTML = `<div class="absencecard"><div class="amsg">${esc(T.empty)}</div>
+        <p class="muted small" style="margin:7px 0 0">${esc(T.emptyNote)}</p></div>`;
+    } else {
+      box.innerHTML = `<div class="card"><div class="tblwrap"><table>
+        <thead><tr><th>${esc(T.colCase)}</th><th>${esc(T.colDrug)}</th><th>${esc(T.colStage)}</th>
+          <th>${esc(T.colProfile)}</th><th>${esc(T.colLedger)}</th><th>${esc(T.colGates)}</th>
+          <th>${esc(T.colClocks)}</th><th>${esc(T.colObligations)}</th>
+          <th>${esc(T.colReleased)}</th><th>${esc(T.colEnrolled)}</th></tr></thead>
+        <tbody>${cases.map(croRowHtml).join("")}</tbody></table></div>
+        ${res && res.note ? `<p class="muted small" style="margin:10px 0 0;max-width:96ch">${esc(asText(res.note))}</p>` : ""}
+      </div>`;
+      if (status) status.textContent = cases.length === 1
+        ? T.countOne : T.countMany.replace("{n}", cases.length);
+    }
+  } catch (e) {
+    box.innerHTML = `<div class="card tight"><p class="muted" style="margin:0">
+      ${esc(T.loadError)} ${esc(e.message)}</p></div>`;
+  }
+}
+
+/* ---- F: the patient view — opaque token, read-only, plain language ---- */
+function layStageLabel(d){
+  // The server's plain-language status string is canonical (it is tested and
+  // versioned with the stage machine); the local map is the offline fallback.
+  const T = STRINGS.patientView;
+  const key = String(d.stage || "").toLowerCase();
+  return asText(d.status || d.stage_label) || T.stages[key] || T.stageUnknown;
+}
+function layRemainingItem(x){
+  const T = STRINGS.patientView;
+  if (typeof x === "string" && T.stages[x.toLowerCase()]) return T.stages[x.toLowerCase()];
+  if (x && typeof x === "object"){
+    const key = String(x.stage || x.step || x.id || "").toLowerCase();
+    if (T.stages[key]) return T.stages[key];
+    return asText(x.label || x.stage_label || x.title || x);
+  }
+  return asText(x);
+}
+function renderPatientInvalid(is404){
+  // Deliberately neutral — the same page for any bad token; no hint of what
+  // exists (no enumeration signal), per the F access model.
+  const T = STRINGS.patientView;
+  $("#patientBody").innerHTML = `
+    <div class="card ptcard" style="text-align:center;padding:34px 26px">
+      <h2 style="margin-bottom:8px">${esc(is404 ? T.invalidTitle : T.loadFailTitle)}</h2>
+      <p class="muted" style="max-width:46ch;margin:0 auto">${esc(is404 ? T.invalidBody : T.loadFail)}</p>
+    </div>`;
+}
+function renderPatientView(d){
+  const T = STRINGS.patientView;
+  const drug = asText(d.drug);
+  const codedId = asText(d.patient_coded_id || d.coded_id);
+  const rem = Array.isArray(d.what_remains) ? d.what_remains
+            : Array.isArray(d.remaining) ? d.remaining : [];
+  const remHtml = rem.length
+    ? `<ol class="ptsteps">${rem.map((x, i) =>
+        `<li><span class="ptdot">${i + 1}</span><span>${esc(layRemainingItem(x))}</span></li>`).join("")}</ol>`
+    : `<p class="muted">${esc(T.remainingNone)}</p>`;
+  $("#patientBody").innerHTML = `
+    <div class="card ptcard">
+      <div class="eyebrow">${esc(T.eyebrow)}</div>
+      <h2>${esc(T.title)}</h2>
+      <p style="max-width:62ch">${esc(T.lead1)} <b>${esc(drug || T.theMedicine)}</b> ${esc(T.lead2)}</p>
+      <div class="ptnotice"><b>${esc(T.draftBarLead)}</b> ${esc(asText(d.notice || d.draft_notice) || T.draftNotice)}</div>
+      <h3 style="margin-top:18px">${esc(T.nowHeading)}</h3>
+      <div class="ptnow">${esc(layStageLabel(d))}</div>
+      <h3 style="margin-top:20px">${esc(T.remainingHeading)}</h3>
+      ${remHtml}
+      <div class="ptfoot">
+        <p>${esc(T.readOnlyNote)}</p>
+        <p><b>${esc(T.adviceNote)}</b></p>
+        ${codedId ? `<p class="small">${esc(T.refCode)}
+          <span class="mono">${esc(codedId)}</span> ${esc(T.refCodeNote)}</p>` : ""}
+      </div>
+    </div>`;
+}
+async function enterPatientMode(token){
+  const T = STRINGS.patientView;
+  document.body.classList.add("patient-mode");   // hides stepper/personas/footer/draftbar via CSS
+  document.title = T.pageTitle;
+  $$(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-patient"));
+  $("#patientBody").innerHTML = `<div class="card ptcard"><p class="muted" style="margin:0">
+    <span class="spin"></span>${esc(T.loading)}</p></div>`;
+  try {
+    const d = await api("/api/patient/" + encodeURIComponent(token));
+    renderPatientView(d);
+  } catch (e) {
+    renderPatientInvalid(e.status === 404);
+  }
+}
+
+/* one-time injection of the pharma + CRO screens' static strings */
 (function initPersonaUI(){
   const T = STRINGS.pharma;
   const pb = $("#personaBtn");
@@ -2569,6 +3249,17 @@ async function loadInbox(){
   const rb = $("#inboxRefreshBtn");
   rb.textContent = T.refresh;
   rb.addEventListener("click", loadInbox);
+
+  const C = STRINGS.cro;
+  const cb = $("#croBtn");
+  if (cb){ cb.textContent = C.btn; cb.title = C.btnTitle; }
+  $("#croEyebrow").textContent = C.eyebrow;
+  $("#croTitle").textContent = C.title;
+  $("#croIntro").textContent = C.intro;
+  $("#croNoActNote").innerHTML = `<b>${esc(C.noActLead)}</b> ${esc(C.noActNote)}`;
+  const crb = $("#croRefreshBtn");
+  crb.textContent = C.refresh;
+  crb.addEventListener("click", loadCroBoard);
 })();
 
 /* ---------------- export ---------------- */
@@ -2656,8 +3347,13 @@ $("#printBtn").addEventListener("click", () => {
   w.document.close();
 });
 
-/* ---------------- boot: resume a case from the URL hash ---------------- */
+/* ---------------- boot: patient token OR resume a case from the URL hash ----
+   A patient token arrives explicitly marked (#patient=<token> or /patient/<token>)
+   so it can never be confused with a case id — the opaque token is the ONLY
+   path into the patient view. */
 (function boot(){
+  const pm = (location.hash + " " + location.pathname).match(/patient[=\/]([A-Za-z0-9-]{8,})/);
+  if (pm){ enterPatientMode(pm[1]); return; }
   const cid = (location.hash || "").replace(/^#\/?(case=)?/, "").trim();
   if (cid) resumeCase(cid);
 })();

@@ -20,9 +20,9 @@ drafts only — OSSICRO never performs a non-delegable regulated act.
 | **C** | Matching engine — registry-search organizer (trials + EA records) | **done** (criteria not scores, absence framing, mini-eval, /match gated; built/reviewed/revised, 282 tests) |
 | **D** | Form FDA 3926 export — print-ready PDF (DRAFT watermark) + FDF field-map | **done** (pure-stdlib PDF, gated, human-verify FDF map; built/reviewed/revised) |
 | **E** | Pharma persona — manufacturer view behind a named-human release gate | **done** (opaque release_id, snapshot view, audit-logged release; built/reviewed/revised, 311 tests) |
-| **F** | Patient persona — patient-facing intake / status | not built |
-| **G** | Micro-CRO persona — coordinator dashboard tying the parties | not built |
-| **H** | INV-5 `promote()` — preparatory-review → enrollment legal transition | not built |
+| **F** | Patient persona — tokenized, read-only plain-language status | **done** (opaque token, no enumeration, stage-correct notice; built/reviewed/revised) |
+| **G** | Micro-CRO persona — read-only coordinator status board | **done** (GET-only, coded summaries; built/reviewed/revised) |
+| **H** | INV-5 `promote()` — preparatory-review → enrollment legal transition | **done** (legal-basis gate, arms the 312.32/56.104(c)/312.310(d)/312.33 duty clocks; built/reviewed/revised, 336 tests) |
 | **I** | Hardening — append-only audit log (GAP-3), case-persistence robustness (GAP-7), wire the last wiki rule (GAP-1) | not built |
 | **J** | Timed pilot (HITL-3) — one real end-to-end run | gated by HITL-2 (Alton's hours) |
 | **K** | Jargon-cleaning pass — de-jargon UI + docs for real users | deferred to end (Alton) |

@@ -57,6 +57,40 @@ SHARED API CONTRACT:
                                            signature stay the manufacturer's
                                            alone (FDCA 561A) — OSSICRO models
                                            neither as an action it takes.
+    POST /api/case/{id}/patient-link    -> {actor}: a NAMED human mints/shares
+                                           the patient's OPAQUE status token
+                                           (Wave 4 F; audit 'patient_link').
+                                           The token — never the case_id — is
+                                           the only way to reach the patient
+                                           view (no case enumeration).
+    GET  /api/patient/{token}           -> READ-ONLY plain-language status view
+                                           (21 CFR Part 50 "understandable to
+                                           the subject"): stage, what remains,
+                                           and the standing draft notice. NO
+                                           case_id, NO clinical detail beyond
+                                           coded id + drug name. Unknown token
+                                           -> 404, indistinguishable from any
+                                           other not-found.
+    POST /api/case/{id}/promote         -> {actor, legal_basis}: INV-5 — the
+                                           preparatory-review -> ENROLLMENT
+                                           legal transition (the HIPAA
+                                           disclosure basis changes here).
+                                           Requires committed profile + named
+                                           actor + a recorded legal_basis;
+                                           arms the post-enrollment sponsor-
+                                           investigator obligation clocks
+                                           (21 CFR 312.32 / 312.310(d) /
+                                           312.33 — HC3: computed or honestly
+                                           UNARMED, never fabricated) and
+                                           returns the obligations checklist.
+                                           Audit-logged 'promote'; a repeat
+                                           promote is refused (409).
+    GET  /api/cro/board                 -> Micro-CRO READ-ONLY status board
+                                           (Wave 4 G): every case's stage
+                                           summary. No action affordance —
+                                           this is the physician's own
+                                           coordinating view (persona auth
+                                           INV-7-deferred).
 
 The backend imports the engine (models / generate / pipeline / gates / routes /
 ea_generators / assemble). It drafts, checks, and assembles; it never performs a
@@ -86,7 +120,11 @@ if ENGINE_DIR not in sys.path:
 from ossicro import audit as audit_mod                       # noqa: E402
 from ossicro import routes as routes_mod                     # noqa: E402
 from ossicro.assemble import assemble_submission             # noqa: E402
-from ossicro.clocks import working_days_between                  # noqa: E402
+from ossicro.clocks import (                                     # noqa: E402
+    expanded_access_emergency_deadlines,
+    ind_30_day_deadline,
+    working_days_between,
+)
 from ossicro.ea_generators import (                              # noqa: E402
     TriggerDateError,
     build_study,
@@ -166,6 +204,161 @@ STRINGS = {
         "sends on the manufacturer's behalf."),
     "pdf_filename": "form-fda-3926-%s-DRAFT.pdf",
     "fdf_filename": "form-fda-3926-%s-DRAFT.fdf",
+
+    # -- Wave 4 F: patient persona (PLAIN LANGUAGE, authored at build time —
+    # "understandable to the subject" is a 21 CFR Part 50 requirement, not a
+    # Wave-5 polish item). The patient view shows ONLY these strings plus the
+    # coded id and the drug name the patient already holds.
+    "patient_link_actor_required": (
+        "actor is required — sharing the patient status link is an explicit "
+        "act by a named human (HC1); OSSICRO never sends anything to a "
+        "patient on its own."),
+    "patient_link_note": (
+        "Share this link with the patient only. It opens a read-only, "
+        "plain-language status page: no case number, no chart details — "
+        "only the request's stage, what remains, and the standing "
+        "nothing-has-been-submitted notice."),
+    "patient_notice": (
+        "This page only shows status. Everything described here is a DRAFT "
+        "that your doctor is preparing. Nothing has been submitted to the "
+        "FDA, and no decision has been made. If you have questions, ask "
+        "your doctor."),
+    # MAJOR-2: at the enrolled stage the request is no longer a draft, so the
+    # "nothing submitted / no decision" notice would be false. The enrolled
+    # notice makes no claim about submission and points to the doctor's office.
+    "patient_notice_enrolled": (
+        "This page only shows status. For anything about your treatment or "
+        "where things stand, your doctor's office is the right place to ask. "
+        "They have the full picture."),
+    "patient_stage_draft": (
+        "Your doctor is preparing a request to ask the FDA for permission "
+        "to treat you with a medicine that is not yet approved for your "
+        "condition. The request is still being written."),
+    "patient_remaining_draft": [
+        "Your doctor is still filling in and double-checking the details.",
+        "The company that makes the medicine must agree to provide it.",
+        "The FDA must allow the treatment to go ahead.",
+        "An ethics review board (called an IRB) must agree.",
+        "Before any treatment, you will be asked for your written "
+        "permission (informed consent).",
+    ],
+    "patient_stage_committed": (
+        "Your doctor has confirmed the details of the request. The "
+        "paperwork is drafted, but it has not been sent anywhere yet."),
+    "patient_remaining_committed": [
+        "The company that makes the medicine must agree to provide it.",
+        "The FDA must allow the treatment to go ahead.",
+        "An ethics review board (called an IRB) must agree.",
+        "Before any treatment, you will be asked for your written "
+        "permission (informed consent).",
+    ],
+    "patient_stage_released": (
+        "Your doctor has shared a draft of the request with the company "
+        "that makes the medicine, asking for their support. The company "
+        "has not decided yet."),
+    "patient_remaining_released": [
+        "The company that makes the medicine must decide whether to "
+        "provide it.",
+        "The FDA must allow the treatment to go ahead.",
+        "An ethics review board (called an IRB) must agree.",
+        "Before any treatment, you will be asked for your written "
+        "permission (informed consent).",
+    ],
+    "patient_stage_enrolled": (
+        "Your doctor has recorded that you are enrolled in this treatment "
+        "plan. From now on your doctor is responsible for watching your "
+        "safety and sending required reports."),
+    "patient_remaining_enrolled": [
+        "Your doctor must report certain side effects to the FDA within "
+        "fixed deadlines.",
+        "Your doctor must send the FDA the required follow-up and yearly "
+        "reports.",
+        "Tell your doctor about anything you notice — new symptoms, side "
+        "effects, or questions.",
+    ],
+
+    # -- Wave 4 H: INV-5 promote() — the preparatory-review -> enrollment
+    # legal transition and the obligations it arms.
+    "promote_actor_required": (
+        "actor is required — enrollment is recorded by a named human "
+        "(INV-5 / HC1); OSSICRO never enrolls a patient on its own."),
+    "promote_legal_basis_required": (
+        "legal_basis is required and must be one of: authorization-164.508 "
+        "(the patient's written HIPAA authorization, 45 CFR 164.508), "
+        "waiver-164.512 (IRB/Privacy Board waiver of authorization, 45 CFR "
+        "164.512(i)(1)(i)), or treatment-disclosure (use/disclosure for "
+        "treatment, 45 CFR 164.506(c)). Enrollment is the moment the HIPAA "
+        "disclosure basis changes — preparatory review (45 CFR "
+        "164.512(i)(1)(ii)) ends here — so the new basis must be recorded, "
+        "never assumed."),
+    "promote_already_enrolled": (
+        "already enrolled — the enrollment record stands and is neither "
+        "silently re-recorded nor undone (the audit trail is append-only). "
+        "If the record is wrong, the correction is itself a recorded human "
+        "act outside this endpoint; OSSICRO never rewrites its history."),
+    "promote_note": (
+        "Enrollment recorded. The post-enrollment sponsor-investigator "
+        "obligations below now attach to you, the physician-sponsor. "
+        "OSSICRO computes the statutory deadlines (HC3) and keeps this "
+        "checklist in view; it never files, sends, or decides anything "
+        "for you."),
+    "obligation_safety_15": (
+        "IND safety report: any suspected adverse reaction that is both "
+        "serious and unexpected must be reported to FDA no later than 15 "
+        "calendar days after you determine the information qualifies."),
+    "obligation_safety_15_q": (
+        "No deadline is computed because no qualifying event has been "
+        "recorded — this clock runs per event, from the date you determine "
+        "a suspected adverse reaction is both serious and unexpected "
+        "(21 CFR 312.32(c)(1)), never from enrollment and never from a "
+        "date OSSICRO invents. Record that determination date to arm it."),
+    "obligation_safety_7": (
+        "Fatal or life-threatening unexpected suspected adverse reaction: "
+        "notify FDA no later than 7 calendar days after your initial "
+        "receipt of the information."),
+    "obligation_safety_7_q": (
+        "No deadline is computed because no qualifying event has been "
+        "recorded — this clock runs per event, from your initial receipt "
+        "of the information (21 CFR 312.32(c)(2)). Record that receipt "
+        "date to arm it."),
+    "obligation_followup": (
+        "Emergency-use follow-up: when FDA authorized the emergency use by "
+        "telephone, the written expanded-access submission (Form 3926) is "
+        "due within 15 working days of that authorization."),
+    "obligation_followup_q": (
+        "Applies when FDA authorized emergency use by telephone (21 CFR "
+        "312.310(d)). Enter the FDA telephone-authorization date "
+        "(submission.emergency_auth_datetime) to arm the 15-working-day "
+        "deadline; OSSICRO assumes no date."),
+    "obligation_irb_notify": (
+        "Emergency-use IRB notification: when a patient is treated before IRB "
+        "review under the emergency provision, the IRB must be notified within "
+        "5 working days of the treatment."),
+    "obligation_irb_notify_q": (
+        "Applies on the emergency path (21 CFR 56.104(c)). Enter the FDA "
+        "telephone-authorization date (submission.emergency_auth_datetime) to "
+        "arm the 5-working-day IRB-notification deadline; OSSICRO assumes no date."),
+    "obligation_annual": (
+        "IND annual report: due within 60 days of each anniversary of the "
+        "date the IND went into effect."),
+    "obligation_annual_q": (
+        "Enter the FDA receipt date of the 3926 "
+        "(submission.fda_receipt_date) so OSSICRO can compute the "
+        "IND-effective date (30 calendar days after receipt, 21 CFR "
+        "312.40(b)(1)) and the annual-report window (within 60 days of "
+        "its anniversary, 21 CFR 312.33); OSSICRO assumes no date."),
+    "obligation_date_unreadable": (
+        "The recorded %s could not be read as a date (YYYY-MM-DD) — "
+        "correct it to arm this deadline; OSSICRO computes clocks only "
+        "from readable recorded dates (HC3), never from guesses."),
+
+    # -- Wave 4 G: Micro-CRO read-only status board.
+    "cro_board_note": (
+        "READ-ONLY coordinating status board over the requesting "
+        "physician's own cases. It offers no actions: every act (commit, "
+        "sign-off, release, promote) happens on the case itself, by a "
+        "named human. Persona-level authentication is deferred (INV-7) — "
+        "this board must not be exposed beyond the physician pilot."),
 }
 
 _CASE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{4,64}$")
@@ -204,7 +397,19 @@ def _new_case() -> dict:
             # Set only by the explicit named-human release act (POST /release,
             # audit-logged); the manufacturer-facing view is snapshotted at
             # release time so later intake edits never leak un-released text.
-            "released": None}
+            "released": None,
+            # Wave 4 (F): the OPAQUE patient-view token. None = never minted —
+            # the patient view is unreachable. Minted lazily by the named
+            # POST /patient-link act (like the Wave-3 release_id, it is the
+            # ONLY capability that reaches the patient view; the case_id
+            # never is).
+            "patient_token": None,
+            # Wave 4 (H) / INV-5: the enrollment record. None = the case is
+            # in PREPARATORY_REVIEW (45 CFR 164.512(i)(1)(ii)); set only by
+            # the named POST /promote act, which records the NEW HIPAA
+            # disclosure basis (the legal moment preparatory review ends).
+            "enrollment": None,
+            "mode": "PREPARATORY_REVIEW"}
 
 
 def _normalize_case(case: dict) -> dict:
@@ -755,6 +960,17 @@ def _form3926_fdf_bytes(case: dict) -> bytes:
 # (FDCA 561A) — no endpoint here models OSSICRO taking either act.
 # ---------------------------------------------------------------------------
 
+def _actor_str(payload: dict) -> str:
+    """The named-actor string, or "" for a missing/non-string value.
+
+    MINOR-1: a dict/list actor must never be str()-baked into an immutable
+    audit record. A non-string value returns "" here and is then rejected by
+    each handler's existing 'actor required' 400 check.
+    """
+    a = payload.get("actor")
+    return a.strip() if isinstance(a, str) else ""
+
+
 def _release(case: dict, payload: dict):
     """POST /api/case/{id}/release {actor, to:'manufacturer'} -> (body, status).
 
@@ -763,7 +979,7 @@ def _release(case: dict, payload: dict):
     committed hash; a re-release becomes possible only after a re-commit
     (new input-of-record, new named act). Caller holds _LOCK and persists.
     """
-    actor = str(payload.get("actor", "")).strip()
+    actor = _actor_str(payload)
     if not actor:
         return {"error": STRINGS["release_actor_required"]}, 400
     to = str(payload.get("to", "")).strip().lower()
@@ -857,6 +1073,342 @@ def _manufacturer_inbox() -> dict:
     return {"inbox": items, "count": len(items), "note": STRINGS["inbox_note"]}
 
 
+# ---------------------------------------------------------------------------
+# Wave 4 (F): the Patient persona — tokenized, read-only, plain-language.
+#
+# The patient view is reachable ONLY through the opaque per-case token (a
+# uuid, like the Wave-3 release_id) — never through the case_id, and there is
+# no enumeration surface. An unknown token is a plain 404, indistinguishable
+# from any other not-found (no not-found vs not-authorized distinction to
+# probe). The view carries NO case_id and no clinical PHI the patient would
+# not already hold: the coded id, the drug name, a plain-language stage, what
+# remains, and the standing draft notice (21 CFR Part 50: "understandable to
+# the subject" — vocabulary authored at build time in STRINGS).
+# ---------------------------------------------------------------------------
+
+def _all_case_ids() -> list:
+    """Every known case id (memory + disk), snapshotted under _LOCK."""
+    with _LOCK:
+        case_ids = set(CASES)
+    if os.path.isdir(CASES_DIR):
+        for name in os.listdir(CASES_DIR):
+            if name.endswith(".json") and _CASE_ID_RE.match(name[:-len(".json")]):
+                case_ids.add(name[:-len(".json")])
+    return sorted(case_ids)
+
+
+def _case_for_patient_token(token: str):
+    """The case whose minted patient_token equals ``token``, else None.
+
+    Lookup by token value only — the URL path never doubles as a case
+    locator, so there is nothing to enumerate.
+    """
+    if not token or not isinstance(token, str):
+        return None
+    for case_id in _all_case_ids():
+        case = _get_case(case_id)
+        if case is not None and case.get("patient_token") == token:
+            return case
+    return None
+
+
+def _case_stage(case: dict) -> str:
+    """The coarse lifecycle stage: draft / committed / released / enrolled."""
+    if isinstance(case.get("enrollment"), dict):
+        return "enrolled"
+    if isinstance(case.get("released"), dict):
+        return "released"
+    if _profile_block(case)["state"] == "COMMITTED":
+        return "committed"
+    return "draft"
+
+
+def _patient_link(case: dict, payload: dict):
+    """POST /api/case/{id}/patient-link {actor} -> (body, status).
+
+    A NAMED act (HC1): a human decides to hand the patient a status link.
+    The token is minted lazily on first use and reused thereafter (one
+    stable link per case); EVERY invocation is audit-logged 'patient_link'
+    — re-sharing an existing link is still an act. Caller holds _LOCK and
+    persists.
+    """
+    actor = _actor_str(payload)
+    if not actor:
+        return {"error": STRINGS["patient_link_actor_required"]}, 400
+    minted = not case.get("patient_token")
+    if minted:
+        case["patient_token"] = uuid.uuid4().hex
+    cp = case.get("committed_profile")
+    audit_mod.append(case.setdefault("audit", []), actor=actor,
+                     action="patient_link", target="patient-view",
+                     input_hash=(cp or {}).get("profile_hash") or "",
+                     detail={"minted": minted})
+    return {"ok": True,
+            "patient_token": case["patient_token"],
+            "link": "/api/patient/%s" % case["patient_token"],
+            "note": STRINGS["patient_link_note"]}, 200
+
+
+def _patient_view(case: dict) -> dict:
+    """The read-only plain-language status view. NO case_id, NO clinical
+    detail beyond the coded id + drug name the patient already holds."""
+    stage = _case_stage(case)
+    intake = case["intake"]
+    return {
+        "stage": stage,
+        "status": STRINGS["patient_stage_" + stage],
+        "what_remains": list(STRINGS["patient_remaining_" + stage]),
+        # Stage-conditional (MAJOR-2): the "nothing submitted" notice is true
+        # in draft/committed/released, false once enrolled.
+        "notice": STRINGS.get("patient_notice_" + stage, STRINGS["patient_notice"]),
+        "patient_coded_id": str(intake.get("patient.coded_id", "") or ""),
+        "drug": str(intake.get("drug.name", "") or ""),
+        "draft": True,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Wave 4 (H): INV-5 promote() — preparatory review -> ENROLLMENT.
+#
+# The legal moment the HIPAA disclosure basis changes: preparatory review
+# (45 CFR 164.512(i)(1)(ii)) ends and the recorded legal_basis takes over.
+# Requires a committed profile (the input-of-record the enrollment is FROM),
+# a named actor, and one of the three recognized bases. Arms the
+# post-enrollment sponsor-investigator obligation clocks via the canonical
+# ossicro.clocks (HC3: computed from recorded anchor dates or honestly
+# UNARMED with the resolving question — never a fabricated date) and emits
+# the obligations checklist: the system must not walk a physician into
+# duties it then ignores.
+# ---------------------------------------------------------------------------
+
+_LEGAL_BASES = {
+    "authorization-164.508": "45 CFR 164.508 (patient's written HIPAA authorization)",
+    "waiver-164.512": "45 CFR 164.512(i)(1)(i) (IRB/Privacy Board waiver of authorization)",
+    "treatment-disclosure": "45 CFR 164.506(c) (use/disclosure for treatment)",
+}
+
+
+def _parse_intake_date(value):
+    """(date | None, present: bool). Honest failure: unreadable -> None."""
+    raw = str(value or "").strip()
+    if not raw:
+        return None, False
+    for candidate in (raw, raw[:10]):
+        try:
+            return datetime.datetime.strptime(candidate, "%Y-%m-%d").date(), True
+        except ValueError:
+            continue
+    return None, True
+
+
+def _obligation(obligation: str, citation: str, basis: str, days: int,
+                armed: bool, due, trigger_field, resolving_question) -> dict:
+    return {"obligation": obligation, "citation": citation, "basis": basis,
+            "days": days, "armed": armed,
+            "due": due.isoformat() if due is not None else None,
+            "owner": "physician-sponsor",
+            "trigger_field": trigger_field,
+            "resolving_question": resolving_question}
+
+
+def _enrollment_obligations(case: dict) -> list:
+    """The post-enrollment sponsor-investigator obligations checklist.
+
+    Computed live from the case (not snapshotted) so a later-recorded anchor
+    date arms its clock honestly. Empty until enrollment — the duties attach
+    at the INV-5 transition, not before. Day-counts and citations:
+
+    - 15 calendar days, 21 CFR 312.32(c)(1): IND safety report of a serious
+      and unexpected suspected adverse reaction, from the sponsor's
+      determination that the information qualifies. Per-event anchor — it
+      cannot exist at enrollment, so this clock is ALWAYS emitted unarmed
+      here (HC3: the resolving question, never an invented date).
+    - 7 calendar days, 21 CFR 312.32(c)(2): fatal / life-threatening
+      unexpected suspected adverse reaction, from initial receipt of the
+      information. Same per-event honesty.
+    - 15 working days, 21 CFR 312.310(d)(2): the written expanded-access
+      submission after FDA's emergency telephone authorization — armed from
+      the recorded authorization date via
+      clocks.expanded_access_emergency_deadlines.
+    - within 60 days of the IND-effective anniversary, 21 CFR 312.33: the
+      annual report — effective date = FDA receipt + 30 calendar days
+      (21 CFR 312.40(b)(1), via clocks.ind_30_day_deadline), first window
+      closes 60 days after its first anniversary.
+    """
+    if not isinstance(case.get("enrollment"), dict):
+        return []
+    intake = case["intake"]
+    items = [
+        _obligation(STRINGS["obligation_safety_15"], "21 CFR 312.32(c)(1)",
+                    "calendar-day", 15, False, None, None,
+                    STRINGS["obligation_safety_15_q"]),
+        _obligation(STRINGS["obligation_safety_7"], "21 CFR 312.32(c)(2)",
+                    "calendar-day", 7, False, None, None,
+                    STRINGS["obligation_safety_7_q"]),
+    ]
+    # BOTH clocks an emergency phone authorization arms: the 15-working-day
+    # written 3926 (312.310(d)(2)) AND the 5-working-day IRB notification
+    # (56.104(c)) — the shortest deadline of all. MAJOR-1: the checklist must
+    # not drop the IRB notice just because the canonical function returns it
+    # second. Both come from expanded_access_emergency_deadlines().
+    auth_field = "submission.emergency_auth_datetime"
+    auth_date, auth_present = _parse_intake_date(intake.get(auth_field))
+    _emergency_labels = {
+        "21 CFR 312.310(d)(2)": STRINGS["obligation_followup"],
+        "21 CFR 56.104(c)": STRINGS["obligation_irb_notify"],
+    }
+    if auth_date is not None:
+        for dl in expanded_access_emergency_deadlines(auth_date):
+            items.append(_obligation(
+                _emergency_labels.get(dl.citation, dl.name), dl.citation,
+                dl.basis, dl.n, True, dl.due, auth_field, None))
+    else:
+        for citation, n, label, qkey in (
+                ("21 CFR 312.310(d)(2)", 15, STRINGS["obligation_followup"],
+                 "obligation_followup_q"),
+                ("21 CFR 56.104(c)", 5, STRINGS["obligation_irb_notify"],
+                 "obligation_irb_notify_q")):
+            q = (STRINGS["obligation_date_unreadable"] % auth_field
+                 if auth_present else STRINGS[qkey])
+            items.append(_obligation(
+                label, citation, "working-day", n, False, None, auth_field, q))
+    # 312.33 — annual report, anchored on the IND-effective anniversary.
+    receipt_field = "submission.fda_receipt_date"
+    receipt, receipt_present = _parse_intake_date(intake.get(receipt_field))
+    if receipt is not None:
+        effective = ind_30_day_deadline(receipt).due   # 312.40(b)(1)
+        try:
+            anniversary = effective.replace(year=effective.year + 1)
+        except ValueError:            # Feb 29 -> Feb 28 of the next year
+            anniversary = datetime.date(effective.year + 1, 2, 28)
+        items.append(_obligation(
+            STRINGS["obligation_annual"], "21 CFR 312.33",
+            "calendar-day", 60, True,
+            anniversary + datetime.timedelta(days=60), receipt_field, None))
+    else:
+        q = (STRINGS["obligation_date_unreadable"] % receipt_field
+             if receipt_present else STRINGS["obligation_annual_q"])
+        items.append(_obligation(
+            STRINGS["obligation_annual"], "21 CFR 312.33",
+            "calendar-day", 60, False, None, receipt_field, q))
+    return items
+
+
+def _promote(case: dict, payload: dict):
+    """POST /api/case/{id}/promote {actor, legal_basis} -> (body, status).
+
+    Caller holds _LOCK and persists. Refusals mutate nothing. A repeat
+    promote is refused with the standing record (the honest alternative to
+    silent re-recording); there is no demotion endpoint — the enrollment
+    record, like the audit trail it lives beside, is append-only history.
+    """
+    actor = _actor_str(payload)
+    if not actor:
+        return {"error": STRINGS["promote_actor_required"]}, 400
+    legal_basis = str(payload.get("legal_basis", "")).strip()
+    if legal_basis not in _LEGAL_BASES:
+        return {"error": STRINGS["promote_legal_basis_required"],
+                "allowed": sorted(_LEGAL_BASES)}, 400
+    intake = dict(case["intake"])   # B1: one snapshot for the gate
+    try:
+        committed_hash = require_committed(intake, case.get("committed_profile"))
+    except ProfileNotCommitted as exc:
+        return {"error": "profile not committed", "pending": exc.pending,
+                "state": exc.state}, 409
+    prior = case.get("enrollment")
+    if isinstance(prior, dict):
+        return {"error": STRINGS["promote_already_enrolled"],
+                "enrollment": dict(prior)}, 409
+    from_mode = str(case.get("mode") or "PREPARATORY_REVIEW")
+    case["enrollment"] = {"actor": actor, "at": _utcnow_z(),
+                          "legal_basis": legal_basis,
+                          "from_hash": committed_hash}
+    case["mode"] = "ENROLLMENT"
+    # I-AUDIT: exactly one immutable 'promote' record per enrollment — the
+    # named human, the recorded legal basis, the input-of-record hash, and
+    # the mode transition. No chart values (INV-8).
+    audit_mod.append(case.setdefault("audit", []), actor=actor,
+                     action="promote", target="enrollment",
+                     input_hash=committed_hash,
+                     detail={"legal_basis": legal_basis,
+                             "legal_basis_citation": _LEGAL_BASES[legal_basis],
+                             "from_mode": from_mode, "to_mode": "ENROLLMENT"})
+    return {"ok": True, "mode": "ENROLLMENT",
+            "enrollment": dict(case["enrollment"]),
+            "obligations_checklist": _enrollment_obligations(case),
+            "note": STRINGS["promote_note"]}, 200
+
+
+# ---------------------------------------------------------------------------
+# Wave 4 (G): the Micro-CRO READ-ONLY status board.
+#
+# The physician's own coordinating view over every case (case-level
+# visibility is appropriate for the physician persona; persona auth is
+# INV-7-deferred — see STRINGS["cro_board_note"]). GET only; no action
+# affordance exists here, honoring the documented deferral (no real
+# counterparty exists yet — an acting coordinator would be the eschaton
+# pattern this build explicitly refused).
+# ---------------------------------------------------------------------------
+
+def _cro_board() -> dict:
+    items = []
+    for case_id in _all_case_ids():
+        case = _get_case(case_id)
+        if case is None:
+            continue
+        intake = dict(case["intake"])
+        profile = _profile_block(case)
+        route = _route_for(case)
+        route_gates = set(route.get("gates", []))
+        signed = {s.get("gate_id") for s in case.get("signoffs", [])}
+        # Best-effort ledger/clock rollup: a STATUS COUNT, never the
+        # authoritative check (that is GET /check). Runs the offline stub
+        # reviewer — a board sweep must not fan out live model calls — and
+        # a case whose data cannot render reports the failure honestly
+        # instead of vanishing from its own coordinator's view.
+        totals = None
+        clocks = None
+        rollup_error = None
+        try:
+            r, study, documents = _study_and_docs(case, intake)
+            result = run_check(study, documents, DOC_REGISTRY, GATE_REGISTRY,
+                               reviewer=DeterministicStubReviewer())
+            counted = {"green": 0, "amber": 0, "red": 0}
+            for item in result.ledger:
+                counted[item.status] = counted.get(item.status, 0) + 1
+            entries = _clock_entries(study, r)
+            totals = counted
+            clocks = {"armed": sum(1 for c in entries if c["armed"]),
+                      "total": len(entries)}
+        except Exception as exc:   # no chart content in the rollup error
+            totals = None          # all-or-nothing: a partial rollup would
+            clocks = None          # read as a complete one
+            rollup_error = type(exc).__name__
+        obligations = _enrollment_obligations(case)
+        items.append({
+            "case_id": case_id,   # the physician's own capability (INV-7 note)
+            "patient_coded_id": str(intake.get("patient.coded_id", "") or ""),
+            "drug": str(intake.get("drug.name", "") or ""),
+            "route_id": route["route_id"],
+            "stage": _case_stage(case),
+            "mode": str(case.get("mode") or "PREPARATORY_REVIEW"),
+            "profile_state": profile["state"],
+            "pending_fields": len(profile["pending"]),
+            "gates": {"required": len(route_gates),
+                      "signed": len(signed & route_gates)},
+            "ledger": totals,
+            "clocks": clocks,
+            "rollup_error": rollup_error,
+            "obligations": {"total": len(obligations),
+                            "armed": sum(1 for o in obligations if o["armed"])},
+            "released": isinstance(case.get("released"), dict),
+            "enrolled": isinstance(case.get("enrollment"), dict),
+            "patient_link_minted": bool(case.get("patient_token")),
+        })
+    return {"board": items, "count": len(items),
+            "note": STRINGS["cro_board_note"]}
+
+
 def _record_signoff(case: dict, payload: dict):
     """Validate and persist a human sign-off record. Returns (obj, err, status)."""
     gate_id = str(payload.get("gate_id", "")).strip()
@@ -931,7 +1483,7 @@ def _append_confirmation(case: dict, actor: str, action: str, field_ids: list) -
 
 def _profile_commit(case: dict, payload: dict):
     """POST /api/case/{id}/profile/commit {actor} -> (body, status)."""
-    actor = str(payload.get("actor", "")).strip()
+    actor = _actor_str(payload)
     if not actor:
         return {"error": "actor is required — the profile is committed by a "
                          "named human (HC1/HC5)"}, 400
@@ -961,7 +1513,7 @@ def _profile_commit(case: dict, payload: dict):
 
 def _profile_confirm(case: dict, payload: dict):
     """POST /api/case/{id}/profile/confirm {actor, field_ids} -> (body, status)."""
-    actor = str(payload.get("actor", "")).strip()
+    actor = _actor_str(payload)
     if not actor:
         return {"error": "actor is required — fields are re-confirmed by a "
                          "named human (HC1/HC5)"}, 400
@@ -1013,6 +1565,9 @@ _CASE_PROFILE_CONFIRM = re.compile(r"^/api/case/([^/]+)/profile/confirm$")
 _CASE_FORM3926_PDF = re.compile(r"^/api/case/([^/]+)/form3926\.pdf$")
 _CASE_FORM3926_FDF = re.compile(r"^/api/case/([^/]+)/form3926\.fdf$")
 _CASE_RELEASE = re.compile(r"^/api/case/([^/]+)/release$")
+_CASE_PATIENT_LINK = re.compile(r"^/api/case/([^/]+)/patient-link$")
+_CASE_PROMOTE = re.compile(r"^/api/case/([^/]+)/promote$")
+_PATIENT_VIEW = re.compile(r"^/api/patient/([^/]+)$")
 
 
 # ---------------------------------------------------------------------------
@@ -1155,6 +1710,28 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 return self._send_json({"error": type(exc).__name__, "detail": str(exc)}, 500)
 
+        if path == "/api/cro/board":
+            # Micro-CRO persona (Wave 4 G): READ-ONLY status board — no
+            # POST route exists for it; nothing on it acts on a case.
+            try:
+                return self._send_json(_cro_board())
+            except Exception as exc:  # no chart content in error payloads
+                return self._send_json({"error": type(exc).__name__}, 500)
+
+        m = _PATIENT_VIEW.match(path)
+        if m:
+            # Patient persona (Wave 4 F): the OPAQUE token is the only key.
+            # Unknown token -> the same bare 404 as any other miss — no
+            # enumeration, no not-found vs not-authorized distinction, and
+            # the token is never echoed back.
+            try:
+                case = _case_for_patient_token(m.group(1))
+                if case is None:
+                    return self._send_json({"error": "not found"}, 404)
+                return self._send_json(_patient_view(case))
+            except Exception as exc:  # no chart content in error payloads
+                return self._send_json({"error": type(exc).__name__}, 500)
+
         if path == "/api/manufacturer/inbox":
             # Pharma persona: RELEASED cases only (a SEND happened); nothing
             # else exists in this view. Read-only — the supply/authorize
@@ -1237,6 +1814,15 @@ class Handler(BaseHTTPRequestHandler):
                 "generated_rev": case["generated_rev"],
                 "route_id": case.get("route_id"),
                 "profile": _profile_block(case),
+                # Wave 4: privacy mode + INV-5 enrollment record + the live
+                # obligations checklist ([] until enrolled — the duties
+                # attach at the transition). patient_token is the
+                # physician's own capability to hand the patient (the case
+                # view already grants strictly more than the patient view).
+                "mode": str(case.get("mode") or "PREPARATORY_REVIEW"),
+                "enrollment": case.get("enrollment"),
+                "obligations": _enrollment_obligations(case),
+                "patient_token": case.get("patient_token"),
             })
 
         if path.startswith("/static/"):
@@ -1274,7 +1860,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"error": "unknown intake field id(s): %s — intake accepts only "
                      "the route's schema fields" % ", ".join(sorted(unknown)[:5]),
                      "unknown": sorted(unknown)}, 400)
-            actor = str(payload.get("actor", "")).strip()
+            actor = _actor_str(payload)
             provenance = payload.get("provenance")
             provenance = provenance if isinstance(provenance, dict) else {}
             with _LOCK:
@@ -1436,6 +2022,42 @@ class Handler(BaseHTTPRequestHandler):
                 body, status = _profile_confirm(case, payload)
                 if status == 200:
                     _save_case(case_id)
+            return self._send_json(body, status)
+
+        m = _CASE_PATIENT_LINK.match(path)
+        if m:
+            case_id = m.group(1)
+            case = self._case(case_id)
+            if case is None:
+                return self._send_json({"error": "unknown case"}, 404)
+            payload = self._read_json()
+            if payload is None or not isinstance(payload, dict):
+                return self._send_json({"error": "expected a JSON object"}, 400)
+            try:
+                with _LOCK:
+                    body, status = _patient_link(case, payload)
+                    if status == 200:
+                        _save_case(case_id)
+            except Exception as exc:  # no chart content in error payloads
+                return self._send_json({"error": type(exc).__name__}, 500)
+            return self._send_json(body, status)
+
+        m = _CASE_PROMOTE.match(path)
+        if m:
+            case_id = m.group(1)
+            case = self._case(case_id)
+            if case is None:
+                return self._send_json({"error": "unknown case"}, 404)
+            payload = self._read_json()
+            if payload is None or not isinstance(payload, dict):
+                return self._send_json({"error": "expected a JSON object"}, 400)
+            try:
+                with _LOCK:
+                    body, status = _promote(case, payload)
+                    if status == 200:
+                        _save_case(case_id)
+            except Exception as exc:  # no chart content in error payloads
+                return self._send_json({"error": type(exc).__name__}, 500)
             return self._send_json(body, status)
 
         return self._send_json({"error": "not found", "path": path}, 404)
