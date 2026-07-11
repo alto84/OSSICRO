@@ -20,6 +20,7 @@ import copy
 import datetime
 import importlib.util
 import json
+import os
 import re
 import shutil
 import sys
@@ -187,8 +188,13 @@ class TestSampleBundleProposals(unittest.TestCase):
             self.assertTrue(p["section"])
 
     def test_summary_counts(self):
+        # manual = every schema field the chart could not fill. Derived from
+        # the live schema so a registry-only field addition (e.g. the P2
+        # foundations) re-baselines here without hiding a mapping regression:
+        # the AUTO count stays pinned.
+        total = len(routes.intake_fields())
         self.assertEqual(self.result["summary"],
-                         {"auto": 19, "manual": 55 - 19})
+                         {"auto": 19, "manual": total - 19})
 
 
 class TestNeverExtract(unittest.TestCase):
@@ -1070,7 +1076,13 @@ class TestEngineEgressBoundary(unittest.TestCase):
     outbound-importing modules exist: ``review_claude.py`` (the Anthropic
     API) and ``egress.py`` (the INV-4 de-identified registry gateway, Wave
     2). Neither may ever import the PHI ingestion path — the gateways see a
-    closed predicate struct / review text, never chart data."""
+    closed predicate struct / review text, never chart data.
+
+    PT-5 (Overhaul P3) extends the boundary to the WHOLE PROGRAM: the app
+    entrypoint (``app/server.py``) plus every repo module it loads is swept
+    for outbound HTTP clients, and reviewer selection is asserted to stay
+    offline unless the OSSICRO_LIVE_CONCEPT_REVIEW opt-in is affirmatively
+    set — an API key alone must never cause egress (B1)."""
 
     SANCTIONED_EGRESS = ("egress.py", "review_claude.py")
 
@@ -1107,6 +1119,98 @@ class TestEngineEgressBoundary(unittest.TestCase):
         for name in self.SANCTIONED_EGRESS:
             src = (ENGINE_ROOT / "ossicro" / name).read_text(encoding="utf-8")
             self.assertNotIn("fhir_ingest", src, name)
+
+    # ---- PT-5 (Overhaul P3): the whole-app egress boundary -----------------
+    # The app legitimately imports the INBOUND http.server; what it may never
+    # import (outside the two sanctioned engine modules) is an OUTBOUND
+    # client: urllib/requests/httpx/httplib2/aiohttp by any spelling,
+    # http.client, socket (incl. socket.create_connection), or importlib
+    # (a source-level check cannot resolve a dynamic import, so we refuse it).
+    _APP_FORBIDDEN = re.compile(
+        r"^\s*(?:import|from)\s+(urllib|requests|httpx|httplib2|aiohttp|importlib)\b"
+        r"|^\s*(?:import|from)\s+http\.client\b"
+        r"|^\s*from\s+http\s+import\s+.*\bclient\b"
+        r"|^\s*(?:import|from)\s+socket\b"
+        r"|socket\.create_connection",
+        re.MULTILINE)
+
+    _app_server_mod = None
+
+    @classmethod
+    def _load_app_server(cls):
+        """Import-walk the app entrypoint: exec app/server.py (which loads the
+        engine); the loaded-module set is then visible in sys.modules."""
+        if cls._app_server_mod is None:
+            spec = importlib.util.spec_from_file_location(
+                "ossicro_app_server_boundary", str(REPO_ROOT / "app" / "server.py"))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            cls._app_server_mod = mod
+        return cls._app_server_mod
+
+    def test_no_outbound_client_in_whole_app(self):
+        # Sweep app/server.py PLUS every repo-resident module it loaded
+        # (engine included — belt over the engine-only sweep above). Test
+        # harnesses are excluded: tests may drive HTTP against a local
+        # fixture server; the PRODUCT may not open an outbound client.
+        mod = self._load_app_server()
+        files = {Path(mod.__file__).resolve()}
+        for loaded in list(sys.modules.values()):
+            path = getattr(loaded, "__file__", None)
+            if not path:
+                continue
+            p = Path(path).resolve()
+            try:
+                p.relative_to(REPO_ROOT)
+            except ValueError:
+                continue                      # stdlib / site-packages
+            if "tests" in p.parts or p.name == "conftest.py":
+                continue                      # harnesses, not product surface
+            if p.suffix == ".py":
+                files.add(p)
+        offenders, swept = [], set()
+        for p in sorted(files):
+            if p.name in self.SANCTIONED_EGRESS:
+                continue                      # the sanctioned egress pair
+            swept.add(p.name)
+            if self._APP_FORBIDDEN.search(p.read_text(encoding="utf-8")):
+                offenders.append(str(p.relative_to(REPO_ROOT)))
+        self.assertEqual(offenders, [])
+        # The sweep must actually have covered the app entrypoint and the
+        # engine surface it rides on — an empty walk would pass vacuously.
+        self.assertIn("server.py", swept)
+        self.assertIn("pipeline.py", swept)
+
+    def test_select_reviewer_stays_offline_without_the_opt_in(self):
+        # B1: an ANTHROPIC_API_KEY present for unrelated reasons must NEVER
+        # select the live reviewer. Only the affirmative
+        # OSSICRO_LIVE_CONCEPT_REVIEW opt-in (a deployment decision — see
+        # docs/deployment/AI-REVIEW-PRECONDITIONS.md) may, and that path is
+        # exercised in app/tests/test_p3_ai_review.py with a fake client.
+        from ossicro.review_port import DeterministicStubReviewer
+        mod = self._load_app_server()
+        old_flag = os.environ.pop("OSSICRO_LIVE_CONCEPT_REVIEW", None)
+        had_key = "ANTHROPIC_API_KEY" in os.environ
+        old_key = os.environ.get("ANTHROPIC_API_KEY")
+        os.environ["ANTHROPIC_API_KEY"] = "sk-synthetic-boundary-test-key"
+        try:
+            # flag entirely unset + key present -> the offline stub
+            self.assertIsInstance(mod._select_reviewer(),
+                                  DeterministicStubReviewer)
+            # every non-affirmative spelling -> still the offline stub
+            for value in ("", "0", "false", "no", "off", "maybe"):
+                os.environ["OSSICRO_LIVE_CONCEPT_REVIEW"] = value
+                self.assertIsInstance(mod._select_reviewer(),
+                                      DeterministicStubReviewer, value)
+        finally:
+            if old_flag is None:
+                os.environ.pop("OSSICRO_LIVE_CONCEPT_REVIEW", None)
+            else:
+                os.environ["OSSICRO_LIVE_CONCEPT_REVIEW"] = old_flag
+            if had_key:
+                os.environ["ANTHROPIC_API_KEY"] = old_key
+            else:
+                os.environ.pop("ANTHROPIC_API_KEY", None)
 
 
 if __name__ == "__main__":

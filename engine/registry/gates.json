@@ -18,6 +18,7 @@
     "name": "SAE causality / expectedness determination",
     "description": "Judging whether a serious adverse event is a suspected adverse reaction (reasonable possibility of causal relationship) and whether it is unexpected is a medical judgment of the qualified physician / medical monitor. OSSICRO computes deadlines and drafts report shells; it never sets causality or expectedness.",
     "responsible_role": "medical-monitor",
+    "responsible_role_label": "physician-sponsor / medical monitor",
     "citation": "21 CFR 312.32(a), 312.32(b), 312.32(c); ICH E2A"
   },
   {

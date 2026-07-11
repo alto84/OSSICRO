@@ -1,5 +1,5 @@
 {
-  "_comment": "Synthetic, clearly-fictional single-patient expanded-access case for Route-3926. NO real PHI. Designed so that POSTing these fields to intake yields a mostly-green ledger with submission_ready true; the remaining ambers are the non-delegable human gates (FDA submission signature, informed consent, IRB concurrence) that OSSICRO never clears.",
+  "_comment": "Synthetic, clearly-fictional single-patient expanded-access case for Route-3926. NO real PHI. Designed so that POSTing these fields to intake yields a mostly-green ledger with submission_ready true; the remaining ambers are the non-delegable human gates (FDA submission signature, informed consent, IRB concurrence) that OSSICRO never clears. The drug-accountability log is deliberately a shell filled at dispensing (M7): its lot-number and dispensing columns carry no sample values and render honest MISSING markers. P4: the sample records the RECEIVED, signed LOA (manufacturer.loa_received_date + loa_signatory) so the external-party LOA row is green and the package submission-ready; remove those two fields to see the awaiting-external-party state.",
   "fields": {
     "patient.coded_id": "PT-3926-014",
     "patient.age": "58",
@@ -21,8 +21,7 @@
     "drug.dose": "240 mg orally twice daily",
     "drug.route": "Oral",
     "drug.duration": "Continuous 28-day cycles until progression or unacceptable toxicity",
-    "drug.lot_numbers": "CYTO-2026-0417",
-    "drug.dispensing_entries": "2026-07-16: 56 tablets dispensed to PT-3926-014 for cycle 1; running balance recorded in the site accountability log per 21 CFR 312.62(a).",
+    "drug.quantity_requested": "Two 28-day cycles' supply (112 tablets), with resupply per response assessment",
 
     "treatment.monitoring_plan": "Baseline history, physical examination, CBC, comprehensive metabolic panel, and contrast CT of the chest, abdomen, and pelvis. On treatment: CBC and metabolic panel every two weeks during cycle 1, then monthly; CT restaging every 8 weeks by RECIST 1.1; adverse events graded by CTCAE v5.0; ECG at baseline and cycle 1 day 15.",
     "treatment.benefit_risk": "In a first-in-human study of 41 patients, Cytoravir produced partial responses in biliary-tract tumors with a safety profile limited mainly to grade 1-2 nausea and reversible transaminase elevation. For a patient with no remaining approved options and a life expectancy of months, this evidence supports a reasonable expectation that the potential benefit justifies the potential risk.",
@@ -37,17 +36,22 @@
     "manufacturer.ind_dmf_reference": "IND 178452",
     "manufacturer.ind_on_file": "true",
     "manufacturer.supply_committed": "true",
+    "manufacturer.loa_received_date": "2026-06-20",
+    "manufacturer.loa_signatory": "Dana Q. Example, VP Regulatory Affairs, Helix Therapeutics, Inc.",
 
     "irb.name": "Midwest Regional IRB",
     "irb.address": "2200 Commerce Boulevard, Suite 500, Rivertown, IL 60000",
     "irb.phone": "(312) 555-0190",
     "irb.chair_concurrence": "true",
 
+    "submission.date": "2026-06-15",
     "submission.emergency": "false",
     "submission.initial_or_followup": "initial",
     "submission.target": "new_ind",
     "submission.fda_division": "Division of Oncology 1, Office of Oncologic Diseases, CDER",
     "submission.fda_receipt_date": "2026-06-15",
+    "submission.needed_by_date": "2026-07-20",
+    "submission.cost_recovery_statement": "The patient will not be charged for the investigational drug; no cost recovery under 21 CFR 312.8 is requested.",
 
     "waiver_10a": "true",
     "waiver_10b": "true",
@@ -59,6 +63,8 @@
     "consent.benefits": "The treatment may slow or shrink your cancer, but this cannot be promised. Information learned may help future patients.",
     "consent.alternatives": "Alternatives include supportive (comfort) care, hospice care, or participation in another clinical trial if one becomes available. You may choose not to receive this treatment.",
     "consent.confidentiality_statement": "Your medical records will be kept confidential to the extent permitted by law and will be stored securely with access limited to the care and research team.",
+    "consent.injury_compensation_statement": "If you are injured as a result of this treatment, medical care is available from Fictional Oncology Associates and through your usual health coverage. No program of compensation funds has been set aside for treatment-related injury. For further information about what is available, contact Jordan A. Rivera, MD.",
+    "consent.cost_statement": "You will not be charged for the investigational drug itself. Routine costs of your care, such as clinic visits, blood tests, and scans, will be billed to you or your insurer in the usual way.",
 
     "contacts.injury_contact_name": "Jordan A. Rivera, MD",
     "contacts.injury_contact_phone": "(312) 555-0148",

@@ -23,6 +23,8 @@ Everything the software produces is a draft for qualified human review. Amber it
 
 **Check.** `pipeline.run_check` produces the green/amber/red completeness ledger, cross-document consistency checks, and the gate packet for the three acts the software must never perform itself: `submission-to-fda`, `informed-consent`, and `irb-approval`. If a gate is unmet, the engine raises `GateViolation` rather than proceeding without it.
 
+The check's concept (voice) review runs the **offline deterministic stub by default — nothing leaves the machine**. A deployment may opt in to the live model-backed reviewer by setting `OSSICRO_LIVE_CONCEPT_REVIEW` to an affirmative value (with `ANTHROPIC_API_KEY` present); that sends rendered document text to the Anthropic API and is a deployment decision with documented preconditions (BAA or de-identified projection, zero-retention configuration, and the named human recorded in the deployment log) — see [`docs/deployment/AI-REVIEW-PRECONDITIONS.md`](../docs/deployment/AI-REVIEW-PRECONDITIONS.md). Every live review writes one `ai_review` audit record (model, version, doc ids, finding count, destination — never text), the check screen discloses which reviewer ran, and `POST /api/case/{id}/review-disposition` records the named human's accepted/dismissed judgment on each finding (escalate-only; it never changes the ledger).
+
 **Assemble.** The regulator-facing submission follows the eCTD module map: Module 1 holds the 3926, the cover letter, and the LOA; Module 5 holds the treatment plan; Modules 3 and 4 plus the investigator brochure are cross-references to the manufacturer's IND via the LOA. Assembly also produces a SHA-256 hash manifest and the manufacturer LOA packet. `submission_ready` stays False while any gate is unmet. The engine only assembles; filing is a human act.
 
 **Clocks.** The deadlines differ between emergency and non-emergency use: the 15-working-day written submission (312.310(d)), the 5-working-day IRB notification (56.104(c)), and the 30-calendar-day IND wait (312.40(b)(1)).
@@ -56,6 +58,7 @@ All endpoints are same-origin; the frontend consumes them. Several endpoints req
 - `GET /api/case/{id}/package` returns a manifest over all route documents plus a package digest.
 - `GET /api/case/{id}/form3926.pdf` returns the filled Form 3926 with a draft watermark. Requires a committed profile; the watermark stays until the gates clear.
 - `GET /api/case/{id}/form3926.fdf` returns draft-marked FDF fill data under the same gate. The PDF field-name map is unverified; see `ossicro.pdf_3926.FDF_3926_FIELD_MAP`.
+- `POST /api/case/{id}/export` with `{actor, format: "pdf"|"fdf"}` is the explicit export act: it returns the same draft bytes under the same committed-profile gate, and writes one `export` audit record naming the human and the format. One email separates an exported draft from a submission, so the export is on the record. The frontend's download buttons use this endpoint; the GET endpoints remain for direct browser use.
 
 ### Other personas
 
@@ -71,6 +74,10 @@ The manufacturer, the patient, and the coordinating physician each get a deliber
 
 ## Boundaries
 
-Case data is stored on disk at `app/data/cases/{id}.json`. The store holds no real PHI; patients appear as coded identifiers only. The software is not medical, legal, or regulatory advice. The submission spec that governs this MVP is `docs/route-3926-submission-spec.md`.
+Case data is stored on disk at `app/data/cases/{id}.json`. The store holds no real PHI; patients appear as coded identifiers only. Committed-profile hashes are HMAC-keyed under a server-side secret (`app/data/secret.key`, created on first run, never committed) so a hash of an enumerable value cannot be reversed offline. The software is not medical, legal, or regulatory advice. The submission spec that governs this MVP is `docs/route-3926-submission-spec.md`.
+
+The server is a single-user loopback pilot and enforces that at startup: `main()` refuses to bind a non-loopback host, because no persona authentication exists (INV-7). The override (`OSSICRO_ALLOW_NONLOCAL_BIND=1`) additionally requires a configured authentication backend, which this build does not have, so the override cannot currently succeed. Everything a deployment must satisfy before any non-synthetic case — covered-entity boundary, encryption at rest, BAA inventory, retention, and the INV-7/keyed-hash preconditions — is in [`docs/deployment/DEPLOYMENT-COMPLIANCE.md`](../docs/deployment/DEPLOYMENT-COMPLIANCE.md).
+
+At release and registry-match time, a naive deterministic lint sweeps the free-text intake fields for identifier-shaped content (SSN-shaped values, dates in narrative, date-of-birth labels, "name:"-labeled name pairs) and returns escalate-only warnings naming the field — never the matched text, never a block, never a rewrite.
 
 Clock arithmetic has a single source. `ea_generators.py` delegates all working-day and deadline computation to `engine/ossicro/clocks.py`, and two test classes in `engine/tests/test_ea_features.py` (`ClockReconciliationTests` and `ComputeClocksCanonicalTests`) verify that the two stay in agreement.

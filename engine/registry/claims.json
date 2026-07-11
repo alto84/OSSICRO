@@ -1,0 +1,47 @@
+{
+  "_comment": "PT-3 (Overhaul P2): the single-source registry of cross-cutting user-facing CLAIMS. Each claim OSSICRO makes about itself that has already burned us (a stale hardcoded copy asserting something no longer true) lives HERE, once: the server injects this registry into the SPA boot payload and both surfaces render from it — no second authored copy may exist. 'tripwire' is the distinctive literal the duplication test greps app/ for: if it appears in app source outside the registry/render path, the test fails (this is the tripwire that would have caught the third hardcoded 'Still in draft.'). 'true_when' states the stage/config conditions under which the claim is true — a claim rendered outside those conditions is a bug, not copy.",
+  "claims": [
+    {
+      "id": "drafts-only-banner",
+      "text": "Every document on this page is a draft for qualified human review. OSSICRO never obtains consent, never approves for an IRB, never determines causality, never signs, and never submits to FDA. Each of those acts is a gate: a step owned by a named person, where the system stops and waits until that person acts.",
+      "tripwire": "never signs, and never submits to FDA",
+      "true_when": "Always — drafts-only is a Constitution hard line (HC1): no configuration, flag, or stage makes OSSICRO sign, send, or submit.",
+      "surfaces": ["physician workspace draft bar"]
+    },
+    {
+      "id": "nothing-submitted-to-fda",
+      "text": "Nothing has been submitted to the FDA, and no decision has been made.",
+      "tripwire": "has been submitted to the FDA",
+      "true_when": "Case stage draft, committed, or released. NOT rendered at the enrolled stage — treatment has begun, so the enrolled patient notice makes no submission claim (MAJOR-2).",
+      "surfaces": ["patient status page notice (server STRINGS patient_notice)", "patient view draft-notice fallback"]
+    },
+    {
+      "id": "chart-data-stays-local",
+      "text": "Names, dates, geography, identifiers, and free text never leave this machine.",
+      "tripwire": "never leave this machine",
+      "true_when": "Registry matching sends only de-identified predicates (codes, age band, sex, coded route) through the audited egress gateway with live egress DISABLED, and the live concept reviewer is off (OSSICRO_LIVE_CONCEPT_REVIEW unset selects the offline stub). The tie shipped in Overhaul P3: the SPA appends the server-composed live-reviewer disclosure (ai-review-live) wherever this claim renders whenever the check reports a live reviewer, so it never renders unqualified while document text can leave the machine.",
+      "surfaces": ["registry-search organizer screen"]
+    },
+    {
+      "id": "no-direct-identifiers-in-view",
+      "text": "No direct patient identifiers appear in this view — the patient is shown by coded ID only.",
+      "tripwire": "shown by coded ID only",
+      "true_when": "Manufacturer inbox: the release-time snapshot carries the coded id, drug, indication, and LOA-request text only; nothing else is released into the view.",
+      "surfaces": ["manufacturer view intro"]
+    },
+    {
+      "id": "ai-review-offline",
+      "text": "Reviewed by the offline built-in checker — nothing left this machine.",
+      "tripwire": "offline built-in checker",
+      "true_when": "The deterministic stub concept reviewer ran (OSSICRO_LIVE_CONCEPT_REVIEW unset or non-affirmative, no API key, or the live reviewer failed to construct and fell back). The review happened in-process; no document text egressed, so no ai_review audit record is written — no egress happened (B1).",
+      "surfaces": ["check screen reviewer disclosure (server _check_payload reviewer.disclosure)"]
+    },
+    {
+      "id": "ai-review-live",
+      "text": "These drafts were reviewed by an external AI model ({model}) — document text left this machine under the deployment's signed BAA.",
+      "tripwire": "document text left this machine",
+      "true_when": "OSSICRO_LIVE_CONCEPT_REVIEW is affirmatively set AND an API key is present AND the live Claude reviewer actually constructed (a fallback to the stub renders the offline claim instead). {model} is interpolated by the server from the reviewer's model_id at render time. Turning the flag on is a deployment decision with preconditions — a signed BAA or documented de-identified projection, zero-retention configuration, and the named human recorded in the deployment log; see docs/deployment/AI-REVIEW-PRECONDITIONS.md (B1 full remediation, Overhaul P3). Every live review writes one ai_review audit record (HC5).",
+      "surfaces": ["check screen reviewer disclosure (server _check_payload reviewer.disclosure)"]
+    }
+  ]
+}

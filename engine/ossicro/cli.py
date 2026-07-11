@@ -21,7 +21,8 @@ from .models import GateViolation, Study
 from .registry import load_documents, load_fixture, load_gates
 from .validate import run_rules
 
-STATUS_TAG = {"green": "[ GREEN ]", "amber": "[ AMBER ]", "red": "[  RED  ]"}
+STATUS_TAG = {"green": "[ GREEN ]", "amber": "[ AMBER ]", "red": "[  RED  ]",
+              "awaiting-external-party": "[AWAIT-EXT]"}
 
 
 def _hr(title: str) -> None:
@@ -53,8 +54,11 @@ def run_demo() -> int:
     print("Documents generated/imported: %d of %d required"
           % (len(documents), len(study.required_documents)))
 
-    _hr("COMPLETENESS LEDGER  (green=validated  amber=awaiting human gate  red=action needed)")
-    print("  GREEN %d   AMBER %d   RED %d\n" % (totals["green"], totals["amber"], totals["red"]))
+    _hr("COMPLETENESS LEDGER  (green=validated  amber=awaiting human gate  "
+        "await-ext=awaiting external party  red=action needed)")
+    print("  GREEN %d   AMBER %d   AWAIT-EXT %d   RED %d\n"
+          % (totals["green"], totals["amber"],
+             totals["awaiting-external-party"], totals["red"]))
     for item in ledger:
         print("%s  %s" % (STATUS_TAG.get(item.status, item.status), item.title))
         if item.gate_id and item.status == "amber":

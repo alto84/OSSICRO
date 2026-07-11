@@ -19,8 +19,13 @@ if APP_DIR not in sys.path:
 
 import server  # noqa: E402  (imports the engine; never binds the port)
 
-from ossicro.profile import ProfileNotCommitted, profile_hash  # noqa: E402
-from ossicro.review_port import DeterministicStubReviewer      # noqa: E402
+from ossicro.profile import ProfileNotCommitted            # noqa: E402
+from ossicro.review_port import DeterministicStubReviewer  # noqa: E402
+
+# P9 (m14): the app keys every profile hash (HMAC-SHA256 under the server
+# secret), so hash expectations here go through the server's keyed wrapper —
+# the unkeyed engine profile_hash no longer matches what the app stamps.
+profile_hash = server.profile_hash
 
 ACTOR = "Jordan A. Rivera, MD"
 
@@ -451,7 +456,9 @@ class TestEndpointValidation(ProfileTestBase):
         block = server._profile_block(case)
         self.assertEqual(block["state"], "COMMITTED")
         self.assertEqual(block["committed_by"], ACTOR)
-        self.assertTrue(block["profile_hash"].startswith("sha256:"))
+        # P9 (m14): the app's committed hashes are HMAC-keyed and prefixed
+        # "hmac-sha256:" — the scheme is visible, never silently upgraded.
+        self.assertTrue(block["profile_hash"].startswith("hmac-sha256:"))
 
 
 # ---------------------------------------------------------------------------

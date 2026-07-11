@@ -12,6 +12,9 @@ updated: 2026-07-09
 
 # Expanded Access Treatment Plan — TEMPLATE (DRAFT for qualified human review)
 
+> [!warning] Legacy paths (Overhaul P4, m5)
+> The `## Fields` table below uses this template's ORIGINAL study-record vocabulary, which predates the canonical intake schema. The canonical dotted field ids live in `engine/registry/routes.json`, and the shipped generator is `ea_generators.gen_treatment_plan`. Key renames: `physician.*` → `investigator.*`; `treatment_plan.dose/route/duration` → `drug.dose/route/duration`; `treatment_plan.monitoring_plan` → `treatment.monitoring_plan`; `patient.initials_coded` → `patient.coded_id`; `loa.referenced_file_numbers` / `drug.loa_reference` → `manufacturer.ind_dmf_reference`; `site.facility_description` → `site.name`. NOTE also that this table's 312.305(b)(2) roman-numeral pinpoints predate the P1/M8 remap — the single-source table `engine/ossicro/citations.py` (rows still PENDING-HUMAN-VERIFICATION) is canonical.
+
 > [!authority] Governing authority
 > [21 CFR 312.305(b)](https://www.law.cornell.edu/cfr/text/21/312.305) (submission requirements for all expanded access uses), read with the criteria of 21 CFR 312.305(a) and, for individual patients, [21 CFR 312.310](https://www.law.cornell.edu/cfr/text/21/312.310); see [FDA expanded access resources](https://www.fda.gov/news-events/public-health-focus/expanded-access). This is a DRAFT template; OSSICRO fills it, a qualified human reviews and signs.
 

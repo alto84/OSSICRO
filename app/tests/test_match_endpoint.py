@@ -147,9 +147,14 @@ class TestMatchContract(MatchEndpointTestBase):
         case_id = self._committed_sample_case()
         status, body = _http("POST", "/api/case/%s/match" % case_id)
         self.assertEqual(status, 200)
+        # P9 (m20): identifier_lint / identifier_lint_note joined the /match
+        # contract — the escalate-only free-text identifier warnings.
         self.assertEqual(set(body),
                          {"candidates", "absence", "absence_message",
-                          "queried_registries", "predicates_used", "as_of"})
+                          "queried_registries", "predicates_used", "as_of",
+                          "identifier_lint", "identifier_lint_note"})
+        # The synthetic sample case carries no direct identifiers: silent.
+        self.assertEqual(body["identifier_lint"], [])
         self.assertFalse(body["absence"])
         ids = {c["id"] for c in body["candidates"]}
         # The synthetic cholangiocarcinoma sample matches the fixture trials

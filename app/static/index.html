@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>OSSICRO — Route-3926 Single-Patient Expanded Access</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b5cad'/%3E%3Cpath d='M8 22V10h4a6 6 0 0 1 0 12z' fill='%2312a594'/%3E%3Ccircle cx='22' cy='16' r='5' fill='none' stroke='%23fff' stroke-width='2.5'/%3E%3C/svg%3E">
+<script>
+/* PT-3 claim registry (engine/registry/claims.json). The server replaces the
+   null below at serve time — the ONLY authored copy of these claims lives in
+   the registry; this page renders them and never restates them. */
+window.OSSICRO_CLAIMS = null;
+</script>
 <style>
   /* ---------- theme ---------- */
   :root{
@@ -241,13 +247,19 @@
   .pill.green{background:var(--green-soft);color:var(--green)} .pill.green .dot{background:var(--green)}
   .pill.amber{background:var(--amber-soft);color:var(--amber)} .pill.amber .dot{background:var(--amber)}
   .pill.red{background:var(--red-soft);color:var(--red)} .pill.red .dot{background:var(--red)}
-  .totals{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0 20px}
+  /* P4: awaiting-external-party — amber-family but visually distinct (dashed
+     ring): a pending EXTERNAL act, not a physician gate. */
+  .pill.awaiting-external-party{background:var(--amber-soft);color:var(--amber);
+    border:1.5px dashed var(--amber)}
+  .pill.awaiting-external-party .dot{background:transparent;border:2px solid var(--amber)}
+  .totals{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0 20px}
   @media(max-width:640px){.totals{grid-template-columns:1fr}}
   .tot{border:1px solid var(--line);border-radius:12px;padding:14px 18px;background:var(--surface)}
   .tot .num{font-size:1.9rem;font-weight:800;line-height:1.1}
   .tot .lbl{font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
   .tot.green{border-color:color-mix(in srgb,var(--green) 40%,var(--line))} .tot.green .num,.tot.green .lbl{color:var(--green)}
   .tot.amber{border-color:color-mix(in srgb,var(--amber) 40%,var(--line))} .tot.amber .num,.tot.amber .lbl{color:var(--amber)}
+  .tot.ext{border:1px dashed color-mix(in srgb,var(--amber) 55%,var(--line))} .tot.ext .num,.tot.ext .lbl{color:var(--amber)}
   .tot.red{border-color:color-mix(in srgb,var(--red) 40%,var(--line))} .tot.red .num,.tot.red .lbl{color:var(--red)}
 
   .ledgeritem{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:var(--surface)}
@@ -255,6 +267,7 @@
   .ledgeritem .title{font-weight:700;flex:1;min-width:200px}
   .ledgeritem .docid{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
   .ledgeritem.amber{border-left:4px solid var(--amber)}
+  .ledgeritem.awaiting-external-party{border-left:4px dashed var(--amber)}
   .ledgeritem.red{border-left:4px solid var(--red)}
   .ledgeritem.green{border-left:4px solid var(--green)}
   .qlist{margin:8px 0 0;padding-left:20px}
@@ -286,6 +299,19 @@
     white-space:pre-wrap;word-break:break-word}
   .vsug{margin-top:4px;font-size:.83rem}
   .vsug b{color:var(--accent-deep)}
+  /* P3: reviewer disclosure + human disposition of AI findings (HC5) */
+  #reviewerDisclosure{border:1px solid var(--line);border-radius:9px;padding:8px 12px;
+    background:var(--surface2);margin:2px 0 10px}
+  #reviewerDisclosure.livewarn{border-left:4px solid var(--amber);
+    background:color-mix(in srgb,var(--amber-soft, #fef3c7) 55%,var(--surface))}
+  .vdisphead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 6px}
+  .vdisphead label{display:inline-flex;align-items:center;gap:6px;font-size:.8rem}
+  .vdisphead input{padding:3px 8px;border:1px solid var(--line);border-radius:7px;
+    font:inherit;font-size:.82rem;background:var(--surface)}
+  .vdisp{margin-top:6px;font-size:.82rem}
+  .vdisp .dispchip{font-size:.68rem;font-weight:800;letter-spacing:.07em;padding:1px 8px;
+    border-radius:999px;border:1px solid var(--line);background:var(--surface)}
+  .vdispbtns .btn{font-size:.8rem;padding:4px 10px}
 
   /* ---------- candidate matching (registry-search organizer — never a recommender) ---------- */
   .matchframe{border:1px dashed color-mix(in srgb,var(--brand) 45%,var(--line));border-radius:12px;
@@ -502,12 +528,9 @@
 </header>
 
 <div class="draftbar">
-  <div class="wrap">
-    <b>Drafting aid.</b> Every document on this page is a <b>draft</b> for qualified human review.
-    OSSICRO never obtains consent, never approves for an IRB, never determines causality, never signs,
-    and never submits to FDA. Each of those acts is a gate: a step owned by a named person, where
-    the system stops and waits until that person acts.
-  </div>
+  <!-- PT-3: the drafts-only banner text is a REGISTERED CLAIM rendered from
+       the claim registry (see renderClaims()) — never hardcoded here. -->
+  <div class="wrap"><b>Drafting aid.</b> <span id="draftbarClaim"></span></div>
 </div>
 
 <div class="wrap">
@@ -664,11 +687,19 @@
 
       <h2>Completeness ledger</h2>
       <p class="muted small" style="margin-top:-4px">
-        Green = complete. Amber = drafted but awaiting a named human act (the gate shown). Red = missing
-        or invalid. Only the responsible person's recorded sign-off moves an item from amber to green;
+        Green = complete. Amber = drafted but awaiting a named human act (the gate shown).
+        Awaiting external party = drafted, but the real-world instrument is signed by someone
+        outside this workspace (e.g. the manufacturer's LOA) — it turns green only when the
+        received, signed instrument is recorded as a fact. Red = missing or invalid. Only the
+        responsible person's recorded sign-off or recorded receipt moves an item toward green;
         an automated review never does.
       </p>
+      <p class="muted small" id="reviewerDisclosure" style="display:none"></p>
       <div class="totals" id="totals"></div>
+      <!-- P5 (M4): at-enrollment advisories with no gate row (external-party
+           facts) — escalate-only lines; gate-linked advisories render as
+           notes on their ledger rows below. -->
+      <div id="enrollAdvisories" style="display:none"></div>
       <div id="ledgerList"></div>
 
       <div class="card" id="consistencyCard" style="display:none">
@@ -704,6 +735,13 @@
         </div>
       </div>
     </div>
+
+    <!-- P7 (M11): the sponsor-investigator obligations checklist, decoupled
+         from promote — surfaced here as soon as ANY anchoring fact is
+         recorded (emergency auth, first treatment, FDA receipt, treatment
+         conclusion). Strings from STRINGS.promote; rendered by
+         renderObligationsCard(). Hidden while the case has no rows. -->
+    <div class="card" id="obligationsCard" style="display:none"></div>
   </section>
 
   <!-- ================= SCREEN 4 : PACKAGE ================= -->
@@ -790,8 +828,9 @@
            patient view (no case enumeration, no case_id-as-capability). Strings from STRINGS.patientLink. -->
       <div class="card" id="patientLinkCard"></div>
 
-      <!-- Wave 4: INV-5 promote() — enrollment records the legal basis and arms the
-           post-enrollment obligation clocks. Strings from STRINGS.promote. -->
+      <!-- Wave 4: INV-5 promote() — the recorded treatment start (the enrollment
+           record) carries the legal basis; the obligations checklist itself is
+           live from the case (P7/M11). Strings from STRINGS.promote. -->
       <div class="card" id="promoteCard"></div>
 
       <div class="card tight">
@@ -825,8 +864,9 @@
       </div>
       <p class="muted small" style="max-width:86ch">
         The search uses only <b>de-identified terms from the committed profile</b>: condition codes,
-        drug, age band, sex, and coded route. Names, dates, geography, identifiers, and free text
-        never leave this machine. Scope: <b>open trials and expanded-access records only</b>. For each
+        drug, age band, sex, and coded route. <span id="chartLocalClaim"><!-- PT-3 registered
+        claim: chart-data-stays-local (filled by renderClaims()) --></span>
+        Scope: <b>open trials and expanded-access records only</b>. For each
         candidate you see which criteria matched, which did not, and which could not be verified from
         structured data, so you can review the basis yourself. No score is computed.
       </p>
@@ -905,6 +945,7 @@
     Governed by the OSSICRO Constitution: complete documentation drafted for qualified human review;
     non-delegable acts (consent, IRB approval, causality, signatures, submission) are never performed by software.
     Not medical, legal, or regulatory advice.
+    <br>Single-user local pilot — do not expose this server or share case URLs.
   </footer>
 </div>
 
@@ -933,6 +974,12 @@
                                         409 uncommitted, 400 missing actor/legal_basis; arms the
                                         post-enrollment obligation clocks + emits the checklist)
      GET  /api/cro/board               (read-only coordinator board — no acting affordances)
+     POST /api/case/{id}/review-disposition {actor, finding_id, disposition, note?}
+                                       (P3/HC5 — records the named human's judgment on an AI
+                                        concept finding; escalate-only, never a ledger change)
+     POST /api/case/{id}/export        {actor, format:'pdf'|'fdf'} (P9/m18 — the explicit
+                                        named export act; writes one 'export' audit record
+                                        and returns the DRAFT bytes; 409 unless COMMITTED)
    GET /api/case/{id} and /check both return a "profile" block:
      {state:"UNCOMMITTED"|"COMMITTED"|"CONFIRMING", profile_hash, pending:[field_ids],
       committed_by, committed_at}
@@ -940,6 +987,7 @@
 
 const S = {           // client state
   caseId: null,
+  claims: (window.OSSICRO_CLAIMS || {}),  // PT-3 claim registry (server-injected boot payload)
   schema: null,       // [{id,label,citation,type,required,help,section}]
   intakeSaved: false,
   documents: null,    // [{doc_id,title,rendered}]
@@ -952,7 +1000,9 @@ const S = {           // client state
   release: null,      // {released_by,released_at,to} | null = not released (Wave 3 cross-persona send)
   patientLink: null,  // {token,url,actor} | null — opaque patient status link (Wave 4 F)
   enrollment: null,   // enrollment record from promote() | null = preparatory review (Wave 4 H)
-  obligations: []     // obligations checklist emitted by promote() (Wave 4 H)
+  obligations: [],    // sponsor-obligations checklist (P7/M11: live from the case,
+                      // present pre-promote once any anchoring fact is recorded)
+  obligationsNote: null // P7: the server's tracked-subset disclosure line
 };
 
 /* ============================================================
@@ -982,7 +1032,14 @@ const STRINGS = {
     noCase: "Start a case first. The draft form is filled from an open case.",
     stale: "The intake changed after these drafts were generated. Regenerate before downloading the draft form.",
     unreachable: "Backend unreachable — is the OSSICRO server running?",
-    downloadFailed: "Could not download the draft:"
+    downloadFailed: "Could not download the draft:",
+    // P9 (m18): the export is an explicit named act — one email from a
+    // submission deserves a record. The name lands in the audit trail.
+    actorLabel: "Exporting clinician",
+    namePlaceholder: "Your name",
+    needName: "Enter your name first. Exporting the draft form is recorded in the case audit trail under that name.",
+    auditNote: "Each download is recorded in the case audit trail under the exporting clinician's name. " +
+      "It is not a signature and clears no gate; it records that the draft left this screen."
   },
   release: {
     eyebrow: "Cross-persona release",
@@ -1009,9 +1066,11 @@ const STRINGS = {
   pharma: {
     eyebrow: "Pharma persona",
     title: "Manufacturer view — released requests",
+    // PT-3: the coded-ID-only sentence is a REGISTERED CLAIM — appended from
+    // the claim registry at render time (initPersonaUI), never typed here.
     intro: "A case appears here only after a named clinician explicitly released it from the " +
       "physician workspace; every release is recorded in the audit trail. " +
-      "Synthetic cases only through the pilot. No direct patient identifiers appear in this view — the patient is shown by coded ID only.",
+      "Synthetic cases only through the pilot.",
     decisionLead: "No decision happens here.",
     decisionNote: "The decision to supply the drug and the LOA signature belong to the " +
       "manufacturer (FDCA §561A). OSSICRO drafts; it does not decide or send. There is " +
@@ -1028,6 +1087,9 @@ const STRINGS = {
     indicationLabel: "Indication:",
     loaHeading: "LOA request (draft — the physician sends it; OSSICRO does not)",
     noLoaText: "(LOA request text not provided by the inbox)",
+    urgentBadge: "URGENT — EMERGENCY REQUEST",
+    hashLabel: "Released artifact SHA-256:",
+    hashNote: "Pin this hash to the exact request text you act on — it identifies the released artifact.",
     cardNote: "Draft for the manufacturer's own review. The decision to supply the drug and " +
       "the LOA signature belong to the manufacturer; OSSICRO drafts and does not decide or send."
   },
@@ -1061,13 +1123,14 @@ const STRINGS = {
     pageTitle: "Your status page",
     loading: "One moment…",
     draftBarLead: "Still in draft.",
+    // PT-3: the nothing-submitted fallback renders from the claim registry —
+    // see claimText("nothing-submitted-to-fda") at the render site.
     eyebrow: "Your status page",
     title: "An update from your physician's office",
     lead1: "This page follows your physician's request to the FDA for permission to treat you with",
     lead2: "under the FDA's “expanded access” program. Expanded access is a way to ask " +
       "permission to use a medicine that is still being studied.",
     theMedicine: "the requested medicine",
-    draftNotice: "This is a draft — nothing has been submitted to the FDA yet.",
     nowHeading: "Where things stand",
     remainingHeading: "What still has to happen",
     remainingNone: "Your physician's office will explain the next steps when you talk with them.",
@@ -1101,36 +1164,57 @@ const STRINGS = {
     loadFailTitle: "We hit a snag.",
     loadFail: "We could not load this page right now. Please try again in a few minutes."
   },
-  /* ---- Wave 4 H: INV-5 promote() — enrollment records the legal basis ---- */
+  /* ---- Wave 4 H: INV-5 promote() — the treatment start records the legal basis.
+     P7 (m2): physician-facing vocabulary says "treatment start" (the real-world
+     event); the /promote endpoint, the enrollment record/JSON keys, the audit
+     action names, and the PATIENT-page strings are deliberately unchanged. ---- */
   promote: {
-    eyebrow: "Enrollment",
-    title: "Enroll (record the legal basis)",
-    framing: "Enrollment records the legal basis and the ongoing sponsor-investigator duties " +
-      "it creates. OSSICRO tracks the deadlines; you perform the acts.",
-    explain: "Moving this case from preparatory review to enrollment is the legal moment the " +
-      "HIPAA basis for using the patient's information changes. Recording it requires a " +
-      "committed profile, a named physician, and the one legal basis that actually occurred. " +
-      "It starts the post-enrollment deadline clocks (21 CFR 312.32 safety reports, 312.310(d) " +
-      "follow-up, 312.33 annual report) and produces the checklist below. The entry goes in " +
-      "the audit trail. It records your decision; OSSICRO makes no decision.",
+    eyebrow: "Treatment start",
+    title: "Record start of treatment (legal basis)",
+    framing: "Recording the start of treatment records the legal basis and the ongoing " +
+      "sponsor-investigator duties this treatment use creates. OSSICRO tracks the deadlines; " +
+      "you perform the acts.",
+    explain: "Recording the treatment start moves this case out of preparatory review — the " +
+      "legal moment the HIPAA basis for using the patient's information changes. Recording it " +
+      "requires a committed profile, a named physician, and the one legal basis that actually " +
+      "occurred. The deadline clocks (21 CFR 312.32 safety reports, 312.310(d) follow-up, " +
+      "312.33 annual report) run from the recorded trigger dates and appear in the checklist " +
+      "below. The entry goes in the audit trail. It records your decision; OSSICRO makes no " +
+      "decision.",
     basisLegend: "Legal basis for the disclosure. Choose the one that actually happened.",
-    actorLabel: "Enrolling physician",
+    actorLabel: "Recording physician",
     namePlaceholder: "Your name",
-    btn: "Record enrollment",
-    busy: "Recording enrollment…",
-    needName: "Enter the enrolling physician's name. The enrollment is recorded under that name.",
-    needBasis: "Choose the legal basis that actually occurred. Enrollment records your choice; it never assumes one.",
-    done: "Enrollment recorded. The obligation clocks are now running. OSSICRO tracks the " +
-      "deadlines; performing the acts remains yours.",
-    enrolledPill: "enrolled",
-    enrolledBy: "Enrolled by",
+    /* P7 (m2/M1): recording the treatment start is the act that naturally
+       supplies the 56.104(c) trigger — ask for the date right here. */
+    treatDateLabel: "First-treatment date (optional — arms the 5-working-day IRB " +
+      "notification clock, 21 CFR 56.104(c))",
+    treatDateHelp: "If treatment has begun, record the first-treatment date here — it is " +
+      "saved to the intake (submission.first_treatment_date) as part of this recorded act " +
+      "and arms the emergency-use IRB-notification deadline. Leave it blank if treatment " +
+      "has not begun; OSSICRO never assumes a date.",
+    treatDateSaveFailed: "The treatment start was recorded, but the first-treatment date " +
+      "could not be saved to the intake — record it on the intake screen:",
+    btn: "Record start of treatment (legal basis)",
+    busy: "Recording treatment start…",
+    needName: "Enter the recording physician's name. The treatment start is recorded under that name.",
+    needBasis: "Choose the legal basis that actually occurred. Recording the treatment start records your choice; it never assumes one.",
+    done: "Treatment start recorded. OSSICRO tracks the deadlines; performing the acts " +
+      "remains yours.",
+    enrolledPill: "treatment started",
+    enrolledBy: "Treatment start recorded by",
     at: "at",
     basisLabel: "Legal basis",
-    checklistTitle: "Post-enrollment obligations",
-    checklistNote: "Each row is a duty the enrollment creates for the sponsor-investigator. " +
-      "OSSICRO computes and tracks each deadline. Performing the act, and signing anything, " +
-      "belongs to the named owner. A clock shown as unarmed is waiting for its trigger date; " +
-      "OSSICRO never fills in a date it was not given.",
+    checklistEyebrow: "Ongoing duties",
+    checklistTitle: "Sponsor-investigator obligations",
+    checklistNote: "Each row is a duty this treatment use creates for the sponsor-" +
+      "investigator — shown from the moment the anchoring facts are recorded, not only " +
+      "after the treatment start. OSSICRO computes and tracks each deadline. Performing " +
+      "the act, and signing anything, belongs to the named owner. A clock shown as unarmed " +
+      "is waiting for its trigger date; OSSICRO never fills in a date it was not given.",
+    /* P7: the tracked-subset disclosure (the server's obligations_note is
+       preferred when present; this is the offline fallback of the same line). */
+    trackedSubset: "This list is the tracked subset of sponsor-investigator duties, not " +
+      "the entirety (recordkeeping under 312.57/312.62 and other duties are yours untracked).",
     colObligation: "Obligation",
     colCitation: "Citation",
     colDue: "Due",
@@ -1139,7 +1223,26 @@ const STRINGS = {
     armedYes: "date set",
     armedNo: "no date yet",
     dueUnarmed: "waiting for a trigger date",
-    failed: "Could not record the enrollment:",
+    failed: "Could not record the treatment start:",
+    /* P5 (M4): the promote gate sweep — advisories + the non-emergency
+       own-words acknowledgment for unsigned ethics gates. */
+    advisoryTitle: "Advisories recorded at the treatment start",
+    advisoryNote: "Each line records a gap that existed at the moment the treatment start " +
+      "was recorded. These are notes, not blocks: they clear nothing, waive nothing, and " +
+      "the acts they name remain yours (or the external party's) to perform and record.",
+    ackTitle: "Recording was refused: ethics gates are unsigned",
+    ackExplain: "On the standard (non-emergency) route, recording the treatment start is " +
+      "refused while the informed-consent or IRB-approval sign-off is missing. Record those " +
+      "sign-offs first — or, if you are knowingly recording the treatment start before them, " +
+      "type an acknowledgment in your own words below. Your sentence is stored with the " +
+      "treatment-start record and in the audit trail: a recorded human act, not a silence.",
+    ackLabel: "Acknowledgment — in your own words",
+    ackPlaceholder: "Type, in your own words, that you are recording the treatment start " +
+      "before the consent / IRB sign-offs are recorded, and why.",
+    ackShort: "Type the acknowledgment in your own words (at least 20 characters) — " +
+      "a placeholder does not record a human judgment.",
+    ackBtn: "Record the treatment start with this acknowledgment",
+    ackRecorded: "Acknowledged unsigned gates (typed by the recording physician):",
     bases: [
       // values are the server's canonical _LEGAL_BASES keys — never renamed here
       { value: "authorization-164.508",
@@ -1166,12 +1269,13 @@ const STRINGS = {
     eyebrow: "Coordinator view",
     title: "Coordinator board — read-only",
     intro: "The physician's own coordinating view across cases: where each stands, which " +
-      "gates are open, which clocks are armed, and what has been released or enrolled. " +
-      "Synthetic cases only through the pilot; coded identifiers only.",
+      "gates are open, which clocks are armed, what has been released, and which cases " +
+      "have a recorded treatment start. Synthetic cases only through the pilot; coded " +
+      "identifiers only.",
     noActLead: "Nothing can be done from here.",
     noActNote: "This board deliberately has no action buttons. Every act (commit, sign-off, " +
-      "release, enrollment, submission) happens in its own workspace, performed by its named " +
-      "person. The board only reports status.",
+      "release, treatment start, submission) happens in its own workspace, performed by its " +
+      "named person. The board only reports status.",
     refresh: "Refresh board",
     loading: "Loading the case board…",
     loadError: "Could not load the coordinator board:",
@@ -1188,7 +1292,7 @@ const STRINGS = {
     colClocks: "Deadlines set",
     colObligations: "Duties with a date",
     colReleased: "Released",
-    colEnrolled: "Enrolled",
+    colEnrolled: "Treatment started",
     rollupUnavailable: "rollup unavailable",
     yes: "yes",
     no: "—"
@@ -1219,6 +1323,35 @@ function toast(msg, isErr){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.className = "", isErr ? 6000 : 3200);
 }
+/* ---------------- PT-3: registered claims ----------------
+   Each cross-cutting claim OSSICRO makes about itself has exactly ONE
+   authored copy — engine/registry/claims.json — injected by the server into
+   window.OSSICRO_CLAIMS (and echoed on the /schema payload). These helpers
+   are the only render path; a tripwire test fails if a claim's distinctive
+   text reappears hardcoded in this file or the server. */
+function claimText(id){
+  const c = (S.claims || {})[id];
+  return (c && c.text) ? c.text : "";
+}
+function renderClaims(){
+  const bar = $("#draftbarClaim");
+  if (bar) bar.textContent = claimText("drafts-only-banner");
+  const local = $("#chartLocalClaim");
+  if (local){
+    /* P3: this claim must never render unqualified while the live concept
+       reviewer is on (document text DOES leave the machine then). The
+       qualifier is the server-composed reviewer disclosure — no second
+       authored copy here. */
+    const rv = (S.check && S.check.reviewer) || null;
+    const qualifier = (rv && rv.live && rv.disclosure)
+      ? " Exception in this deployment: " + rv.disclosure : "";
+    local.textContent = claimText("chart-data-stays-local") + qualifier;
+  }
+  const pi = $("#pharmaIntro");
+  if (pi) pi.textContent =
+    STRINGS.pharma.intro + " " + claimText("no-direct-identifiers-in-view");
+}
+
 async function api(path, opts){
   let res;
   try { res = await fetch(path, opts); }
@@ -1288,10 +1421,12 @@ $("#startBtn").addEventListener("click", async () => {
     ]);
     S.caseId = caseRes.case_id;
     S.schema = schemaRes.fields || [];
+    if (schemaRes.claims){ S.claims = schemaRes.claims; renderClaims(); }  // PT-3 rehydrate
     S.intakeRev = 0; S.generatedRev = null;
     setProfile(caseRes.profile || { state:"UNCOMMITTED", pending:[] });  // fresh case = uncommitted
     S.release = extractRelease(caseRes);       // fresh case = not released
     S.patientLink = null; S.enrollment = null; S.obligations = [];   // Wave 4 — fresh case
+    renderObligationsCard();   // P7: hide the checklist card for the fresh case
     location.hash = S.caseId;                  // resumable URL — survives restarts
     $("#caseChip").textContent = "case " + S.caseId;
     renderIntake();
@@ -1332,6 +1467,7 @@ async function resumeCase(cid){
     ]);
     S.caseId = cid;
     S.schema = schemaRes.fields || [];
+    if (schemaRes.claims){ S.claims = schemaRes.claims; renderClaims(); }  // PT-3 rehydrate
     S.intakeRev = caseRes.intake_rev ?? 0;
     S.generatedRev = caseRes.generated_rev ?? null;
     setProfile(caseRes.profile || null);
@@ -1339,6 +1475,8 @@ async function resumeCase(cid){
     S.enrollment = extractEnrollment(caseRes);          // Wave 4 — case may carry these
     const obl = caseRes.obligations_checklist || caseRes.obligations;
     if (Array.isArray(obl)) S.obligations = obl;
+    if (caseRes.obligations_note) S.obligationsNote = caseRes.obligations_note;
+    renderObligationsCard();   // P7 (M11): visible pre-promote once anchored
     if (caseRes.patient_link && typeof caseRes.patient_link === "object")
       S.patientLink = caseRes.patient_link;
     else if (caseRes.patient_token)   // the case view returns the bare token
@@ -1888,7 +2026,10 @@ async function saveIntake(opts){
     // An intake write after a commit is the COMMITTED -> CONFIRMING transition;
     // re-read the profile block so the commit panel reflects it immediately.
     if (res && res.profile !== undefined) setProfile(res.profile);
-    else await refreshProfile();
+    // P7 (M11): re-read the case either way — a just-saved anchor date
+    // (e.g. treatment.conclusion_date) must arm its obligations row
+    // immediately; the checklist is live, never snapshotted.
+    await refreshProfile();
     updateStaleUI();
     const n = Object.keys(fields).length, total = S.schema.length;
     $("#intakeStatus").textContent =
@@ -1952,13 +2093,15 @@ async function refreshProfile(){
     if (res && res.profile !== undefined) setProfile(res.profile);
     const rel = extractRelease(res);
     if (rel) { S.release = rel; renderReleaseCard(); }
+    // P7 (M11): the obligations checklist is decoupled from promote — it is
+    // live from the case in EVERY state, so re-read it unconditionally (a
+    // just-recorded anchor date arms its row without any promote).
+    const obl = res.obligations_checklist || res.obligations;
+    if (Array.isArray(obl)) S.obligations = obl;
+    if (res.obligations_note) S.obligationsNote = res.obligations_note;
     const en = extractEnrollment(res);
-    if (en){
-      S.enrollment = en;
-      const obl = res.obligations_checklist || res.obligations;
-      if (Array.isArray(obl)) S.obligations = obl;
-      renderPromoteCard();
-    }
+    if (en) S.enrollment = en;
+    renderPromoteCard();
     if (!S.patientLink && res && res.patient_token){
       S.patientLink = { token: res.patient_token,
         url: location.origin + location.pathname + "#patient=" + res.patient_token };
@@ -2175,6 +2318,7 @@ async function runCheck(){
   if (S.check.profile !== undefined) setProfile(S.check.profile);
   renderClocks();
   renderLedger();
+  renderClaims();   // P3: reviewer liveness may qualify chart-data-stays-local
   markDone("check"); enableStep("package");
   updateStaleUI();
 }
@@ -2226,24 +2370,64 @@ function renderClocks(){
    POSTs an attribution record to /api/case/{id}/signoff. The server re-applies
    it through the engine's gates.record_signoff (role must match the gate's
    responsible role), and the ledger's own has_signoff path is what moves
-   amber to green — the UI never clears a gate. */
+   amber to green — the UI never clears a gate.
+
+   P5 (M13): for the informed-consent / irb-approval gates the modal asks the
+   signer to TYPE the attestation in their own words (the server refuses a
+   placeholder) plus the gate's evidence facts — each may be honestly blank,
+   but the keys are always asked. (m13b): re-recording supersedes the prior
+   record; it never overwrites it. */
+
+// m13a: the point-of-use 312.52 sentence — one authored copy, shown on the
+// sign-off modal and the promote card.
+const SPONSOR_312_52 = "You remain the sponsor-investigator; OSSICRO is not " +
+  "and cannot be a 21 CFR 312.52 transferee — recording this act transfers " +
+  "nothing to software.";
+
+// M13: which gates require the signer's own-words statement, and which
+// evidence facts each asks for (keys mirror the server's
+// _SIGNOFF_EVIDENCE_KEYS — blanks are honest, invented values are not).
+const SIGNOFF_EVIDENCE_FIELDS = {
+  "informed-consent": [
+    { key: "consent_date", label: "Consent date", type: "date" }
+  ],
+  "irb-approval": [
+    { key: "concurrence_date", label: "Concurrence / approval date", type: "date" },
+    { key: "concurring_member", label: "Concurring member (chair or designee)", type: "text" },
+    { key: "irb_reference", label: "IRB reference / minute number", type: "text" }
+  ]
+};
+
 function openSignoff(gateId, docId){
   const box = document.getElementById("so-" + docId);
   if (!box) return;
   if (box.style.display === "block"){ box.style.display = "none"; return; }
   const g = gateInfo(gateId) || {};
-  const role = g.responsible_role || "";
+  const role = g.responsible_role || "";   // the role-MATCHING key the server validates
   const today = new Date().toISOString().slice(0, 10);
+  const evidenceFields = SIGNOFF_EVIDENCE_FIELDS[gateId] || null;
+  const ownWords = !!evidenceFields;
+  const ownWordsHtml = ownWords ? `
+    <label style="display:block;margin-top:8px">Attestation — in your own words
+      <textarea class="so-statement" rows="2"
+        placeholder="Type what you are attesting. OSSICRO will not write this sentence for you."></textarea>
+    </label>
+    <div class="row">
+      ${evidenceFields.map(f => `
+        <label>${esc(f.label)} <span class="muted small">(may be left blank)</span>
+          <input type="${esc(f.type)}" class="so-evidence" data-key="${esc(f.key)}"></label>`).join("")}
+    </div>` : "";
   box.innerHTML = `
     <div><b>Record the human act</b> — ${esc(g.name || gateId)}</div>
     <p class="disclaimer">This records that the named human performed the act outside OSSICRO;
-      it does not perform it.</p>
+      it does not perform it. ${esc(SPONSOR_312_52)}</p>
     <div class="row">
       <label>Signer (named human)<input type="text" class="so-name" placeholder="Full name"></label>
       <label>Role<input type="text" class="so-role" value="${esc(role)}" readonly
         title="Fixed by the gate: ${esc(g.citation || "gate definition")}"></label>
       <label>Date performed<input type="date" class="so-date" value="${today}"></label>
     </div>
+    ${ownWordsHtml}
     <div class="btnrow">
       <button type="button" class="btn primary so-submit">Record sign-off</button>
       <button type="button" class="btn so-cancel">Cancel</button>
@@ -2255,12 +2439,26 @@ function openSignoff(gateId, docId){
     const date = box.querySelector(".so-date").value;
     if (!name){ toast("Enter the signer's name. The sign-off records the person who acted.", true); return; }
     if (!date){ toast("Enter the date the act was performed.", true); return; }
+    const payload = { gate_id: gateId, doc_id: docId, signer_name: name, role, date };
+    if (ownWords){
+      const stmtEl = box.querySelector(".so-statement");
+      const statement = (stmtEl ? stmtEl.value : "").trim();
+      if (statement.length < 20){
+        toast("Type the attestation in your own words (at least 20 characters) — this gate's record carries your judgment, not boilerplate.", true);
+        return;
+      }
+      payload.statement = statement;
+      payload.evidence = {};
+      box.querySelectorAll(".so-evidence").forEach(inp => {
+        payload.evidence[inp.dataset.key] = inp.value.trim();
+      });
+    }
     const btn = box.querySelector(".so-submit");
     btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Recording…';
     try {
       await api(`/api/case/${S.caseId}/signoff`, {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ gate_id: gateId, doc_id: docId, signer_name: name, role, date })
+        body: JSON.stringify(payload)
       });
       toast("Sign-off recorded — re-running the check.");
       await runCheck();
@@ -2283,6 +2481,32 @@ function conceptReview(docId){
   return { findings: entry.findings || [], model: entry.model || "" };
 }
 
+/* P3 (HC5): the human reviewer's recorded judgment on an AI concept finding.
+   RD.actor persists across ledger re-renders. A disposition RECORDS judgment
+   only — the server enforces that it never changes ledger state. */
+const RD = { actor: "" };
+
+function findingDisposition(findingId){
+  if (!findingId) return null;
+  return ((S.check && S.check.review_dispositions) || {})[findingId] || null;
+}
+
+function dispositionHtml(f){
+  if (!f.finding_id) return "";   // pre-P3 payload — no id, no buttons
+  const d = findingDisposition(f.finding_id);
+  if (d){
+    const verdict = (d.disposition === "accepted") ? "Accepted" : "Dismissed";
+    return `<div class="vdisp"><span class="dispchip">${esc(verdict)}</span>
+      by <b>${esc(d.actor || "")}</b>${d.at ? ` · ${esc(d.at)}` : ""}
+      <span class="muted"> — recorded judgment; the ledger is unchanged.</span></div>`;
+  }
+  return `<div class="btnrow vdispbtns" style="margin-top:7px">
+    <button type="button" class="btn" data-disp="accepted" data-finding="${esc(f.finding_id)}">Accept finding</button>
+    <button type="button" class="btn" data-disp="dismissed" data-finding="${esc(f.finding_id)}">Dismiss finding</button>
+    <span class="muted small">Records your judgment under your name. It clears nothing and blocks nothing.</span>
+  </div>`;
+}
+
 function voiceReviewHtml(docId){
   const cv = conceptReview(docId);
   if (!cv.findings.length) return "";
@@ -2297,27 +2521,90 @@ function voiceReviewHtml(docId){
       ${f.span ? `<div class="vspan">&ldquo;${esc(f.span)}&rdquo;</div>` : ""}
       <div>${esc(asText(f.message))}</div>
       ${f.suggestion ? `<div class="vsug"><b>Suggestion:</b> ${esc(f.suggestion)}</div>` : ""}
+      ${dispositionHtml(f)}
     </div>`;
   }).join("");
+  const anyOpen = cv.findings.some(f => f.finding_id && !findingDisposition(f.finding_id));
+  const nameBox = anyOpen ? `<div class="vdisphead muted small">
+      Accept or dismiss each finding to record your judgment (it is stored under your name and never changes the ledger).
+      <label>Reviewing clinician
+        <input type="text" class="vdisp-name" placeholder="Your name" autocomplete="off" value="${esc(RD.actor)}"></label>
+    </div>` : "";
   return `<div class="voice">
     <div class="voicehead">Voice review
       <span class="muted">— advisory notes for the human reviewer${cv.model ? ` · reviewer <code>${esc(cv.model)}</code>` : ""};
       findings can only flag problems and never clear a gate</span></div>
+    ${nameBox}
     ${rows}
   </div>`;
+}
+
+async function recordDisposition(findingId, disposition){
+  const actor = (RD.actor || "").trim();
+  if (!actor){
+    toast("Enter the reviewing clinician's name — the judgment is recorded under that name.", true);
+    return;
+  }
+  try {
+    const res = await api(`/api/case/${S.caseId}/review-disposition`, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ actor, finding_id: findingId, disposition })
+    });
+    if (S.check){
+      S.check.review_dispositions = S.check.review_dispositions || {};
+      S.check.review_dispositions[findingId] =
+        (res && res.disposition) || { disposition, actor };
+    }
+    renderLedger();   // local re-render; no fresh review is triggered
+    toast("Judgment recorded. The finding stays visible and the ledger is unchanged.");
+  } catch (e) {
+    toast(e.message, true);
+  }
 }
 
 function renderLedger(){
   const c = S.check;
   $("#ledgerArea").style.display = "block";
 
+  /* P3 UI disclosure: which concept reviewer ran and whether document text
+     left this machine. Server-composed from the claim registry (PT-3) —
+     rendered verbatim, never re-authored here; never silent either way. */
+  const rd = c.reviewer || {};
+  const rdEl = $("#reviewerDisclosure");
+  if (rdEl){
+    if (rd.disclosure){
+      rdEl.textContent = rd.disclosure;
+      rdEl.classList.toggle("livewarn", !!rd.live);
+      rdEl.style.display = "block";
+    } else {
+      rdEl.style.display = "none";
+    }
+  }
+
   const tt = c.totals || {green:0, amber:0, red:0};
   $("#totals").innerHTML = `
     <div class="tot green"><div class="num">${tt.green ?? 0}</div><div class="lbl">Green — complete</div></div>
     <div class="tot amber"><div class="num">${tt.amber ?? 0}</div><div class="lbl">Amber — awaiting human act</div></div>
+    <div class="tot ext"><div class="num">${tt["awaiting-external-party"] ?? 0}</div><div class="lbl">Awaiting external party</div></div>
     <div class="tot red"><div class="num">${tt.red ?? 0}</div><div class="lbl">Red — missing / invalid</div></div>`;
 
-  const order = {red:0, amber:1, green:2};
+  // P5 (M4): the at-enrollment advisories that have no gate row (external-
+  // party facts) render as an escalate-only block above the ledger; the
+  // gate-linked ones arrive as notes on their own rows.
+  const eaEl = $("#enrollAdvisories");
+  if (eaEl){
+    const externalAdvisories = (c.enrollment_advisories || [])
+      .filter(a => a && !a.gate_id);
+    if (externalAdvisories.length){
+      eaEl.innerHTML = advisoryListHtml(externalAdvisories);
+      eaEl.style.display = "block";
+    } else {
+      eaEl.innerHTML = "";
+      eaEl.style.display = "none";
+    }
+  }
+
+  const order = {red:0, "awaiting-external-party":1, amber:2, green:3};
   const items = (c.ledger || []).slice()
     .sort((a,b) => (order[a.status] ?? 3) - (order[b.status] ?? 3));
   $("#ledgerList").innerHTML = items.map(item => {
@@ -2328,11 +2615,16 @@ function renderLedger(){
       const fid = (q && typeof q === "object") ? q.field_id : null;
       return `<li>${esc(text)}${fid ? ` <a class="fixlink" data-fid="${esc(fid)}">Fix in intake →</a>` : ""}</li>`;
     }).join("");
+    // P5: escalate-only ledger notes (at-enrollment advisories, receipt
+    // facts, §6.1 profile advisories) — rendered, never a status change.
+    const notes = (item.notes || []).map(n =>
+      `<div class="muted small lednote">${esc(asText(n))}</div>`).join("");
     let gateHtml = "";
     if (item.gate_id && st !== "green"){   // green = gate's human act already recorded
       const g = gateInfo(item.gate_id);
       const gname = g ? g.name : item.gate_id;
-      const role = g ? g.responsible_role : "";
+      // m1: display label preferred; the matching key still drives the POST.
+      const role = g ? (g.responsible_role_label || g.responsible_role) : "";
       const pending = st === "amber" && g;   // gate still awaiting its human
       gateHtml = `<div class="gatecall"><b>Awaiting human act:</b> ${esc(gname)}
         ${role ? ` — <span class="rolechip">${esc(role)}</span> must act` : ""}
@@ -2343,13 +2635,16 @@ function renderLedger(){
         </div>` : ""}</div>
         ${pending ? `<div class="soform" id="so-${esc(item.doc_id)}" style="display:none"></div>` : ""}`;
     }
+    // P4: the fourth state reads as words, not a slug.
+    const stLabel = st === "awaiting-external-party" ? "awaiting external party" : st;
     return `<div class="ledgeritem ${esc(st)}">
       <div class="top">
-        <span class="pill ${esc(st)}"><span class="dot"></span>${esc(st || "?")}</span>
+        <span class="pill ${esc(st)}"><span class="dot"></span>${esc(stLabel || "?")}</span>
         <span class="title">${esc(item.title || item.doc_id)}</span>
         <span class="docid">${esc(item.doc_id || "")}</span>
       </div>
       ${qs ? `<ul class="qlist">${qs}</ul>` : ""}
+      ${notes}
       ${gateHtml}
       ${voiceReviewHtml(item.doc_id)}
     </div>`;
@@ -2358,6 +2653,10 @@ function renderLedger(){
     a.addEventListener("click", () => gotoField(a.dataset.fid)));
   $$("#ledgerList [data-signoff]").forEach(b =>
     b.addEventListener("click", () => openSignoff(b.dataset.signoff, b.dataset.doc)));
+  $$("#ledgerList .vdisp-name").forEach(inp =>
+    inp.addEventListener("input", () => { RD.actor = inp.value; }));
+  $$("#ledgerList [data-disp]").forEach(b =>
+    b.addEventListener("click", () => recordDisposition(b.dataset.finding, b.dataset.disp)));
 
   const cons = c.consistency || [];
   $("#consistencyCard").style.display = cons.length ? "block" : "none";
@@ -2367,7 +2666,7 @@ function renderLedger(){
   $("#gatePacketCard").style.display = gp.length ? "block" : "none";
   $("#gateTable tbody").innerHTML = gp.map(g => `<tr>
     <td><b>${esc(g.name || g.gate_id)}</b><br><code>${esc(g.gate_id)}</code></td>
-    <td><span class="rolechip">${esc(g.responsible_role || "")}</span></td>
+    <td><span class="rolechip">${esc(g.responsible_role_label || g.responsible_role || "")}</span></td>
     <td class="mono small">${esc(g.doc_id || "")}</td>
   </tr>`).join("");
 }
@@ -2423,14 +2722,20 @@ $("#refreshPkgBtn").addEventListener("click", loadPackage);
 function renderPackage(){
   const p = S.pkg;
 
-  // readiness banner
+  // readiness banner — never a bare boolean (P4, ethics 9): "ready" always
+  // reads as documentation-ready with the outstanding HUMAN acts counted and
+  // named (unsigned gates + awaiting-external-party documents).
   const blocking = p.blocking || [];
+  const acts = p.human_acts_outstanding || [];
   if (p.submission_ready){
+    const actList = acts.map(a => `<li>${esc(asText(a.label || a.id))}${
+      a.who ? ` — <span class="rolechip">${esc(String(a.who).replace(/-/g," "))}</span>` : ""}${
+      a.kind === "external-party" ? ` <span class="muted small">(external party — not a physician act)</span>` : ""}</li>`).join("");
     $("#readyBanner").innerHTML = `<div class="ready yes">
-      <b>Package assembly complete.</b> Every draft is validated and internally consistent.
-      What remains: the physician's review and signatures, the third-party acts tracked in the
-      ledger (manufacturer LOA, IRB concurrence, informed consent), and the physician's
-      own act of submission to FDA. OSSICRO does not file.</div>`;
+      <b>Documentation ready — ${acts.length} human act${acts.length === 1 ? "" : "s"} outstanding.</b>
+      Every draft is validated and internally consistent. OSSICRO performs none of the acts below;
+      each belongs to the named person or external party, and OSSICRO does not file.
+      ${actList ? `<ul>${actList}</ul>` : ""}</div>`;
   } else {
     $("#readyBanner").innerHTML = `<div class="ready no">
       <b>Not submission-ready.</b> The following items block assembly. Each names the person or fact required:
@@ -2660,7 +2965,12 @@ function releaseInfo(r){
            to: r.to || "manufacturer" };
 }
 
-/* ---- D: draft Form 3926 PDF + FDF field-map downloads ---- */
+/* ---- D: draft Form 3926 PDF + FDF field-map downloads ----
+   P9 (m18): downloads go through POST /api/case/{id}/export {actor, format}
+   — an explicit named act that writes one 'export' audit record. The GET
+   endpoints still exist for the browser, but this UI never uses them. */
+const EX = { actor: "" };   // exporting clinician — persists across re-renders
+
 function renderForm3926Card(){
   const box = $("#form3926Card"); if (!box) return;
   const T = STRINGS.form3926;
@@ -2668,10 +2978,17 @@ function renderForm3926Card(){
     <div class="eyebrow">${esc(T.eyebrow)}</div>
     <h3>${esc(T.title)} <span class="draftstamp">DRAFT</span></h3>
     <div class="btnrow">
+      <label class="confirmclin">${esc(T.actorLabel)}
+        <input type="text" id="exportActor" placeholder="${esc(T.namePlaceholder)}"
+               autocomplete="off" value="${esc(EX.actor)}">
+      </label>
       <button type="button" class="btn primary" id="dl3926Pdf">${esc(T.downloadBtn)}</button>
       <a class="fixlink" id="dl3926Fdf" role="button" tabindex="0">${esc(T.fdfLink)}</a>
     </div>
-    <p class="muted small" style="margin:10px 0 0;max-width:86ch">${esc(T.caption)}</p>`;
+    <p class="muted small" style="margin:10px 0 0;max-width:86ch">${esc(T.caption)}</p>
+    <p class="muted small" style="margin:6px 0 0;max-width:86ch">${esc(T.auditNote)}</p>`;
+  const nameEl = $("#exportActor");
+  nameEl.addEventListener("input", () => { EX.actor = nameEl.value; });
   $("#dl3926Pdf").addEventListener("click", () => downloadForm3926("pdf", $("#dl3926Pdf")));
   const fdf = $("#dl3926Fdf");
   fdf.addEventListener("click", () => downloadForm3926("fdf", null));
@@ -2684,11 +3001,19 @@ async function downloadForm3926(kind, btn){
   const T = STRINGS.form3926;
   if (!S.caseId){ toast(T.noCase, true); return; }
   if (staleNow()){ toast(T.stale, true); return; }
+  const actor = (EX.actor || "").trim();
+  if (!actor){ toast(T.needName, true); return; }
   const orig = btn ? btn.textContent : "";
   if (btn){ btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + esc(T.preparing); }
   try {
     let res;
-    try { res = await fetch(`/api/case/${S.caseId}/form3926.${kind}`); }
+    try {
+      res = await fetch(`/api/case/${S.caseId}/export`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ actor, format: kind })
+      });
+    }
     catch { throw new Error(T.unreachable); }
     if (res.status === 409){
       let body = null;
@@ -2817,9 +3142,14 @@ function inboxItemHtml(it){
   const ind  = asText(it.indication || it.diagnosis) || "—";
   const loa  = asText(it.loa_request || it.loa_request_text || it.request);
   const rel  = releaseInfo((it.released_by || it.actor || it.by) ? it : extractRelease(it));
+  // P4 (m6 + M15): urgency badge + the released-artifact hash the
+  // manufacturer can pin the request text to.
+  const urgent = !!it.emergency;
+  const loaSha = asText(it.loa_request_sha256) || "";
   return `<div class="card">
     <div class="prophead">
       <span class="proplabel mono">${esc(id)}</span>
+      ${urgent ? `<span class="pill red"><span class="dot"></span>${esc(T.urgentBadge)}</span>` : ""}
       <span class="draftstamp">DRAFT</span>
     </div>
     <div class="commitmeta">
@@ -2830,6 +3160,8 @@ function inboxItemHtml(it){
     </div>
     <p class="muted small" style="margin:6px 0 4px">${esc(T.loaHeading)}</p>
     <pre class="render open">${esc(loa || T.noLoaText)}</pre>
+    ${loaSha ? `<p class="muted small" style="margin:8px 0 0"><b>${esc(T.hashLabel)}</b>
+      <span class="mono" style="word-break:break-all">${esc(loaSha)}</span><br>${esc(T.hashNote)}</p>` : ""}
     <p class="muted small" style="margin:8px 0 0">${esc(T.cardNote)}</p>
   </div>`;
 }
@@ -2965,8 +3297,27 @@ async function createPatientLink(){
   }
 }
 
-/* ---- H: INV-5 promote() — enrollment records the legal basis ---- */
-const EN = { actor: "", basis: "" };   // persists across re-renders
+/* ---- H: INV-5 promote() — the treatment start records the legal basis ---- */
+// P5: ack / advisories persist across re-renders — the 409 refusal hands the
+// advisories back, and the actor's typed acknowledgment must survive a redraw.
+// P7: treatDate is the optional first-treatment date asked for right on the
+// card — the act that naturally supplies the 56.104(c) trigger (M1).
+const EN = { actor: "", basis: "", ack: "", ackRequired: false, advisories: [],
+             treatDate: "" };
+
+/* P5 (M4): the escalate-only advisory block (promote card, both the
+   pre-enrollment refusal view and the enrolled record view). */
+function advisoryListHtml(advisories){
+  const T = STRINGS.promote;
+  const list = advisories || [];
+  if (!list.length) return "";
+  return `<div class="advisories" style="margin-top:10px">
+    <h4 style="margin:0 0 2px">${esc(T.advisoryTitle)}</h4>
+    <p class="muted small" style="margin:0;max-width:86ch">${esc(T.advisoryNote)}</p>
+    <ul class="qlist">${list.map(a =>
+      `<li>${esc(asText((a && a.text) || a))}</li>`).join("")}</ul>
+  </div>`;
+}
 
 function extractEnrollment(obj){
   if (!obj || typeof obj !== "object") return null;
@@ -3002,7 +3353,36 @@ function obligationsTableHtml(list){
     <tbody>${rows}</tbody></table></div>`;
 }
 
+/* P7: the tracked-subset disclosure — one line under every rendering of the
+   checklist; the server's obligations_note is preferred, the local string is
+   the same-sentence fallback. The list must never read as the entirety of
+   the sponsor-investigator's duties. */
+function trackedSubsetHtml(){
+  return `<p class="muted small" style="margin:6px 0 0;max-width:86ch">
+    ${esc(asText(S.obligationsNote) || STRINGS.promote.trackedSubset)}</p>`;
+}
+
+/* P7 (M11): the check-screen obligations card. The checklist is decoupled
+   from promote — rows appear from the moment ANY anchoring fact is recorded
+   (emergency auth, first treatment, FDA receipt, treatment conclusion); the
+   card hides only while the case has no rows. Read-only: every act stays
+   with its named owner. */
+function renderObligationsCard(){
+  const box = $("#obligationsCard"); if (!box) return;
+  const T = STRINGS.promote;
+  const list = S.obligations || [];
+  if (!list.length){ box.style.display = "none"; box.innerHTML = ""; return; }
+  box.style.display = "block";
+  box.innerHTML = `
+    <div class="eyebrow">${esc(T.checklistEyebrow)}</div>
+    <h3>${esc(T.checklistTitle)}</h3>
+    <p class="muted small" style="margin:0;max-width:86ch">${esc(T.checklistNote)}</p>
+    ${trackedSubsetHtml()}
+    ${obligationsTableHtml(list)}`;
+}
+
 function renderPromoteCard(){
+  renderObligationsCard();   // P7 (M11): the check-screen card tracks the same live list
   const box = $("#promoteCard"); if (!box) return;
   const T = STRINGS.promote;
   const en = S.enrollment;
@@ -3020,17 +3400,44 @@ function renderPromoteCard(){
         ${basis ? `<span>${esc(T.basisLabel)}: <b>${esc(basisTitle(String(basis)))}</b></span>` : ""}
       </div>
       <p class="small" style="margin:8px 0 0;max-width:86ch">${esc(T.framing)}</p>
+      <p class="muted small" style="margin:6px 0 0;max-width:86ch">${esc(SPONSOR_312_52)}</p>
+      ${advisoryListHtml(en.advisories)}
+      ${en.acknowledge_unsigned_gates ? `
+        <p class="muted small" style="margin:6px 0 0;max-width:86ch">
+          <b>${esc(T.ackRecorded)}</b> &ldquo;${esc(asText(en.acknowledge_unsigned_gates))}&rdquo;</p>` : ""}
       ${(S.obligations || []).length ? `
         <h4 style="margin:14px 0 2px">${esc(T.checklistTitle)}</h4>
         <p class="muted small" style="margin:0;max-width:86ch">${esc(T.checklistNote)}</p>
+        ${trackedSubsetHtml()}
         ${obligationsTableHtml(S.obligations)}` : ""}`;
     return;
   }
+  // P7: prefill the first-treatment date from the intake form when it is
+  // already recorded there (never invented — read, not assumed).
+  if (!EN.treatDate){
+    try {
+      const v = collectIntake()["submission.first_treatment_date"];
+      if (v) EN.treatDate = String(v).slice(0, 10);
+    } catch {}
+  }
+  // P5 (M4): the 409 refusal view — advisories + the own-words acknowledgment
+  // textarea. Recording sign-offs first remains the primary path; the
+  // acknowledgment turns a knowing skip into a recorded human act.
+  const ackHtml = EN.ackRequired ? `
+    <div class="ackblock" style="margin-top:10px">
+      <h4 style="margin:0 0 2px">${esc(T.ackTitle)}</h4>
+      <p class="muted small" style="margin:0 0 6px;max-width:86ch">${esc(T.ackExplain)}</p>
+      ${advisoryListHtml(EN.advisories)}
+      <label style="display:block;margin-top:6px">${esc(T.ackLabel)}
+        <textarea id="enAck" rows="2" placeholder="${esc(T.ackPlaceholder)}">${esc(EN.ack)}</textarea>
+      </label>
+    </div>` : "";
   box.innerHTML = `
     <div class="eyebrow">${esc(T.eyebrow)}</div>
     <h3>${esc(T.title)}</h3>
     <p class="small" style="margin:4px 0 6px;max-width:86ch"><b>${esc(T.framing)}</b></p>
     <p class="muted small" style="margin:0 0 10px;max-width:86ch">${esc(T.explain)}</p>
+    <p class="muted small" style="margin:0 0 10px;max-width:86ch">${esc(SPONSOR_312_52)}</p>
     <fieldset style="border:0;padding:0;margin:0">
       <legend class="small" style="font-weight:700;padding:0">${esc(T.basisLegend)}</legend>
       ${T.bases.map(b => `
@@ -3040,13 +3447,24 @@ function renderPromoteCard(){
             <span class="lb-desc">${esc(b.desc)}</span></span>
         </label>`).join("")}
     </fieldset>
+    ${ackHtml}
+    <!-- P7 (m2/M1): recording the treatment start is the act that naturally
+         supplies the 56.104(c) trigger — ask for the date right here. -->
+    <label class="confirmclin" style="display:block;margin-top:10px">${esc(T.treatDateLabel)}
+      <input type="date" id="enTreatDate" value="${esc(EN.treatDate || "")}">
+    </label>
+    <p class="muted small" style="margin:4px 0 0;max-width:86ch">${esc(T.treatDateHelp)}</p>
     <div class="btnrow" style="margin-top:10px">
       <label class="confirmclin">${esc(T.actorLabel)}
         <input type="text" id="enActor" placeholder="${esc(T.namePlaceholder)}"
                autocomplete="off" value="${esc(EN.actor)}">
       </label>
-      <button type="button" class="btn primary" id="enBtn" disabled>${esc(T.btn)}</button>
+      <button type="button" class="btn primary" id="enBtn" disabled>${esc(EN.ackRequired ? T.ackBtn : T.btn)}</button>
     </div>`;
+  const ackEl = $("#enAck");
+  if (ackEl) ackEl.addEventListener("input", () => { EN.ack = ackEl.value; });
+  const tdEl = $("#enTreatDate");
+  if (tdEl) tdEl.addEventListener("input", () => { EN.treatDate = tdEl.value; });
   const nameEl = $("#enActor"), btn = $("#enBtn");
   const sync = () => { btn.disabled = !((EN.actor && EN.actor.trim()) && EN.basis); };
   nameEl.addEventListener("input", () => { EN.actor = nameEl.value; sync(); });
@@ -3068,20 +3486,57 @@ async function recordEnrollment(){
   const actor = (EN.actor || "").trim();
   if (!actor){ toast(T.needName, true); return; }
   if (!EN.basis){ toast(T.needBasis, true); return; }
+  const payload = { actor, legal_basis: EN.basis };
+  if (EN.ackRequired){
+    const ack = (EN.ack || "").trim();
+    if (ack.length < 20){ toast(T.ackShort, true); return; }
+    payload.acknowledge_unsigned_gates = ack;   // the recorded human override
+  }
   const btn = $("#enBtn");
   if (btn){ btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + esc(T.busy); }
   try {
     const res = await api(`/api/case/${S.caseId}/promote`, {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ actor, legal_basis: EN.basis })
+      body: JSON.stringify(payload)
     });
     S.enrollment = (res && res.enrollment)
       || { enrolled_by: actor, enrolled_at: new Date().toISOString(), legal_basis: EN.basis };
     S.obligations = (res && res.obligations_checklist) || [];
+    if (res && res.obligations_note) S.obligationsNote = res.obligations_note;
+    EN.ackRequired = false; EN.ack = ""; EN.advisories = [];
+    // P7 (m2/M1): the first-treatment date entered on this card is saved to
+    // the intake via the canonical intake endpoint (named actor, audited,
+    // provenance-tracked) — the recorded act supplies the 56.104(c) trigger.
+    if (EN.treatDate){
+      try {
+        await api(`/api/case/${S.caseId}/intake`, {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ fields: { "submission.first_treatment_date": EN.treatDate },
+                                 actor })
+        });
+        // Keep the intake form control in sync so a later full intake save
+        // cannot silently blank the just-recorded date.
+        const wrap = document.getElementById("fld-submission.first_treatment_date");
+        const ctl = wrap && wrap.querySelector("input:not([type=hidden]),select,textarea");
+        if (ctl) ctl.value = EN.treatDate;
+        EN.treatDate = "";
+        await refreshProfile();   // re-reads the live checklist (56.104(c) arms)
+      } catch (e2) {
+        toast(T.treatDateSaveFailed + " " + e2.message, true);
+      }
+    }
     renderPromoteCard();
     toast(T.done);
   } catch (e) {
-    if (e.status === 409 && e.body && e.body.enrollment){
+    if (e.status === 409 && e.body && e.body.acknowledgement_required){
+      // P5 (M4): unsigned ethics gates on the non-emergency route — show the
+      // advisories and ask for the actor's own-words acknowledgment. Nothing
+      // was recorded; recording the sign-offs first remains the primary path.
+      EN.ackRequired = true;
+      EN.advisories = e.body.advisories || [];
+      renderPromoteCard();
+      toast(e.message, true);
+    } else if (e.status === 409 && e.body && e.body.enrollment){
       // Already enrolled — adopt the standing record (append-only history;
       // the server refuses a silent re-recording and returns what stands).
       S.enrollment = e.body.enrollment;
@@ -3101,7 +3556,7 @@ async function recordEnrollment(){
 
 /* ---- G: coordinator (micro-CRO) board — read-only, no acting affordances ----
    GET /api/cro/board -> {board:[...], count, note}. Each row carries a
-   best-effort ledger rollup {green,amber,red} (or rollup_error — a case whose
+   best-effort ledger rollup {green,amber,awaiting-external-party,red} (or rollup_error — a case whose
    data cannot render reports the failure honestly instead of vanishing),
    gates {required,signed}, clocks {armed,total}, obligations {total,armed},
    released / enrolled flags. Read-only cells only — never a button. */
@@ -3115,6 +3570,7 @@ function croLedgerCells(c){
   return `<span class="gatecells">
     <span class="pill green"><span class="dot"></span>${Number(led.green) || 0}</span>
     <span class="pill amber"><span class="dot"></span>${Number(led.amber) || 0}</span>
+    <span class="pill awaiting-external-party" title="awaiting external party"><span class="dot"></span>${Number(led["awaiting-external-party"]) || 0}</span>
     <span class="pill red"><span class="dot"></span>${Number(led.red) || 0}</span></span>`;
 }
 function croRatioChip(obj, armedKey, totalKey, emptyText){
@@ -3214,7 +3670,7 @@ function renderPatientView(d){
       <div class="eyebrow">${esc(T.eyebrow)}</div>
       <h2>${esc(T.title)}</h2>
       <p style="max-width:62ch">${esc(T.lead1)} <b>${esc(drug || T.theMedicine)}</b> ${esc(T.lead2)}</p>
-      <div class="ptnotice">${String(d.stage).toLowerCase() === "enrolled" ? "" : `<b>${esc(T.draftBarLead)}</b> `}${esc(asText(d.notice || d.draft_notice) || T.draftNotice)}</div>
+      <div class="ptnotice">${String(d.stage).toLowerCase() === "enrolled" ? "" : `<b>${esc(T.draftBarLead)}</b> `}${esc(asText(d.notice || d.draft_notice) || claimText("nothing-submitted-to-fda"))}</div>
       <h3 style="margin-top:18px">${esc(T.nowHeading)}</h3>
       <div class="ptnow">${esc(layStageLabel(d))}</div>
       <h3 style="margin-top:20px">${esc(T.remainingHeading)}</h3>
@@ -3250,7 +3706,7 @@ async function enterPatientMode(token){
   if (pb){ pb.textContent = STRINGS.persona.toManufacturer; pb.title = STRINGS.persona.btnTitle; }
   $("#pharmaEyebrow").textContent = T.eyebrow;
   $("#pharmaTitle").textContent = T.title;
-  $("#pharmaIntro").textContent = T.intro;
+  renderClaims();  // PT-3: pharmaIntro (+ the other claim surfaces) render from the registry
   $("#pharmaDecisionNote").innerHTML = `<b>${esc(T.decisionLead)}</b> ${esc(T.decisionNote)}`;
   const rb = $("#inboxRefreshBtn");
   rb.textContent = T.refresh;
@@ -3359,6 +3815,7 @@ $("#printBtn").addEventListener("click", () => {
    so it can never be confused with a case id — the opaque token is the ONLY
    path into the patient view. */
 (function boot(){
+  renderClaims();   // PT-3: claim surfaces render from the injected registry
   const pm = (location.hash + " " + location.pathname).match(/patient[=\/]([A-Za-z0-9-]{8,})/);
   if (pm){ enterPatientMode(pm[1]); return; }
   const cid = (location.hash || "").replace(/^#\/?(case=)?/, "").trim();

@@ -11,7 +11,14 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from .models import Document, Gate, GateViolation, HumanSignoff, SafetyReport
+from .models import (
+    _GATED_FINAL_TOKEN,
+    Document,
+    Gate,
+    GateViolation,
+    HumanSignoff,
+    SafetyReport,
+)
 
 __all__ = [
     "GateViolation",
@@ -67,6 +74,7 @@ def record_signoff(
     role: str,
     statement: str,
     timestamp: Optional[str] = None,
+    evidence: Optional[Dict[str, str]] = None,
 ) -> HumanSignoff:
     """Record that a named human executed the document's gate.
 
@@ -75,6 +83,12 @@ def record_signoff(
     attribution is missing. In production this call sits behind an
     authenticated 21 CFR Part 11 e-signature ceremony; the prototype
     enforces attribution and role only.
+
+    ``evidence`` (M13, Overhaul P5): the sign-off's supporting facts as the
+    signer entered them (e.g. irb-approval's concurrence_date /
+    concurring_member / irb_reference; informed-consent's consent_date).
+    Stored verbatim on the record — keys may be honestly blank; nothing is
+    invented.
     """
     if not document.gate_id:
         raise GateViolation(
@@ -98,6 +112,8 @@ def record_signoff(
             "A gate sign-off requires the signer's attestation statement."
         )
     kwargs = {"timestamp": timestamp} if timestamp else {}
+    if evidence:
+        kwargs["evidence"] = {str(k): str(v) for k, v in evidence.items()}
     signoff = HumanSignoff(
         gate_id=gate.id, person=person.strip(), role=role,
         statement=statement.strip(), **kwargs
@@ -111,8 +127,10 @@ def finalize(document: Document, gate_registry: Dict[str, Gate]) -> Document:
 
     Raises GateViolation if the document is gated and no VALID human
     sign-off has been recorded (validity re-checked at read time via
-    signoff_problems). This is the only sanctioned path to 'final' for
-    gated documents, and it cannot create the sign-off itself.
+    signoff_problems). This is the ONLY path to 'final' for gated documents
+    — by code, not convention (m8): Document.advance("final") refuses
+    outright for gated documents, and only this function holds the
+    finalize capability token. It cannot create the sign-off itself.
     """
     if document.gate_id and not has_valid_signoff(document, document.gate_id, gate_registry):
         gate = gate_registry.get(document.gate_id)
@@ -124,7 +142,7 @@ def finalize(document: Document, gate_registry: Dict[str, Gate]) -> Document:
             "Record the human sign-off first (gates.record_signoff)."
             % (document.doc_id, document.gate_id, who, why)
         )
-    document.advance("final")
+    document.advance("final", _finalize_token=_GATED_FINAL_TOKEN)
     return document
 
 

@@ -23,9 +23,14 @@ ENGINE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ENGINE_DIR not in sys.path:
     sys.path.insert(0, ENGINE_DIR)
 
+from ossicro import ea_generators                            # noqa: E402
+from ossicro import pdf_3926                                  # noqa: E402
 from ossicro import routes as routes_mod                     # noqa: E402
 from ossicro.pdf_3926 import (                               # noqa: E402
     FDF_3926_FIELD_MAP,
+    FORM_3926_ITEMS,
+    ITEM_UNRESOLVED,
+    PENDING_NUMBERING_NOTE,
     fdf_3926,
     render_3926_pdf,
 )
@@ -36,6 +41,18 @@ FIXTURES = os.path.join(ENGINE_DIR, "fixtures")
 def _sample_intake():
     with open(os.path.join(FIXTURES, "ea_sample_case.json"), encoding="utf-8") as f:
         return dict(json.load(f)["fields"])
+
+
+def _doc_registry():
+    from ossicro.registry import load_documents
+    return load_documents()
+
+
+def _pdf_escape(text: str) -> bytes:
+    """The same WinAnsi literal-string encoding the PDF writer uses, so a
+    heading with non-ASCII (e.g. the em dash) is searchable in the bytes."""
+    from ossicro.pdf_3926 import _pdf_escape as esc
+    return esc(text)
 
 
 def _page_count(pdf: bytes) -> int:
@@ -137,6 +154,88 @@ class TestFdf3926(unittest.TestCase):
         fdf = fdf_3926(_sample_intake())
         self.assertNotIn(b"consent.purpose", fdf)
         self.assertNotIn(b"kept confidential", fdf)
+
+
+class TestForm3926ItemMap(unittest.TestCase):
+    """Overhaul P8 (M6): the ONE item map — text template, PDF layout, and
+    FDF field map are all derived from FORM_3926_ITEMS, so they cannot
+    disagree, and the pending-numbering marker stands until a human initials
+    the map."""
+
+    def setUp(self):
+        self.intake = _sample_intake()
+
+    def test_item_numbers_are_contiguous_1_to_11(self):
+        numbers = [item.number for item in FORM_3926_ITEMS]
+        self.assertEqual(numbers, [str(n) for n in range(1, 12)])
+
+    def test_item_9_is_explicit_unresolved(self):
+        by_num = {item.number: item for item in FORM_3926_ITEMS}
+        self.assertEqual(by_num["9"].status, ITEM_UNRESOLVED)
+
+    def test_pdf_layout_headings_match_the_item_map(self):
+        # Every item heading (number + label) appears verbatim in the PDF.
+        pdf = render_3926_pdf(self.intake)
+        for item in FORM_3926_ITEMS:
+            heading = "%s. %s" % (item.number, item.label)
+            self.assertIn(_pdf_escape(heading), pdf, heading)
+
+    def test_text_template_headings_match_the_item_map(self):
+        # The ea_generators text render carries the same numbered headings —
+        # the two renders consume the same table.
+        route = routes_mod.route_for_emergency(False)
+        study = ea_generators.build_study(self.intake, route)
+        rendered = ea_generators.gen_form_3926(
+            study, _doc_registry()).rendered
+        for item in FORM_3926_ITEMS:
+            heading = "%s. %s" % (item.number, item.label)
+            self.assertIn(heading, rendered, heading)
+
+    def test_fdf_map_is_derived_from_the_item_map(self):
+        derived = {intake_id: fdf_name
+                   for item in FORM_3926_ITEMS
+                   for (_l, intake_id, fdf_name) in item.fields
+                   if fdf_name}
+        self.assertEqual(dict(FDF_3926_FIELD_MAP), derived)
+
+    def test_pending_marker_present_until_a_human_initials_the_map(self):
+        # Default state: no verifier -> the pending marker is on the PDF, the
+        # FDF, and the text template.
+        self.assertIsNone(pdf_3926.FORM_3926_MAP_VERIFIED_BY,
+                          "the shipped map must be unverified (HITL)")
+        self.assertEqual(pdf_3926.pending_item_numbering_note(),
+                         PENDING_NUMBERING_NOTE)
+        pdf = render_3926_pdf(self.intake)
+        self.assertIn(b"Item numbering pending verification", pdf)
+        fdf = fdf_3926(self.intake)
+        self.assertIn(b"item numbering unverified", fdf)
+        route = routes_mod.route_for_emergency(False)
+        study = ea_generators.build_study(self.intake, route)
+        rendered = ea_generators.gen_form_3926(
+            study, _doc_registry()).rendered
+        self.assertIn("PENDING-HUMAN-VERIFICATION", rendered)
+        self.assertIn("Item numbering pending verification", rendered)
+
+    def test_marker_removed_only_by_the_verifier_edit(self):
+        # Simulate the human pass (the one edit that removes the marker) and
+        # prove nothing else does.
+        orig = pdf_3926.FORM_3926_MAP_VERIFIED_BY
+        try:
+            pdf_3926.FORM_3926_MAP_VERIFIED_BY = "Dr. Verifier, 2026-07-15"
+            self.assertEqual(pdf_3926.pending_item_numbering_note(), "")
+            pdf = render_3926_pdf(self.intake)
+            self.assertNotIn(b"Item numbering pending verification", pdf)
+            # The DRAFT watermark is untouched by the numbering verification.
+            self.assertIn(b"NOT FOR SUBMISSION", pdf)
+            fdf = fdf_3926(self.intake)
+            self.assertIn(b"map verified by Dr. Verifier", fdf)
+            self.assertNotIn(b"item numbering unverified", fdf)
+        finally:
+            pdf_3926.FORM_3926_MAP_VERIFIED_BY = orig
+
+    def test_heading_softened_to_draft_layout(self):
+        pdf = render_3926_pdf(self.intake)
+        self.assertIn(b"DRAFT LAYOUT", pdf)
 
 
 if __name__ == "__main__":

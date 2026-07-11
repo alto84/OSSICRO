@@ -22,6 +22,13 @@ _ALLOWED_TRANSITIONS = {
     "final": set(),
 }
 
+# m8 (Overhaul P5): the capability token that authorizes moving a GATED
+# document to 'final'. Held only by ossicro.gates.finalize, which verifies a
+# VALID recorded human sign-off first. Document.advance("final") on a gated
+# document refuses OUTRIGHT without it — finalize() is the only path to
+# 'final' by code, not by convention.
+_GATED_FINAL_TOKEN = object()
+
 
 class StateError(RuntimeError):
     """Raised on an illegal Document state transition."""
@@ -74,6 +81,12 @@ class HumanSignoff:
 
     In production this is an authenticated Part 11 e-signature record
     (21 CFR 11.50-11.300). The prototype records attribution only.
+
+    ``evidence`` (M13, Overhaul P5) carries the sign-off's supporting facts
+    as entered by the signer — e.g. for irb-approval
+    ``{concurrence_date, concurring_member, irb_reference}``, for
+    informed-consent ``{consent_date}``. Keys may be honestly blank; the
+    record never invents them.
     """
 
     gate_id: str
@@ -81,17 +94,31 @@ class HumanSignoff:
     role: str
     statement: str
     timestamp: str = field(default_factory=_utcnow)
+    evidence: Dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
 class Gate:
-    """A non-delegable function that must be executed by a named human."""
+    """A non-delegable function that must be executed by a named human.
+
+    ``responsible_role`` is the ROLE-MATCHING KEY a sign-off must carry;
+    ``responsible_role_label`` (m1, Overhaul P5) is an optional DISPLAY
+    label for surfaces a human reads (e.g. sae-causality shows
+    "physician-sponsor / medical monitor" while the key stays
+    "medical-monitor"). Empty label = display the key.
+    """
 
     id: str
     name: str
     description: str
     responsible_role: str
     citation: str
+    responsible_role_label: str = ""
+
+    @property
+    def role_label(self) -> str:
+        """The human-facing role label (falls back to the matching key)."""
+        return self.responsible_role_label or self.responsible_role
 
 
 @dataclass
@@ -148,6 +175,10 @@ class LedgerItem:
     status: 'green'  - present, all required fields filled, validated
             'amber'  - present and complete but awaiting a non-delegable
                        human gate
+            'awaiting-external-party' - drafted and complete, but the
+                       real-world instrument is authored/signed by an
+                       external party (registry author_party, Overhaul
+                       P4/M2) and its receipt is not yet recorded
             'red'    - missing document, missing required field, failed
                        validation, or cross-document inconsistency; the
                        exact resolving question(s) are attached
@@ -189,7 +220,15 @@ class Document:
     def has_signoff(self, gate_id: str) -> bool:
         return any(s.gate_id == gate_id for s in self.signoffs)
 
-    def advance(self, to_state: str) -> None:
+    def advance(self, to_state: str, *, _finalize_token: object = None) -> None:
+        """Advance the document state machine.
+
+        m8 (Overhaul P5): for a GATED document, ``advance("final")`` refuses
+        OUTRIGHT — even with a recorded sign-off. ``ossicro.gates.finalize``
+        (which verifies a VALID sign-off and holds the module-private
+        capability token) is the only path to 'final', by code instead of
+        by convention.
+        """
         if to_state not in DOCUMENT_STATES:
             raise StateError("Unknown document state: %r" % to_state)
         if to_state not in _ALLOWED_TRANSITIONS.get(self.state, set()):
@@ -197,11 +236,13 @@ class Document:
                 "Illegal transition %s -> %s for %s"
                 % (self.state, to_state, self.doc_id)
             )
-        if to_state == "final" and self.gate_id and not self.has_signoff(self.gate_id):
+        if (to_state == "final" and self.gate_id
+                and _finalize_token is not _GATED_FINAL_TOKEN):
             raise GateViolation(
-                "Document '%s' is gated by non-delegable gate '%s': it cannot "
-                "be finalized programmatically. A qualified human must execute "
-                "the gate (ossicro.gates.record_signoff) first."
+                "Document '%s' is gated by non-delegable gate '%s': "
+                "advance('final') is refused outright for gated documents "
+                "(m8). ossicro.gates.finalize is the only path to 'final' — "
+                "it verifies the recorded human sign-off; it never creates one."
                 % (self.doc_id, self.gate_id)
             )
         self.state = to_state

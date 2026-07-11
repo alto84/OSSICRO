@@ -74,6 +74,7 @@ __all__ = [
     "roll_up_condition_codes",
     "decompose_query",
     "egress_query",
+    "lint_free_text_identifiers",
 ]
 
 # The ONLY hosts an outbound registry query may ever address (BUILD-PLAN
@@ -370,6 +371,68 @@ def decompose_query(predicates: "DeidentifiedPredicates"):
                                       ("route_code", predicates.route_code))
              if value is not None]
     return outbound, local
+
+
+# ---------------------------------------------------------------------------
+# m20 (Overhaul P9): naive deterministic identifier lint over free text.
+#
+# Deliberately NAIVE — a handful of fixed patterns, no NLP, no judgment. It
+# runs at release and egress time over the intake's FREE-TEXT fields (the
+# caller selects them; typed date fields legitimately hold dates). It is
+# ESCALATE-ONLY by construction: a warning names the FIELD and the pattern
+# KIND — never the matched text (the warning itself must not re-leak the
+# identifier), never a block, never a rewrite. A human decides what to do.
+# ---------------------------------------------------------------------------
+
+_LINT_NAME_ADJACENT_RE = re.compile(
+    r"[Nn]ame\s*[:=]\s*[A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+")
+_LINT_DOB_LABEL_RE = re.compile(
+    r"(?i)\b(?:dob|date\s+of\s+birth|birth\s*date|born\s+on)\b")
+_LINT_SSN_RE = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
+
+# (kind, matcher(text) -> bool, human-readable description of the KIND).
+_IDENTIFIER_LINTS = (
+    ("ssn", lambda t: bool(_LINT_SSN_RE.search(t)),
+     "a Social-Security-number-shaped value"),
+    ("date-like", lambda t: _looks_like_date(t),
+     "a date-shaped value (a DOB or treatment date in free text can identify)"),
+    ("dob-label", lambda t: bool(_LINT_DOB_LABEL_RE.search(t)),
+     "a date-of-birth label"),
+    ("name-label", lambda t: bool(_LINT_NAME_ADJACENT_RE.search(t)),
+     "a 'name:'-labeled capitalized name pair"),
+)
+
+
+def lint_free_text_identifiers(fields: Dict[str, object]) -> List[dict]:
+    """Naive deterministic identifier lint (m20) over free-text fields.
+
+    ``fields`` maps field_id -> value; non-string values are ignored. Returns
+    one warning dict per (field, pattern-kind) hit:
+
+        {"field_id": ..., "kind": ..., "message": ...}
+
+    The message names the field and the pattern kind ONLY — never the matched
+    text. Escalate-only: the caller surfaces the warnings; nothing is ever
+    blocked or rewritten on their account.
+    """
+    warnings: List[dict] = []
+    for field_id in sorted(fields):
+        value = fields[field_id]
+        if not isinstance(value, str) or not value.strip():
+            continue
+        for kind, hits, description in _IDENTIFIER_LINTS:
+            if hits(value):
+                warnings.append({
+                    "field_id": field_id,
+                    "kind": kind,
+                    "message": (
+                        "Possible direct identifier in free text: field "
+                        "'%s' contains %s. Review and remove direct "
+                        "identifiers (coded identifiers only) before any "
+                        "real use — OSSICRO flags this; it never blocks or "
+                        "rewrites your text." % (field_id, description)),
+                })
+    return warnings
 
 
 # ---------------------------------------------------------------------------

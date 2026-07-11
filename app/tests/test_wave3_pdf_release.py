@@ -341,16 +341,21 @@ class TestManufacturerInbox(Wave3TestBase):
         self.assertIn("cholangiocarcinoma", item["indication"])
         self.assertIn("LETTER OF AUTHORIZATION", item["loa_request"])
         self.assertTrue(item["draft"])
-        # No patient identifiers beyond the coded id: age/sex are not in the
-        # view, and the item exposes only the fixed manufacturer-facing keys.
+        # No DIRECT patient identifiers: the coded id is the only patient key
+        # the item exposes. (P4 re-baseline: the LOA-request TEXT now carries
+        # the coded-safe age/sex triage facts per the M15 spec — they are Form
+        # 3926 content, not identifiers — so the old "Female"-absent pin no
+        # longer holds. Raw intake keys still never leak.)
         item_json = json.dumps(item)
-        self.assertNotIn("Female", item_json)
         self.assertNotIn("patient.age", item_json)
+        self.assertNotIn("patient.sex", item_json)
+        # P4 re-baseline: the inbox item gains the released-artifact hash and
+        # the emergency badge fact (m6 + M15) — still no patient identifiers.
         self.assertEqual(
             set(item.keys()),
             {"release_id", "released_by", "released_at", "released_hash",
              "patient_coded_id", "drug", "indication", "physician",
-             "loa_request", "draft"})
+             "loa_request", "loa_request_sha256", "emergency", "draft"})
         # The manufacturer decision is not modeled as an OSSICRO action.
         self.assertIn("manufacturer's alone", body["note"])
 

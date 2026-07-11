@@ -1,0 +1,392 @@
+{
+ "wiki/03-documents/transfer-of-regulatory-obligations-toro.md": [
+  {
+   "severity": "high",
+   "persona": "LEGAL reviewer",
+   "issue": "Confirmed factual error, repeated four times (lines 8, 18, 42, 72): the page states the CRO transfer-of-obligations disclosure is 'Field 16 of Form FDA 1571.' Per FDA's own 1571 instructions, Field 14 is 'CONTRACT RESEARCH ORGANIZATIONS (CROs)' \u2014 the yes/no questions plus the Continuation Page statement per 21 CFR 312.23(a)(1)(viii). Field 16 is the person responsible for safety review under 312.32 \u2014 a different, load-bearing concept. Line 72 even commits the engine to 'reconcile against the Form 1571 Field 16 listing,' so a validation rule built from this page would check the wrong field. For a project whose stated first-order requirement is regulatory accuracy, this is exactly the failure class the whole system claims to prevent. (Verified against FDA 1571 Form Instructions, FORM FDA 1571 SUPPLEMENT; the CFR citation 312.23(a)(1)(viii) itself is correct.)",
+   "recommendation": "Change all four occurrences to Field 14; note Fields 15/16 (monitoring person, safety-review person) separately because FDA's instructions state that for Sponsor-Investigator INDs the investigator personally holds those responsibilities \u2014 which itself interacts with the micro-CRO monitoring-transfer model and should be addressed. Grep confirmed the error is confined to this page (engine/ does not encode the field number); add a wiki-wide form-field verification pass against current FDA form instructions to the QA punch list."
+  },
+  {
+   "severity": "medium",
+   "persona": "LEGAL reviewer",
+   "issue": "Two related overstatements about what transfer accomplishes. (1) Line 38: 'The 312.52 transfer moves direct enforcement exposure for the enumerated items' reads as a liability shield; FDA's actual practice (BIMO CPGM 7348.810, warning letters) is that the sponsor remains citable for failures in transferred functions via the retained oversight duty, and FDA has never treated 312.52 as immunizing the transferor. The page's own E6(R3) hedge two sentences later contradicts the headline. (2) The model enumeration's 'Split' rows (312.32 'preparation and submission mechanics' transferred, judgment retained; 312.33 drafting transferred, ownership retained) have no textual basis in 312.52, which speaks of transferring 'obligations set forth in this part' \u2014 sub-obligation splitting is common industry practice, but FDA could treat the entity that prepares and submits a 15-day report as having assumed 312.32 wholesale. The interpretive flag exists but understates the contestability of the split.",
+   "recommendation": "Soften line 38 to 'adds the transferee to the enforcement perimeter for enumerated items; it does not remove the sponsor'; add an explicit note that split dispositions are industry convention without regulatory text support, that the Field-14 statement must describe the split precisely, and that counsel should assume FDA may read assumption at the whole-obligation level."
+  },
+  {
+   "severity": "low",
+   "persona": "LEGAL reviewer",
+   "issue": "Unauthorized-practice-of-law exposure is nowhere analyzed. Line 72: 'OSSICRO the software generates the TORO' \u2014 an instrument that reallocates federal regulatory liability between parties \u2014 and the micro-CRO (a non-law-firm entity) offers paid Tier 2 human review of it. Interactive-software document preparation has drawn UPL challenges (Janson v. LegalZoom; the Texas Parsons Technology litigation), and outcomes are state-by-state. The detailed plan gestures at 'counsel review of the service model' once; no assigned page carries the analysis, and the 'requiring counsel review per engagement' note in the interpretive callout is the right instinct without the supporting frame.",
+   "recommendation": "Add a UPL note to the TORO and micro-CRO pages: OSSICRO ships the TORO as an annotated template with mandatory attorney-review framing for Tier 3 executions; micro-CRO staff review for regulatory completeness, not legal sufficiency; the engagement paper should say so."
+  }
+ ],
+ "wiki/01-roles-responsibilities/micro-cro-accountable-layer.md": [
+  {
+   "severity": "high",
+   "persona": "LEGAL reviewer",
+   "issue": "The page conflates regulatory enumeration with liability containment. Line 29: 'the TORO writing defines the micro-CRO's regulatory exposure precisely, obligation by obligation' \u2014 true only for FDA administrative exposure. Civil exposure does not track the TORO schedule: negligent undertaking (Restatement (2d) Torts \u00a7324A), subject-injury and wrongful-death claims, and contribution/indemnity claims from pharma counterparties attach to what the micro-CRO's people actually did, not to what the writing enumerated. A micro-CRO whose medical monitor misses a fatal safety signal is a defendant regardless of the schedule. The page contains no treatment of insurance (clinical-trial liability, E&O, medical-professional coverage for the employed medical monitor), indemnification structure, or subject-injury compensation \u2014 for the entity whose entire reason to exist is 'holding accountability,' the accountability analysis covers only one of the two sovereigns that can reach it.",
+   "recommendation": "Add a civil-liability section distinguishing FDA exposure (TORO-bounded) from tort/contract exposure (conduct-bounded); make insurance and indemnity architecture an explicit Tier 2/3 design requirement; reframe the line 29 claim as bounding regulatory scope only."
+  },
+  {
+   "severity": "high",
+   "persona": "LEGAL reviewer",
+   "issue": "The Tier 2/3 boundary is presented as a bright line ('the tier boundary that matters legally is 2\u21923') but the page's own text makes it porous. Line 40 describes the micro-CRO as 'an employer/engager of the qualified humans who OWN gated judgments when the sponsor-investigator does not personally,' while the tier table classifies Tier 2 as 'Consulting; obligations still not transferred.' If the micro-CRO's medical monitor is the operative decision-maker on causality/expectedness at Tier 2 \u2014 with no TORO \u2014 that is assumption-in-fact of the sponsor's 312.32 obligation: 312.52(b) attaches to a CRO 'that assumes any obligation,' BIMO looks at conduct rather than paper, and simultaneously the arrangement flunks the 312.52(a) writing requirement and leaves the S-I holding an obligation someone else actually discharged. The construct as drafted invites the worst posture available: CRO enforcement exposure without the TORO's definitional protection.",
+   "recommendation": "State expressly that at Tier 2 the micro-CRO's physician advises and the S-I documents the determination as the S-I's own; any arrangement in which a micro-CRO human is the operative decision-maker on a Subpart D obligation must be papered as Tier 3 with a Field-14 disclosure. Add an assumption-in-fact warning callout to the tier table."
+  }
+ ],
+ "wiki/00-overview/legal-thesis-3123-vs-31252.md": [
+  {
+   "severity": "medium",
+   "persona": "LEGAL reviewer",
+   "issue": "The thesis overstates its legal conclusion. Line 47 calls pure software disintermediation 'not merely a weak business model but a structurally unlawful one' (echoed at cro.md line 36, 'structurally foreclosed by regulation,' and in docs/detailed-plan.md, 'structurally illegal'). What 312.52 forecloses is software as TRANSFEREE. It is entirely lawful for a sponsor to use software to discharge coordination labor while retaining every obligation \u2014 that is the existing eClinical vendor industry. Compounding this, the Science 37 / TrialSpark collapses are offered as 'the market corroborat[ing] the law,' but neither company ever attempted a \u00a7312.52 transfer to software; they failed commercially as coordination vendors, which is evidence about margins, not legality. A regulator or opposing counsel reading 'structurally illegal' next to that evidence will conclude the author conflated two different propositions \u2014 and the credibility cost lands on the parts of the thesis that are actually right.",
+   "recommendation": "Rewrite to the accurate, narrower claim: software cannot hold accountability, so a software-only CRO replacement cannot relieve the sponsor of anything \u2014 the unlawful actor is the sponsor who stops discharging retained obligations, not the software vendor. Recast Science 37/TrialSpark as commercial evidence that coordination-only software captures no durable value, decoupled from the legality argument."
+  },
+  {
+   "severity": "medium",
+   "persona": "LEGAL reviewer",
+   "issue": "The Mode B + micro-CRO structure has an unaddressed structural conflict: in a sponsor-investigator IND, monitoring under 312.56 exists to verify the conduct of the investigator \u2014 the same individual who, wearing the sponsor hat, selects, hires, pays, and can fire the micro-CRO supplying the monitors. FDA's 2015 S-I draft guidance (cited on this very page) and BIMO inspection experience treat the absence of an independent sponsor watching the investigator as the S-I model's characteristic weakness; the 1571 instructions reinforce it by stating that for S-I INDs the investigator personally holds the field 15/16 monitoring and safety-review responsibilities. Neither this page, micro-cro-accountable-layer.md, nor the TORO model enumeration (which transfers 312.53(d)/312.56(a) to the micro-CRO) says a word about monitor independence, escalation duties that survive the client relationship, or what the micro-CRO's monitor does upon finding serious noncompliance by the person paying the invoice.",
+   "recommendation": "Add a self-monitoring-conflict section: TORO independence covenants, a non-waivable escalation path (IRB, and FDA where 312.56(b)-type discontinuation logic would apply), termination-for-reporting protections, and disclosure of the arrangement in the Field 14 statement. This is also a pharma-trust selling point \u2014 an independence-protected monitor is part of the verifiable-dossier story."
+  },
+  {
+   "severity": "medium",
+   "persona": "LEGAL reviewer",
+   "issue": "Step 2 of the 'three confirmed steps' (line 44) misreads a canon: 21 U.S.C. 321(e) says 'person' INCLUDES individual, partnership, corporation, and association \u2014 an illustrative list, not a closed one, under both the standard 'includes' canon and FDCA practice. 'Software is not an individual, partnership, corporation, or association' therefore does not complete the syllogism as a matter of statutory text. The conclusion is still right, but its sound basis is step 3 (legal personality / enforceability) plus 312.3(b)'s 'independent contractor' language \u2014 a role only a juridical person can occupy \u2014 not enumeration-exclusion. A page that labels its steps 'confirmed' should not have a canon error in one of them.",
+   "recommendation": "Rest step 2 on legal personhood: the FDCA list is non-exhaustive but every listed and analogous category is a juridical person capable of holding duties, contracting as an independent contractor (312.3(b)), and being enforced against; software is none of these. One-sentence fix."
+  }
+ ],
+ "wiki/05-ossicro-system/part-11-and-ai-credibility.md": [
+  {
+   "severity": "medium",
+   "persona": "LEGAL reviewer",
+   "issue": "The clause-by-clause table asserts 'OSSICRO implementation' of \u00a711.10 controls, but Part 11 compliance is a property of a deployed system plus the regulated user's procedures, never of distributed code \u2014 FDA's consistent position is that no product is 'Part 11 compliant' out of the box. The page omits every user-side obligation: 11.10(a) validation must be performed on the regulated user's installed instance (not just the project's 'versioned validation suite'); \u00a711.100(b) requires the ORGANIZATION to verify individual identity before assigning an e-signature; and \u00a711.100(c) requires the user organization \u2014 here, a solo sponsor-investigator \u2014 to submit a paper certification with a handwritten signature to FDA before its e-signatures are legally binding. The page cites 11.100(c) in passing but never tells the S-I this letter is their personal filing obligation. For an audience of physicians with no research office, silence on user-side duties converts 'Part 11-compliant substrate' (also asserted in docs/detailed-plan.md \u00a72) into precisely the vendor overclaim the HARD PRINCIPLE forbids.",
+   "recommendation": "Add a 'user-side compliance obligations' section (deployment validation, identity verification, the \u00a711.100(c) certification letter to FDA, SOPs/training per 11.10(i)-(k)); reframe all claims from 'Part 11-compliant' to 'Part 11-capable; compliance is achieved in your deployment' and have the engine generate the 11.100(c) letter as one of its gated documents."
+  }
+ ],
+ "wiki/05-ossicro-system/non-delegable-functions-and-gates.md": [
+  {
+   "severity": "medium",
+   "persona": "LEGAL reviewer",
+   "issue": "Gate property 1 ('There is no configuration flag, permission mode, or API call that executes the gated act') is a code-integrity representation the project cannot keep under its own MIT license: anyone may fork, strip the gates, and redistribute. The legal architecture leans on 'enforced in code' (PROGRAM.md hard principle) without addressing distribution integrity \u2014 which creates (a) misrepresentation exposure if 'OSSICRO' builds circulate with gates removed, (b) foreseeable-misuse arguments in any subject-injury suit, and (c) no stated mechanism (trademark policy, signed builds, gate self-test in the validation suite) to scope the compliance claims to official artifacts. This also interacts with the Part 11 finding: 11.10(a) requires the ability to discern altered records/systems, and a gate-stripped fork is exactly the alteration the compliance story must be able to detect or disclaim.",
+   "recommendation": "Scope every 'enforced in code / no automated bypass' claim to unmodified official releases; add a distribution-integrity note (signed releases, a gate-presence self-test in the Part 11 validation suite, trademark/name policy conditioning use of the OSSICRO mark on gate-intact builds)."
+  }
+ ],
+ "wiki/01-roles-responsibilities/cro.md": [
+  {
+   "severity": "low",
+   "persona": "LEGAL reviewer",
+   "issue": "The economic claims doing thesis-level work \u2014 '~90-95% of direct cost is labor,' '40-50% gross margins,' repeated across legal-thesis, micro-CRO, and gating pages as 'the economic core of the OSSICRO thesis' \u2014 are sourced to an AI-company blog (IntuitionLabs) and an investment-banking interview-prep site, plus one 2015 PRA disclosure. Under the project's own citation-quality bar (primary sources, flag stale data), a decade-old data point and two tertiary blogs are below grade for load-bearing claims.",
+   "recommendation": "Re-source from primary filings: PRA Health Sciences 10-K (the 95.7% figure's actual origin), ICON/IQVIA/Fortrea 10-Ks for current margin structure; date-stamp the figures and flag the 2015 datum as stale per the project's own 6-month staleness rule."
+  }
+ ],
+ "wiki/02-lifecycle/ind-submission-and-30-day-clock.md": [
+  {
+   "severity": "high",
+   "persona": "REGULATORY reviewer",
+   "issue": "Fabricated CFR subsections on a page marked status: confirmed. The bullet list attributes 'FDA may impose a clinical hold during the 30 days' to 312.40(c) and 'sponsor may not begin if a hold is in force' to 312.40(d). In the actual regulation, 312.40(c) governs SHIPMENT of investigational drug to investigators (30 days after receipt or on earlier authorization), and 312.40(d) does not exist. The hold mechanics live in 312.40(b)(1) ('unless FDA notifies the sponsor that the investigations... are subject to a clinical hold') and 312.42. The 312.40(a) bullet also inserts 'a signed agreement' \u2014 312.40(a)(2) requires IRB review/approval compliance; the signed 1572 requirement is 312.53(c), not 312.40(a).",
+   "recommendation": "Rewrite the 312.40 mechanics bullets against the actual eCFR text: (a) conditions for use (IND in effect + Part 56 compliance), (b)(1)/(b)(2) the 30-day/earlier-notification effective-date rule with the clinical-hold exception, (c) the shipment rule. Delete the (d) reference. Since this page is 'confirmed' status, run it through the same human re-verification gate the wiki prescribes for others."
+  },
+  {
+   "severity": "low",
+   "persona": "REGULATORY reviewer",
+   "issue": "The clinical-hold grounds bullet 'for certain expanded-access/treatment protocols, additional 312.42(b)(2)\u2013(b)(4) grounds' mischaracterizes the subsections: (b)(2) is the Phase 2/3 design-deficiency ground (already listed separately above it), (b)(3) is expanded-access holds, and (b)(4) covers studies not designed to be adequate and well-controlled.",
+   "recommendation": "Split the bullet: cite (b)(3) for expanded access and (b)(4) for non-adequate-and-well-controlled studies; drop the (b)(2) reference from this line."
+  }
+ ],
+ "wiki/03-documents/document-catalog.md": [
+  {
+   "severity": "high",
+   "persona": "REGULATORY reviewer",
+   "issue": "The 'E6 ref' column uses a phantom E6(R3) numbering scheme that does not exist in the Step 4 guideline. E6(R3) is structured as Principles + Annex 1 (\u00a71 IRB/IEC, \u00a72 Investigator, \u00a73 Sponsor, \u00a74 Data Governance) + Appendices A (IB), B (Protocol), C (Essential Records). The catalog cites 'R3 \u00a77' for the protocol (should be Appendix B), 'R3 \u00a78' for the IB (should be Appendix A), 'R3 \u00a74' for consent (consent duties are Annex 1 \u00a72; \u00a74 is data governance), 'R3 \u00a75' for DSMB/CTA (no \u00a75 exists in Annex 1), '\u00a76.9' for monitoring (monitoring is Annex 1 \u00a73.11), and '\u00a76 (ALCOA++)' for data integrity (data governance is Annex 1 \u00a74). Worse, engine/registry/documents.json uses the CORRECT scheme (ICH E6(R3) Appendix A for the IB, Appendix B for the protocol, Annex-1-style 2.x/3.x) \u2014 so the wiki 'source of truth' and the validation engine contradict each other on the project's flagship standard.",
+   "recommendation": "Re-derive every E6 ref in the catalog from the actual E6(R3) Step 4 table of contents (Annex 1 \u00a7\u00a71\u20134 subsections + Appendices A/B/C row IDs), reconcile with documents.json so both use one scheme, and add an E6(R2)\u2192E6(R3) crosswalk row-by-row rather than freehand numbers. This column is the one a GCP auditor will spot-check first."
+  },
+  {
+   "severity": "medium",
+   "persona": "REGULATORY reviewer",
+   "issue": "The catalog claims to be the master E6(R3) Appendix C superset but omits the record classes R3 actually added: computerized-systems records (system validation documentation, access/user-account records, audit-trail review records), service-provider oversight records (R3's expanded sponsor duty over technology vendors \u2014 directly relevant since OSSICRO itself is such a system), and serious-breach/noncompliance documentation. A sponsor QA reviewer comparing this against Appendix C will notice the gap immediately.",
+   "recommendation": "Add a fourth catalog block (or rows in A/B) for data-governance and computerized-system records mapped to Annex 1 \u00a74 and the Appendix C entries, with OSSICRO itself named as an in-scope validated system \u2014 this also strengthens the Part 11 story."
+  },
+  {
+   "severity": "low",
+   "persona": "REGULATORY reviewer",
+   "issue": "Row B6 lists the IRB as a receiver of 312.32 IND safety reports. 312.32(c) requires notification of FDA and all participating investigators; IRB receipt runs through the separate 312.66/56.108(b)(1) unanticipated-problem route (a distinction safety-reporting-lifecycle.md itself draws correctly \u2014 'Not every IND safety report is an unanticipated problem').",
+   "recommendation": "Change B6's receiver to 'FDA + all participating investigators' and cross-reference the unanticipated-problem row for IRB routing, keeping the two pages consistent."
+  },
+  {
+   "severity": "low",
+   "persona": "REGULATORY reviewer",
+   "issue": "Currency drift in Sources: the FDA E6(R3) link is still labeled '(draft)' while the wiki elsewhere asserts FDA final adoption September 2025; and the RBM authority cited for A13 is the 2013 guidance without the April 2023 final Q&A ('A Risk-Based Approach to Monitoring of Clinical Investigations: Questions and Answers') that supplements it.",
+   "recommendation": "Update the source link to the final FDA E6(R3) guidance page and add the 2023 RBM Q&A alongside the 2013 guidance in A13 and the risk-based-monitoring rows."
+  }
+ ],
+ "wiki/02-lifecycle/safety-reporting-lifecycle.md": [
+  {
+   "severity": "high",
+   "persona": "REGULATORY reviewer",
+   "issue": "The follow-up reporting deadline is wrong. Stage 3 says follow-up information 'must be submitted as soon as the information is available' and the clocks table row reads 'As soon as available (312.32(d))'. 21 CFR 312.32(d)(2) actually requires relevant follow-up to an IND safety report 'as soon as possible, but in no case later than 15 calendar days after the sponsor receives the information.' The hard 15-day backstop is the enforceable part of the clock, and this page is the one the safety-clock-engine is built from. sponsor.md states the 15-day follow-up deadline correctly, so the wiki is also internally inconsistent on a safety timeline.",
+   "recommendation": "Correct Stage 3 and the clocks-at-a-glance table to '15 calendar days after receipt (312.32(d)(2))'. Then grep the engine's safety-clock rules to confirm no rule encoded the softer 'when available' formulation."
+  },
+  {
+   "severity": "low",
+   "persona": "REGULATORY reviewer",
+   "issue": "SUSAR is attributed to 'ICH E2A terminology.' E2A defines the concept (serious, unexpected, suspected adverse reaction) but the acronym itself is EU Clinical Trials Directive/Regulation usage; FDA regulations never use it. Minor, but this wiki's register invites exactness.",
+   "recommendation": "Reword to 'the EU/ICH-derived shorthand for the E2A concept' or note the acronym's EU CTD/CTR origin."
+  }
+ ],
+ "engine/registry/documents.json": [
+  {
+   "severity": "medium",
+   "persona": "REGULATORY reviewer",
+   "issue": "site-initiation-visit-report cites '21 CFR 312.53(b)' as governing authority. 312.53(b) is 'Control of drug' \u2014 the sponsor ships only to participating investigators. It has nothing to do with site initiation visits; the regulatory hooks for SIVs are 312.53(d) (selecting monitors), 312.56(a) (monitoring), and E6(R3) Annex 1 \u00a73.11.",
+   "recommendation": "Replace the citation with 21 CFR 312.56(a) plus the correct E6(R3) monitoring subsection; audit the registry for other one-off subsection mismatches with the same pass that fixes the E6 numbering."
+  },
+  {
+   "severity": "medium",
+   "persona": "REGULATORY reviewer",
+   "issue": "The registry (58 entries) is missing several rows the document-catalog marks Confirmed, so the engine's completeness check cannot flag their absence: A10 IRB roster/assurance (56.107), A11 FDA IND acknowledgment / safe-to-proceed correspondence, A27 IRB-approved recruitment/advertising materials, B7 IB updates/revisions (312.55(b)), B14 correspondence log, C7 audit certificate (conditional), and C10 final screening/enrollment logs + safety reconciliation. For a system whose selling point is 'COMPLETE documentation,' the check pass is only as complete as this registry.",
+   "recommendation": "Reconcile documents.json 1:1 against catalog rows tagged Confirmed (and Conditional with trigger predicates); add a CI test that fails when a catalog row has no registry counterpart or vice versa."
+  },
+  {
+   "severity": "low",
+   "persona": "REGULATORY reviewer",
+   "issue": "The TORO entry has owner 'cro' and receiver 'fda'. The 312.52(a) written transfer is executed by the sponsor (with the CRO as transferee), and for INDs it is not a routine FDA submission \u2014 it is a sponsor record describing what was transferred (contrast 314.50(a)(5) for marketing applications).",
+   "recommendation": "Set owner to sponsor/sponsor-investigator, receiver to the CRO entity + sponsor TMF, and note FDA availability on inspection rather than submission."
+  }
+ ],
+ "wiki/01-roles-responsibilities/investigator.md": [
+  {
+   "severity": "low",
+   "persona": "REGULATORY reviewer",
+   "issue": "The authority callout asserts '\u00a7\u00a7312.63, 312.65, and 312.67 are reserved.' The eCFR does not designate these as [Reserved] sections \u2014 they are simply unassigned numbers in Subpart D. Asserting a 'reserved' designation the CFR doesn't make is a small fabrication on an authority-bearing line.",
+   "recommendation": "Either verify against the current eCFR rendering and cite it, or soften to 'no sections are codified at 312.63, 312.65, or 312.67.'"
+  }
+ ],
+ "wiki/06-personas/patient.md": [
+  {
+   "severity": "high",
+   "persona": "ETHICAL reviewer",
+   "issue": "The system's foundational scenario \u2014 a treating physician becomes sponsor-investigator specifically to get their own identified patient into an early-phase trial \u2014 is the textbook setup for therapeutic misconception and dual-role conflict of interest, and none of the assigned files acknowledges it. The patient's entry question is framed as 'can my doctor get me in,' i.e., research is presented as a treatment-access pathway from the first screen. The person who initiated the study to treat this patient is then the person who conducts that patient's consent conversation and judges its voluntariness. Belmont's respect-for-persons and Helsinki para. 27 (physician-dependent relationship; consent should be sought by an appropriately qualified individual independent of the relationship where dependence is a concern) are directly implicated. 56.111(a)(3) equitable selection is also strained in an n-of-1 site built around a preselected patient \u2014 the wiki quotes the criterion but never confronts what it means when the trial exists for one person.",
+   "recommendation": "Add a dedicated page (or a first-class section in patient.md and informed-consent-document-vs-event.md) on therapeutic misconception and the treating-physician/sponsor-investigator dual role: mandatory ICF language distinguishing research from treatment, an explicit design consideration for an independent consent discussant or consent monitor in Mode B n-of-1 cases, disclosure of the physician's sponsor-investigator role and any funding in the ICF, and guidance on how equitable-selection review applies to single-patient studies. Surface this to the IRB in the submission package rather than leaving it for the board to discover."
+  },
+  {
+   "severity": "low",
+   "persona": "ETHICAL reviewer",
+   "issue": "The interpretive portal design ('your doctor is reviewing candidate programs,' 'consent visit scheduled') manages hope poorly: status updates to a seriously ill patient before IRB approval or physician judgment create expectation pressure that flows back into the consent conversation as undue influence on both parties, and the page says nothing about what the patient sees when the answer is no match or the physician declines.",
+   "recommendation": "Add expectation-management design rules: no status language implying likelihood of enrollment pre-consent; a designed 'no suitable option found' pathway with standard-of-care framing; and a note that patient-facing copy is itself IRB-reviewable recruitment-adjacent material."
+  },
+  {
+   "severity": "medium",
+   "persona": "PATIENT reviewer",
+   "issue": "The persona page covers payment-to-subjects but is silent on the question that actually matters to a patient injured in an early-phase trial: research-injury compensation. 50.25(a)(6) requires the ICF to disclose whether compensation and medical treatment for injury are available \u2014 and in OSSICRO's core Mode B scenario the honest answer is likely 'none': a solo sponsor-investigator has no sponsor injury fund, and clinical malpractice insurance typically excludes research. The wiki's patient page should confront this rather than let the apparatus imply big-sponsor protections exist in the n-of-1 case.",
+   "recommendation": "Add a 'compensation for research injury' subsection: state that in sponsor-investigator mode the injury-compensation answer must be determined and disclosed honestly before consent, flag insurance/indemnification as a red completeness-ledger item for Mode B, and note that the IRB will scrutinize element 6 hardest for exactly this configuration."
+  },
+  {
+   "severity": "medium",
+   "persona": "PATIENT reviewer",
+   "issue": "The patient is given transparency theater but no agency. The interpretive design gate routes all matching output to the HCP only ('never trial recommendations directly to the patient'), the portal shows only plain-language status lines, and there is no stated recourse if the physician sits on the candidate list, no timeline expectation, and no right to see the adjudication ledger for their own case \u2014 even though the patient can already search ClinicalTrials.gov themselves and the frontend advertises 'transparent trial & therapy matching' to them. Paternalism here needs either a justification or a counterweight.",
+   "recommendation": "Give the patient portal a real minimum: 'your doctor received N candidate programs on [date]' status, an expected-response window, and an on-request plain-language summary of why candidates were or weren't pursued. State explicitly why raw match output is withheld (avoiding therapeutic misconception is a defensible reason \u2014 say it) and what the patient can do if they disagree (second opinion, self-referral path)."
+  },
+  {
+   "severity": "low",
+   "persona": "PATIENT reviewer",
+   "issue": "The claim 'subject identity is coded in every OSSICRO record (identities never appear in logs or generated documents)' is overbroad and self-contradicting: the ICF and the HIPAA authorization are generated documents that necessarily bear the patient's name and signature.",
+   "recommendation": "Tighten the wording: identities never appear in logs, audit trails, or system-internal records; subject-facing legal instruments (ICF, authorization) necessarily carry identity and are stored under the case-history/ISF controls instead."
+  }
+ ],
+ "wiki/03-documents/informed-consent-form.md": [
+  {
+   "severity": "high",
+   "persona": "ETHICAL reviewer",
+   "issue": "Section 6 and section 8 permit OSSICRO to 'run comprehension checks' during eConsent, while informed-consent-document-vs-event.md (the master page) forbids any component to 'augment-in-the-moment' the consent event and states the human 'judges voluntariness and capacity.' These are in tension: an automated comprehension assessment administered during consent IS in-the-moment participation in the event, and its pass/fail output will de facto substitute for \u2014 or anchor \u2014 the qualified person's comprehension judgment. Neither page says who acts on a failed check, whether a passed automated quiz may be recorded as evidence of comprehension, or whether AI-generated comprehension questions are themselves IRB-reviewed content. The bright line is drawn beautifully and then smudged in the one place regulators and boards will look hardest.",
+   "recommendation": "Reconcile the two pages explicitly: (a) comprehension-assessment instruments are IRB-approved static content, not AI-generated at consent time; (b) automated quiz results are an input the qualified human must independently confirm, never the recorded basis of the comprehension finding; (c) a failed check hard-stops the eConsent flow and routes to the human discussant; (d) state this in both files with cross-reference so the boundary survives implementation."
+  },
+  {
+   "severity": "medium",
+   "persona": "ETHICAL reviewer",
+   "issue": "For a system explicitly aimed at FIH-to-Phase-2 trials, the ICF page contains no early-phase-specific consent ethics: nothing on describing benefit honestly when direct benefit is unlikely or unknown (the chronic 50.25(a)(3) overstatement problem in Phase 1), nothing on dose-escalation/cohort language, nothing warning against hope-inflating benefit framing in AI-generated drafts. An LLM drafting a benefits section from a protocol synopsis and IB will, absent constraints, produce optimistic prose \u2014 and the element-completeness check will pass it because a benefits description is present. Completeness is being verified; truthful calibration is not.",
+   "recommendation": "Add an early-phase consent section: required template language that direct benefit cannot be assured and the primary purpose is safety/dose-finding (per FDA informed-consent guidance, Aug 2023); a validation rule flagging superlatives and unqualified benefit claims in the generated benefits/risks sections; and a rule that the benefits section may not exceed a calibrated proportion of the risk section for FIH protocols without human justification."
+  },
+  {
+   "severity": "high",
+   "persona": "PATIENT reviewer",
+   "issue": "Section 8 claims the engine will 'validate against 56.111/50.20 (no exculpatory language, understandable language)' \u2014 but 'understandable language' validation is completely unspecified for a system that AUTO-DRAFTS consent forms from Investigator's Brochure risk data. IB risk sections are written for regulators at graduate reading level; piping them into an ICF is the mechanism most likely to produce a legally-complete, humanly-incomprehensible consent form. No readability target (e.g., 6th-8th grade standard used by most IRBs), no health-literacy check, no plain-language transformation step, and translation for limited-English-proficiency patients gets one clause about the 46.117 short form with no workflow.",
+   "recommendation": "Specify the comprehension check concretely: a readability ceiling the check pass enforces (with the metric named), a mandatory plain-language transformation of IB-derived risk text (with provenance preserved), and a translation/short-form workflow as a gated artifact. 'Language understandable to the subject' (50.20) deserves the same engineering rigor the page gives the eight 50.25(a) elements."
+  },
+  {
+   "severity": "medium",
+   "persona": "PATIENT reviewer",
+   "issue": "Section 6 says OSSICRO can 'run comprehension checks' in the eConsent flow. An AI administering and scoring comprehension quizzes edges into the consent event itself \u2014 the 2016 FDA/OHRP Q&A permits interactive methods, but the judgment that the subject comprehends belongs to the qualified human. As written, a reader could conclude a passed machine quiz satisfies the comprehension requirement.",
+   "recommendation": "One sentence fixes it: comprehension-check results are inputs the consenting human reviews during the conversation; a passing score never substitutes for the qualified person's own comprehension assessment, and a failing score hard-stops the eConsent flow pending human discussion."
+  }
+ ],
+ "wiki/01-roles-responsibilities/irb-iec.md": [
+  {
+   "severity": "high",
+   "persona": "ETHICAL reviewer",
+   "issue": "Lines 54 and 79 describe the engine as pre-checking the submission package 'against the 56.111 criteria (each element mapped to its supporting document).' The 56.111 criteria are substantive ethical judgments \u2014 risks reasonable relative to benefits, equitable selection, adequate safeguards for the vulnerable \u2014 not document-presence properties. Mapping each criterion to 'its supporting document' teaches users that satisfying the board is a completeness exercise, and produces submissions optimized to look approval-ready. This is the precise mechanism by which AI-drafted material undermines genuine review: a polished, criterion-keyed package invites the board (and the PI before it) toward rubber-stamp confirmation rather than deliberation. The disclaimer ('asserts nothing about how the IRB will decide') is present but the framing works against it.",
+   "recommendation": "Rename and reframe the pre-check as a document-completeness check keyed to the IRB's administrative submission requirements, not to 56.111. Where the engine flags material relevant to a 56.111 criterion, label it 'material the board will weigh,' never 'criterion satisfied/pre-checked.' Add an explicit anti-anchoring note: the system must not display any predicted or implied approval-readiness score for an ethics determination."
+  },
+  {
+   "severity": "medium",
+   "persona": "ETHICAL reviewer",
+   "issue": "Vulnerable-population treatment is thin across the set: Subparts B (pregnant women) and C (prisoners) appear once in a table row and never again; 56.111(b) additional safeguards is quoted but not operationalized anywhere in the assigned files; and the population the system will actually attract \u2014 seriously ill, option-exhausted patients, whom patient.md itself locates in 'under-resourced settings' \u2014 is precisely the group most susceptible to undue influence, yet no file analyzes how desperation plus a treatment-access framing interacts with 50.20's undue-influence prohibition. Economic vulnerability and financial toxicity (who pays in Mode B; charging under expanded access per 312.8) are absent beyond the bare 50.25(b)(3) listing.",
+   "recommendation": "Add a vulnerable-populations page that operationalizes 56.111(b) for OSSICRO's actual user base: decisional-impairment screening prompts, undue-influence risk factors specific to last-option patients, Subpart B/C branch handling in the document generator, and explicit cost/financial-toxicity disclosure guidance including expanded-access charging."
+  }
+ ],
+ "wiki/04-coordination/informed-consent-document-vs-event.md": [
+  {
+   "severity": "medium",
+   "persona": "ETHICAL reviewer",
+   "issue": "Line 19 says OSSICRO 'translates-with-verification' the consent document. AI translation of an ICF is one of the highest-risk comprehension surfaces in the whole system \u2014 50.20's 'language understandable to the subject' is load-bearing \u2014 and 'with verification' is asserted without specification: verified by whom, against what standard (certified translator? back-translation?), and IRB-approved in which language versions? The short-form mechanism at 50.27(b) is described, but its relationship to AI-translated long forms is not gated.",
+   "recommendation": "Specify the translation control: AI translation is a draft only; a qualified human translator certifies before IRB submission; each language version is separately IRB-approved; the validation engine blocks use of any translated ICF lacking a certification record. State it in the division-of-labor table."
+  }
+ ],
+ "frontend/index.html": [
+  {
+   "severity": "high",
+   "persona": "PHYSICIAN reviewer",
+   "issue": "This is a static marketing landing page, not the 'pharma-corporate-style frontend demonstrating the clinician flow end-to-end' that PROGRAM.md success criterion 4 claims is done. There is no triage wizard, no intake form, no document view, no ledger wired to the engine \u2014 the 'Live example \u2014 actual engine output' ledger is hand-transcribed HTML, and 'Get started' scrolls to a persona card grid. As the primary user I can do exactly nothing with this page except click through to GitHub.",
+   "recommendation": "Either build a minimal working flow (de-identified intake \u2192 three-route triage \u2192 generated document list \u2192 live ledger rendered from engine JSON output) or relabel the deliverable honestly in PROGRAM.md as a landing page and move the clinician-flow demo to pending. Also drop or soften 'Live example' / 'actual engine output' for a static mock \u2014 the project's whole credibility rests on never overstating."
+  },
+  {
+   "severity": "medium",
+   "persona": "PATIENT reviewer",
+   "issue": "The frontend is benefit-forward recruitment-toned copy aimed partly at patients ('Get patients into trials. Not stuck in paperwork.'; patient card: 'Is there a trial for me?') with zero therapeutic-misconception counterweight \u2014 nothing says early-phase trials may not benefit the participant, that most Phase 1/2 drugs fail, or that participation is voluntary. The footer disclaims medical advice but not benefit. And despite the detailed-plan promise that 'each persona gets a portal perspective in the frontend,' there is no patient view at all \u2014 the patient card's promises (transparent matching, plain-language documents) link to nothing; 'Get started' is an anchor scroll.",
+   "recommendation": "Add one honest sentence near the patient entry point: early-phase participation is voluntary, may carry risk without personal benefit, and every decision runs through your doctor and an ethics board. Either build the minimal patient-portal mock the plan promises or relabel the card as a roadmap item, so the prototype doesn't advertise patient-facing transparency it doesn't have. If this page could ever function as recruitment material, note it would itself require IRB review."
+  }
+ ],
+ "wiki/06-personas/hcp-physician.md": [
+  {
+   "severity": "high",
+   "persona": "PHYSICIAN reviewer",
+   "issue": "The intimidation-points list omits three prerequisites that stop a community physician before any document is drafted: (1) IRB access \u2014 a solo clinic has no institutional IRB; which central IRB reviews my protocol, at what fee ($2\u20135K+ initial review), on what timeline, and who contracts with them is nowhere in the physician-facing burden map; (2) malpractice/liability \u2014 my clinical malpractice policy almost certainly excludes research activity, and sponsor-investigator work is uninsurable without a specific rider; indemnification is not mentioned; (3) research billing compliance \u2014 Medicare coverage analysis, qualifying-trial determination, and the double-billing exposure that has produced real FCA settlements. Any one of these is a hard stop that a perfect paperwork package does not touch.",
+   "recommendation": "Add these three to the intimidation-points section with the same candor as the rest, and state explicitly which OSSICRO addresses (central-IRB submission package, coverage-analysis draft) and which it cannot (insurance is a market problem; say so). A physician who discovers the insurance gap after assembling the dossier will never trust the tool again."
+  },
+  {
+   "severity": "medium",
+   "persona": "PHYSICIAN reviewer",
+   "issue": "Effort/reward is never quantified. 'The burden OSSICRO removes' lists categories but nowhere states what remains in physician-hours per route: GCP training (~8h), IRB back-and-forth, the SIV, 24/7 SAE availability once the drug is administered, monitoring visits, and \u2014 in Mode B \u2014 perpetual IND maintenance that is a standing part-time job even with perfect drafting. Barrier #5 is 'Time' and the page never answers it with a number. A physician deciding whether to do this needs the residual-hours estimate more than any other single datum.",
+   "recommendation": "Add an honest per-route effort table (setup hours, ongoing hours/month, out-of-pocket costs incl. IRB fees and micro-CRO tiers) flagged interpretive with stated assumptions. Under-promising here is the trust move."
+  },
+  {
+   "severity": "low",
+   "persona": "PHYSICIAN reviewer",
+   "issue": "'Facilities adequate for the protocol (storage, labs \u2014 arranged, not necessarily owned)' hand-waves the operational reality: a community clinic typically has no temperature-monitored IP storage, no research pharmacy, no coordinator to populate the delegation log, and cannot execute early-phase assessment schedules (serial PK draws, central-lab kits, protocol imaging). Paperwork completeness does not confer conduct capability, and the pitch 'make me an accepted site' implies it.",
+   "recommendation": "Add a site-readiness/capability checklist distinct from the document checklist \u2014 what must physically exist or be contracted before the 1572 names the facility \u2014 and surface it at triage so conduct-infeasible protocols are screened out early."
+  }
+ ],
+ "wiki/00-overview/guiding-scenario.md": [
+  {
+   "severity": "high",
+   "persona": "PHYSICIAN reviewer",
+   "issue": "Step 2\u21923 assumes away the binding constraint in one sentence: 'Assume the sponsor's protocol is open and willing to add a site.' For a community physician, getting pharma to return the call is the wall \u2014 PROGRAM.md itself names contract/budget negotiation as the dominant chokepoint, and a drafted CTA template does not resolve a bilateral negotiation with pharma legal that routinely takes months. The scenario that is supposed to be the spine of the architecture skips the step where the counterparty says yes.",
+   "recommendation": "Add an explicit Step 2.5 covering sponsor engagement: who contacts the sponsor, the feasibility questionnaire exchange, the realistic timeline and refusal-rate for a one-patient site, and what OSSICRO does while waiting (parallel expanded-access prep is the honest hedge). Link the pharma-acceptance page from the main narrative, not just from the n-of-1 page."
+  },
+  {
+   "severity": "low",
+   "persona": "PHYSICIAN reviewer",
+   "issue": "Step 3 links 'live milestone tracker' to [[monitoring-plan]] \u2014 a monitoring plan (312.53(d)/E6(R3) sponsor oversight) is a different artifact from a startup milestone tracker; a physician following the link gets the wrong concept.",
+   "recommendation": "Point the link at the milestone/coordination page (or the frontend tracker concept) and keep [[monitoring-plan]] for Step 6 conduct."
+  }
+ ],
+ "wiki/02-lifecycle/single-patient-site-enrollment.md": [
+  {
+   "severity": "medium",
+   "persona": "PHYSICIAN reviewer",
+   "issue": "Route 3's medical-monitor problem is unaddressed: in an n-of-1 sponsor-investigator study I own causality/expectedness for 7/15-day IND safety reports on my own patient \u2014 a self-review conflict \u2014 and there is no coverage plan for when I am unreachable. Guiding-scenario Step 6 assigns causality to 'the medical monitor's judgment,' but in Route 3 the medical monitor is me. site-activation.md flags self-monitoring as 'the structural weak point' but the safety-judgment analog is silent in these files.",
+   "recommendation": "Name the conflict explicitly and specify the mitigation: an independent medical-monitor arrangement via the micro-CRO (or a documented reciprocal-coverage agreement) as a recommended \u2014 arguably necessary \u2014 element of the Route 3 package."
+  },
+  {
+   "severity": "medium",
+   "persona": "PHYSICIAN reviewer",
+   "issue": "The Route 2 wedge thesis \u2014 a verifiable dossier converts 'no track record' into sponsor acceptance \u2014 treats sponsor refusal as a trust/information problem. It is substantially an economics problem: per-site activation, monitoring, and safety-data-exchange costs for a one-patient site exceed its enrollment value on most sponsor models, and a beautiful dossier does not change that arithmetic. The page correctly flags the thesis interpretive, but still calls Route 2 'the cleanest route,' which will set physician expectations the market will break.",
+   "recommendation": "Add the sponsor's cost calculus to the Route 2 section (or the acceptance page) and give a base-rate-honest framing: when Route 2 is realistically attainable (sponsor actively site-hunting, competitive enrollment) versus when expanded access is the pragmatic default for a single patient."
+  }
+ ],
+ "engine/README.md": [
+  {
+   "severity": "medium",
+   "persona": "PHYSICIAN reviewer",
+   "issue": "The engine's generation is {{field}} substitution over a built-in template set (4 templates done; the 78-doc library is pending per PROGRAM.md). That is adequate for a 1572 but structurally incapable of drafting the documents where quality actually decides acceptance \u2014 a protocol-specific ICF risk section or an M11 protocol. The validate pass checks presence (e.g., '8 basic elements present'), not adequacy; a GREEN/AMBER ledger status could induce a physician to over-trust a document an IRB or sponsor will reject on substance. The 'drafts COMPLETE documentation' claim currently outruns the artifact.",
+   "recommendation": "State the presence-vs-adequacy distinction in the README and in the ledger UI copy ('GREEN = structurally complete and rule-valid, not IRB-acceptable'), and sequence the AI-drafting layer (detailed-plan \u00a7Addendum) against the documents where substitution fails: ICF risk language, protocol, IB summaries."
+  }
+ ],
+ "wiki/05-ossicro-system/hipaa-and-privacy-gating.md": [
+  {
+   "severity": "high",
+   "persona": "PATIENT reviewer",
+   "issue": "The flagship n-of-1 scenario breaks the page's own privacy model and the page never says so. For one physician + one patient + one rare condition, 'de-identified' data is effectively re-identifiable (small-cell problem: a Safe Harbor dataset of n=1 with a rare epilepsy phenotype identifies the patient), yet the page treats \u00a7164.514(b) de-identification as the compliant currency for anything leaving the covered entity. Worse, the core workflow requires the physician to approach a manufacturer ('my patient needs this drug' \u2014 expanded-access intake, single-patient site inquiry) BEFORE any authorization exists, and neither this page nor the fulcrum table has a row for that pre-authorization external disclosure about an identifiable single patient.",
+   "recommendation": "Add an explicit n-of-1 subsection: state that de-identification is presumptively unavailable at n=1, that the manufacturer/pharma contact about a specific patient is a disclosure requiring a signed \u00a7164.508 authorization FIRST (or must be framed as a treatment disclosure for expanded access), and add that step to the operational fulcrum table. Wire the privacy-state-machine to block outbound communication-hub messages describing a patient until that record exists."
+  },
+  {
+   "severity": "low",
+   "persona": "PATIENT reviewer",
+   "issue": "The patient's 'right to revoke' the authorization is named (here and in patient.md) but its real-world consequence is never explained anywhere in the assigned pages: after revocation the covered entity may still use/disclose data already collected in reliance on the authorization (\u00a7164.508(b)(5)(i)), and trial data already reported is not clawed back. A patient reading 'right to revoke' will assume more than the law delivers \u2014 that is a comprehension failure in the system's own transparency story.",
+   "recommendation": "Add the reliance exception to both the authorization section and the patient persona page, in plain language: what revocation stops, and what it does not."
+  }
+ ],
+ "wiki/05-ossicro-system/matching-eligibility-adjudication.md": [
+  {
+   "severity": "high",
+   "persona": "PATIENT reviewer",
+   "issue": "The 'indeterminate is never coerced to not-met' protection only exists at the adjudication stage. The retrieve stage applies hard binary filters on structured facets (condition, age/sex, geography, recruitment status) and a semantic ranker \u2014 a trial dropped at retrieval never reaches adjudication and the patient silently loses access with no ledger entry, no question routed to the clinician, and no trace. Geography is the worst offender: a filter excludes trials the patient would happily travel for. The page's own stated failure mode ('a patient silently loses access') is thus still live one stage earlier, and the recall commitment is deferred to a benchmarks page rather than being a contract on this page.",
+   "recommendation": "Extend the three-valued discipline upstream: make retrieval facets soft (rank-down, not drop) wherever the underlying datum is patient-preference (geography) or chart-derived and possibly stale (age at future enrollment date); surface a retrieval-coverage line to the clinician ('N trials matched condition facets but were excluded by X'); and state a minimum recall floor as a contract on this page, not just in the eval harness."
+  },
+  {
+   "severity": "low",
+   "persona": "PATIENT reviewer",
+   "issue": "Minimum-necessary is asserted ('the matcher reads the data elements eligibility adjudication needs, not the whole chart') but adjudicating hundreds of criteria across a recall-first candidate set approaches whole-chart access in practice, and real SMART-on-FHIR deployments typically grant broad resource scopes. The claim is a design intention presented as a property.",
+   "recommendation": "State how minimum-necessary is operationalized: scoped FHIR resource requests derived from the parsed predicate set, with the per-read audit log recording which criterion justified which read \u2014 making the claim verifiable rather than asserted."
+  }
+ ],
+ "wiki/05-ossicro-system/verifiable-site-qualification-dossier.md": [
+  {
+   "severity": "high",
+   "persona": "PHARMA reviewer",
+   "issue": "The hash-chained manifest solves a problem pharma does not have. As a sponsor quality/clin-ops decision-maker, my distrust of a new site is not 'the documents might be tampered with' \u2014 it is future operational conduct: coordinator bandwidth, protocol-deviation risk, data-entry quality over time, monitoring findings, inspection exposure. No sponsor QA function has an SOP for 'recompute a third party's SHA-256 chain,' and no pharma IT security policy lets a reviewer run a bundled 'dependency-free verification tool' from an unvetted open-source source inside the network. The page itself concedes the real wedge in its interpretive callout ('a complete, credentialed, internally-consistent package is what a sponsor's trust gate actually requires') \u2014 the crypto layer is garnish the buyer will never consume, yet it is positioned as the headline differentiator and the Micro-CRO 'moat.'",
+   "recommendation": "Re-center the wedge on what the page half-admits: completeness + citation mapping + credentialed accountable signers, delivered in eTMF/portal-native document conventions (map to TransCelerate/sponsor checklists). Keep hash-chaining as an internal Part 11 integrity mechanism and an inspection-readiness feature, not the sponsor-facing pitch. Add a realistic sponsor-side verification path that assumes the reviewer will NOT run any OSSICRO tooling."
+  }
+ ],
+ "wiki/04-coordination/single-patient-site-and-pharma-acceptance.md": [
+  {
+   "severity": "high",
+   "persona": "PHARMA reviewer",
+   "issue": "Route 2 (one-patient site added to the company's protocol) hand-waves the sponsor-side economics with 'expedited qualification rather than a full SQV where the sponsor's risk assessment permits.' OSSICRO software running at the site absorbs none of the sponsor's marginal costs: protocol-specific EDC account build and training, IRT/RTSM configuration and a new drug-supply shipping lane, scheduled IMVs for a one-subject site, indemnification/insurance amendment, addition to the sponsor's inspection footprint, and internal change control on an active protocol. Sponsors mid-enrollment routinely refuse site adds outright and steer the physician to an existing site or to expanded access \u2014 which is what actually happens. The page never ranks the three routes by realistic acceptance probability, so a physician-user will burn months pursuing the route pharma is least likely to grant.",
+   "recommendation": "State plainly that Route 2 is the least-likely acceptance path; enumerate the sponsor-side costs OSSICRO cannot reduce; add an explicit 'what the sponsor will counter-offer' section (referral to nearest active site; expanded access) and make the triage logic prefer Routes 1 and 3 unless the sponsor has an open site-identification need."
+  },
+  {
+   "severity": "medium",
+   "persona": "PHARMA reviewer",
+   "issue": "Acceptance-gate item 6 ('a validated, Part 11-compliant document/data environment') overstates what a manufacturer requires for individual-patient expanded access \u2014 in practice EA physicians run on paper and institutional EMRs, and no expanded-access coordinator demands Part 11 validation evidence from a treating physician. Inflating the gate contradicts the page's own risk-proportionality argument and makes the 'minimal-but-compliant' package less minimal than the regulation or practice requires.",
+   "recommendation": "Scope item 6 to Routes 2/3 (sponsored-trial and S-I study contexts); for Route 1 state that ordinary medical-records practice suffices and Part 11 tooling is an OSSICRO convenience, not a manufacturer requirement."
+  }
+ ],
+ "wiki/02-lifecycle/iis-request-workflow.md": [
+  {
+   "severity": "high",
+   "persona": "PHARMA reviewer",
+   "issue": "The IIS workflow is document-complete but acceptance-naive. Missing realities a Medical Affairs decision-maker lives with daily: (1) IIS programs publish areas-of-interest lists and decline most unsolicited concepts \u2014 strategic-fit rejection, not paperwork rejection, is the dominant failure mode, so a perfectly formatted synopsis outside the AOI is dead on arrival; (2) cycle time \u2014 committee review typically runs months, contracting months more, which collides fatally with the 'my patient needs this now' guiding scenario; (3) most companies will not contract with, or supply pre-approval investigational drug to, a solo private-practice physician \u2014 IIS agreements are signed with an institution's legal entity (indemnification, insurance, institutional oversight), and a physician with no institution is a structural non-starter the page never addresses. This is the single biggest adoption blocker for the solo-clinician premise on my side of the table.",
+   "recommendation": "Add an 'acceptance realities' section: AOI gating, realistic timelines, decline rates, and the institutional-counterparty preference. Address the no-institution case head-on \u2014 either the Micro-CRO serves as the contracting/indemnified entity (say so, and specify how) or the workflow should tell the solo physician that Route 3 with investigational product effectively requires institutional affiliation."
+  },
+  {
+   "severity": "low",
+   "persona": "PHARMA reviewer",
+   "issue": "Sources list leans on secondary/vendor material for the money rails (IntuitionLabs blog, Advarra blog, Health Affairs brief) where primary authority exists and is cited elsewhere in the wiki; a pharma compliance reviewer discounts vendor-blog citations in a document that elsewhere holds itself to black-letter sourcing.",
+   "recommendation": "Swap or subordinate the vendor-blog citations to HHS-OIG guidance and the CMS Open Payments regulation already cited on sibling pages; keep the blogs as 'practice color' if at all."
+  }
+ ],
+ "wiki/04-coordination/pharma-partner-interface-iis.md": [
+  {
+   "severity": "medium",
+   "persona": "PHARMA reviewer",
+   "issue": "The interoperability section lists the CTMS/eTMF/EDC/IRT/safety-DB stack correctly, then quietly concedes there is no automated write-access and 'portal-shaped records' \u2014 which is not a defined thing. The unaddressed question my quality function will actually ask: if a site's regulatory documents live in OSSICRO, who stands behind OSSICRO's own Part 11 validation? Sponsors qualify vendors via audits (IQ/OQ/PQ evidence, SOPs, a legal entity to hold accountable). Open-source software self-hosted by the physician under review has no auditable vendor \u2014 and the dossier page's manifest even lists the Part 11 attestation signer as 'Deploying entity,' i.e., the same solo physician attesting to his own system's validation. That self-attestation fails sponsor QA on its face.",
+   "recommendation": "Make system validation an explicit Micro-CRO deliverable: the Micro-CRO (a real, auditable entity) maintains the validation package and hosts or certifies the deployment, and is the named party a sponsor can audit. Replace 'portal-shaped records' with concrete commitments (upload-ready renditions per sponsor portal conventions; no interoperability claims beyond that)."
+  }
+ ],
+ "wiki/06-personas/pharma.md": [
+  {
+   "severity": "medium",
+   "persona": "PHARMA reviewer",
+   "issue": "The persona page names Clinical Development as the Mode A counterparty but assumes a landing pad that mostly doesn't exist: sponsors have no intake function for unsolicited inbound 'accept me as a site' requests from unknown physicians. Site identification runs outward through the sponsor's CRO feasibility machinery and site databases; a cold OSSICRO-armed inbound reaches, at best, a ClinicalTrials.gov central contact whose job is patient referral, not site adds. The 'acceptance workflow OSSICRO builds around' is flagged interpretive, but the page never tells the user the door may simply not open, or where the actual doors are.",
+   "recommendation": "Add a 'how the request actually lands' subsection per channel: CRO feasibility platforms and site registries for Mode A, the published IIS portal + AOI list for Mode B, the \u00a7561A-mandated public expanded-access policy/contact for the EA branch \u2014 and set expectations that Mode A cold inbound usually converts to a patient-referral conversation, not a site add."
+  }
+ ]
+}

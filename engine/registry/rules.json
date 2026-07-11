@@ -90,6 +90,41 @@
     "version": "2026-07-09"
   },
   {
+    "id": "R-ICF-50.25-EA",
+    "description": "EA-profiled ICF must contain the 8 basic elements of informed consent (presence, by construction)",
+    "citation": "21 CFR 50.25(a)(1)-(8)",
+    "doc_id": "informed-consent-form-part50-ea",
+    "strategy": "provenance",
+    "check": "verbatim_spans_present",
+    "principle_text": "The EA-profiled informed-consent form (Overhaul P6) keeps the eight 50.25(a) basic-element headings BYTE-IDENTICAL to the generic Part-50 form: generate.VERBATIM_SPANS aliases the EA doc id to the same locked tuples, ea_generators.gen_icf_ea stamps their provenance records, and this rule verifies presence and SHA-256 identity against the SAME registered hashes as R-ICF-50.25. PRESENCE only; adequacy is R-ICF-50.25-ADEQ-EA plus the qualified-human review named in the document's registry description.",
+    "params": {
+      "spans": [
+        "icf-element-1",
+        "icf-element-2",
+        "icf-element-3",
+        "icf-element-4",
+        "icf-element-5",
+        "icf-element-6",
+        "icf-element-7",
+        "icf-element-8"
+      ],
+      "sha256": {
+        "icf-element-1": "9b3a963c80a670792f755033530f11f5c32bd4453fb06ca093bae4cd5623a32a",
+        "icf-element-2": "5675a292cabdcca3678317c54ce3b88dde5e3e1d0bdbcd02ced50511e00220f2",
+        "icf-element-3": "31bb7d78b1d0ea8b206c24dbe5cad496794908da7e91974f076d65d271f89608",
+        "icf-element-4": "474d4c14fe10f905d9c614cec4c9d104a8e98efdc35de708d3ea3fe323cf99de",
+        "icf-element-5": "bfafd2fa067e8465d8811643e0a8eeb4786d9d1064823e727e526992c88f5751",
+        "icf-element-6": "53d3370ee6e0efb547cf57bb55ebfa01f9828a50adf8ebe154c1ce201fe49062",
+        "icf-element-7": "fa53e45b006f181fae71377d251746e640b56142e8199e5813f899cf92b5c26b",
+        "icf-element-8": "8cbd90f2a2379b228abb93189d5e74b99bee36884aaf2be186cf4a1b1dd5b7a8"
+      },
+      "pass_message": "EA ICF contains all 8 basic-element sections of 21 CFR 50.25(a) (provenance records + SHA-256 verified).",
+      "fail_message": "EA ICF basic-element section verification failed: {problems}"
+    },
+    "resolving_question": "Add the missing basic element section(s) of informed consent to the EA consent form (21 CFR 50.25(a)).",
+    "version": "2026-07-11"
+  },
+  {
     "id": "R-ICF-50.25-ADEQ",
     "description": "ICF basic elements must be substantively adequate for the subject population (concept-reviewed; deferred)",
     "citation": "21 CFR 50.25(a)(1)-(8)",
@@ -100,6 +135,18 @@
     "params": {},
     "resolving_question": "Does each consent element substantively inform the subject population in language they can understand? Route deficiencies to the drafting physician for rewrite and IRB review.",
     "version": "2026-07-09"
+  },
+  {
+    "id": "R-ICF-50.25-ADEQ-EA",
+    "description": "EA ICF elements must be substantively adequate for THIS patient (concept-reviewed; deferred — a qualified human review is the release precondition)",
+    "citation": "21 CFR 50.25(a)(1)-(8); 21 CFR 50.25(b)(3)-(5)",
+    "doc_id": "informed-consent-form-part50-ea",
+    "strategy": "concept",
+    "check": null,
+    "principle_text": "21 CFR 50.25: assess whether each consent element of the EA-profiled form substantively informs this individual patient in language they can understand — treatment-use framing without therapeutic misconception in either direction, honest investigational-status and supply-contingency disclosure, and the whether-compensation / whether-costs statements in plain terms. Presence of the eight headings is verified structurally (R-ICF-50.25-EA); this rule judges the filled content. Deferred: not executed by run_rules. HITL (Overhaul P6): consent language a real patient would sign additionally requires review by a qualified, IRB-experienced human — the document carries a PENDING-HUMAN-VERIFICATION banner that only that review removes.",
+    "params": {},
+    "resolving_question": "Does each consent element substantively inform this patient, in language they can understand, with the expanded-access treatment framing intact? Route deficiencies to the drafting physician for rewrite and IRB review; the qualified-human consent-language review is the release precondition for real-patient use.",
+    "version": "2026-07-11"
   },
   {
     "id": "R-DOA-PI",

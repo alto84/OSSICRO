@@ -12,6 +12,9 @@ updated: 2026-07-09
 
 # Form FDA 3926 - Individual Patient Expanded Access Application — TEMPLATE (DRAFT for qualified human review)
 
+> [!warning] Legacy paths (Overhaul P4, m5)
+> The `## Fields` table below uses this template's ORIGINAL study-record vocabulary, which predates the canonical intake schema. The canonical dotted field ids live in `engine/registry/routes.json`, and the shipped generator is `ea_generators.gen_form_3926`. Key renames: `physician.*` → `investigator.*`; `drug.manufacturer` → `manufacturer.name`; `treatment_plan.dose/route/duration` → `drug.dose/route/duration`; `treatment_plan.monitoring_summary` → `treatment.monitoring_plan`; `patient.initials_coded` → `patient.coded_id`; `drug.loa_reference` → `manufacturer.ind_dmf_reference`; `site.irb.name` → `irb.name`; `submission.type` → computed from `submission.emergency` + `submission.initial_or_followup`. This table's 312.305(b)(2) pinpoints predate the P1/M8 remap — `engine/ossicro/citations.py` is canonical.
+
 > [!authority] Governing authority
 > [21 CFR 312.310](https://www.law.cornell.edu/cfr/text/21/312.310) (individual patient expanded access, including emergency use under 312.310(d)); criteria at [21 CFR 312.305(a)](https://www.law.cornell.edu/cfr/text/21/312.305); [Form FDA 3926](https://www.fda.gov/drugs/investigational-new-drug-ind-application/individual-patient-expanded-access-applications-form-fda-3926) (OMB No. 0910-0814). This is a DRAFT template; OSSICRO fills it, a qualified human reviews and signs.
 

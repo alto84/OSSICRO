@@ -237,6 +237,12 @@ VERBATIM_SPANS: Dict[str, Dict[str, Tuple[str, str]]] = {
             "21 CFR 312.40(b)(1)",
         ),
     },
+    # Overhaul P6: the EA-profiled ICF (ea_generators.gen_icf_ea) keeps the
+    # eight 50.25(a) element headings BYTE-IDENTICAL to the generic form —
+    # the alias below points the EA doc id at the SAME tuples, so identity
+    # is guaranteed by construction, not by parallel maintenance, and rule
+    # R-ICF-50.25-EA verifies the same SHA-256 locks. Populated right after
+    # this literal (see the assignment below VERBATIM_SPANS).
     "informed-consent-form-part50": {
         "icf-element-1": (
             "1. RESEARCH STATEMENT, PURPOSE, DURATION, PROCEDURES - 50.25(a)(1)",
@@ -272,6 +278,12 @@ VERBATIM_SPANS: Dict[str, Dict[str, Tuple[str, str]]] = {
         ),
     },
 }
+
+# Overhaul P6: same locked tuples under the EA doc id (see the comment above
+# the generic entry). Because both ids share the SAME objects, the headings
+# cannot drift apart; the generic template itself is untouched.
+VERBATIM_SPANS["informed-consent-form-part50-ea"] = VERBATIM_SPANS[
+    "informed-consent-form-part50"]
 
 MISSING_MARKER = "[[MISSING: %s]]"
 

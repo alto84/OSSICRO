@@ -9,19 +9,28 @@ Federal holidays follow 5 U.S.C. 6103 with the OPM weekend-observance rule: a
 fixed-date holiday on Saturday is observed the preceding Friday; on Sunday, the
 following Monday. Monday-anchored holidays never fall on a weekend.
 
-The clocks implemented (each cited where used):
+The clocks implemented (each cited where used; every pinpoint routed through
+the single-source table in ossicro.citations — [PT-2]):
 - 15 WORKING DAYS — written submission of an individual-patient expanded-access
-  request after emergency authorization (21 CFR 312.310(d)(2)).
+  request after emergency authorization (21 CFR 312.310(d)(2)); anchored on
+  the FDA AUTHORIZATION date (``written_3926_deadline``).
 - 5 WORKING DAYS — IRB notification after emergency use of the test article
-  (21 CFR 56.104(c)); the clock runs from the emergency use (first treatment).
-The 30-DAY IND wait (312.40(b)(1)) is a CALENDAR-day clock, also provided.
+  (21 CFR 56.104(c)); anchored on the emergency USE, i.e. the FIRST-TREATMENT
+  date (``irb_emergency_notification_deadline``). The two emergency clocks
+  start on DIFFERENT statutory events (M1) — each function takes only its own
+  keyword-named anchor so the anchors cannot be swapped silently.
+The 30-DAY IND wait (312.40(b)(1)) is a CALENDAR-day clock, also provided, and
+the 312.33 annual report (within 60 calendar days of each IND-effective
+anniversary) is derived from it (``ind_annual_report_deadline``).
 """
 
 from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict
+
+from .citations import cite
 
 _DAY = datetime.timedelta(days=1)
 
@@ -134,18 +143,34 @@ class Deadline:
         return (self.due - as_of).days
 
 
-def expanded_access_emergency_deadlines(authorization_date: datetime.date) -> List[Deadline]:
-    """The two clocks that start when FDA authorizes emergency use by phone.
+def written_3926_deadline(*, authorization_date: datetime.date) -> Deadline:
+    """21 CFR 312.310(d)(2): the written Form 3926 is due within 15 WORKING
+    DAYS of the FDA emergency (telephone) AUTHORIZATION.
 
-    312.310(d)(2): written submission within 15 working days.
-    56.104(c): IRB notification within 5 working days.
+    The anchor is keyword-only and named for its statutory event: this clock
+    runs from the authorization, never from first treatment. Its sibling,
+    ``irb_emergency_notification_deadline``, takes ``first_treatment_date`` —
+    the two anchors are different events (M1) and cannot be swapped without
+    a TypeError.
     """
-    return [
-        Deadline("Written expanded-access submission to FDA", "21 CFR 312.310(d)(2)",
-                 "working-day", 15, authorization_date, add_working_days(authorization_date, 15)),
-        Deadline("IRB notification of emergency use", "21 CFR 56.104(c)",
-                 "working-day", 5, authorization_date, add_working_days(authorization_date, 5)),
-    ]
+    return Deadline("Written expanded-access submission to FDA",
+                    cite("clock.written_3926"), "working-day", 15,
+                    authorization_date, add_working_days(authorization_date, 15))
+
+
+def irb_emergency_notification_deadline(*, first_treatment_date: datetime.date) -> Deadline:
+    """21 CFR 56.104(c): the IRB must be notified within 5 WORKING DAYS of the
+    emergency USE of the test article — i.e. the FIRST TREATMENT.
+
+    The anchor is keyword-only and named for its statutory event: this clock
+    runs from the treatment itself, NEVER from the FDA authorization date
+    (the M1 defect this split repairs). Unarmed callers simply do not call —
+    an absent first-treatment date is an honestly pending clock, not one
+    computed from the wrong anchor.
+    """
+    return Deadline("IRB notification of emergency use",
+                    cite("clock.irb_emergency_notification"), "working-day", 5,
+                    first_treatment_date, add_working_days(first_treatment_date, 5))
 
 
 def ind_30_day_deadline(fda_receipt_date: datetime.date) -> Deadline:
@@ -153,5 +178,29 @@ def ind_30_day_deadline(fda_receipt_date: datetime.date) -> Deadline:
     receipt (absent hold or earlier notification). The returned date is the
     IND-effective date (30 calendar days after receipt) and the earliest day
     treatment may begin absent earlier FDA notification."""
-    return Deadline("IND effective (30-day wait ends)", "21 CFR 312.40(b)(1)",
+    return Deadline("IND effective (30-day wait ends)",
+                    cite("clock.ind_effective_30_day"),
                     "calendar-day", 30, fda_receipt_date, fda_receipt_date + datetime.timedelta(days=30))
+
+
+def ind_annual_report_deadline(fda_receipt_date: datetime.date) -> Deadline:
+    """21 CFR 312.33: the annual report is due within 60 CALENDAR DAYS of each
+    anniversary of the date the IND went into effect (m16 — this arithmetic
+    lives HERE; the app never computes a date).
+
+    effective   = FDA receipt + 30 calendar days (312.40(b)(1), via
+                  ``ind_30_day_deadline``)
+    anniversary = effective + 1 year (a Feb-29 effective date anniversaries
+                  on Feb 28)
+    due         = anniversary + 60 calendar days   (first window)
+
+    ``anchor`` is the anniversary, so ``due == anchor + n`` holds.
+    """
+    effective = ind_30_day_deadline(fda_receipt_date).due
+    try:
+        anniversary = effective.replace(year=effective.year + 1)
+    except ValueError:               # Feb 29 -> Feb 28 of the next year
+        anniversary = datetime.date(effective.year + 1, 2, 28)
+    return Deadline("IND annual report (first window)",
+                    cite("clock.ind_annual_report"), "calendar-day", 60,
+                    anniversary, anniversary + datetime.timedelta(days=60))

@@ -92,9 +92,16 @@ class ClockReconciliationTests(unittest.TestCase):
         # ea_generators must re-export the canonical engine, not shadow it.
         self.assertIs(ea_generators.add_working_days, clocks.add_working_days)
         self.assertIs(ea_generators.federal_holidays, clocks.federal_holidays)
-        self.assertIs(ea_generators.expanded_access_emergency_deadlines,
-                      clocks.expanded_access_emergency_deadlines)
+        self.assertIs(ea_generators.written_3926_deadline,
+                      clocks.written_3926_deadline)
+        self.assertIs(ea_generators.irb_emergency_notification_deadline,
+                      clocks.irb_emergency_notification_deadline)
         self.assertIs(ea_generators.ind_30_day_deadline, clocks.ind_30_day_deadline)
+        self.assertIs(ea_generators.ind_annual_report_deadline,
+                      clocks.ind_annual_report_deadline)
+        # P1 split: the combined dual-anchor function is gone everywhere.
+        self.assertFalse(hasattr(clocks, "expanded_access_emergency_deadlines"))
+        self.assertFalse(hasattr(ea_generators, "expanded_access_emergency_deadlines"))
         # the duplicate inline calendar is gone
         self.assertFalse(hasattr(ea_generators, "us_federal_holidays"))
 
@@ -145,7 +152,8 @@ class ComputeClocksCanonicalTests(unittest.TestCase):
             "submission.first_treatment_date": "2026-07-01",
         })
         by_id = {c["id"]: c for c in out}
-        written, irb = clocks.expanded_access_emergency_deadlines(D(2026, 7, 1))
+        written = clocks.written_3926_deadline(authorization_date=D(2026, 7, 1))
+        irb = clocks.irb_emergency_notification_deadline(first_treatment_date=D(2026, 7, 1))
         self.assertEqual(by_id["written-3926-15-working-day"]["deadline"],
                          written.due.isoformat())
         self.assertEqual(by_id["irb-notify-5-working-day"]["deadline"],
@@ -168,7 +176,8 @@ class ComputeClocksCanonicalTests(unittest.TestCase):
             "submission.first_treatment_date": "2026-07-01",
         }, as_of=as_of)
         by_id = {c["id"]: c for c in out}
-        written, irb = clocks.expanded_access_emergency_deadlines(D(2026, 7, 1))
+        written = clocks.written_3926_deadline(authorization_date=D(2026, 7, 1))
+        irb = clocks.irb_emergency_notification_deadline(first_treatment_date=D(2026, 7, 1))
         self.assertEqual(by_id["written-3926-15-working-day"]["days_remaining"],
                          written.days_remaining(as_of))
         self.assertEqual(by_id["irb-notify-5-working-day"]["days_remaining"],
@@ -193,7 +202,7 @@ class ComputeClocksCanonicalTests(unittest.TestCase):
             "submission.emergency_auth_datetime": "2026-07-01",
         }, route)
         doc = ea_generators.gen_cover_letter(study, load_documents())
-        written = clocks.expanded_access_emergency_deadlines(D(2026, 7, 1))[0]
+        written = clocks.written_3926_deadline(authorization_date=D(2026, 7, 1))
         self.assertIn(written.due.isoformat(), doc.rendered)
 
 

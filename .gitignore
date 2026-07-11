@@ -47,3 +47,6 @@ app/data/
 
 # Browser-automation QA artifacts (Playwright MCP)
 .playwright-mcp/
+
+# Downloaded source-library originals stay local (indexed in sources/MANIFEST.md); never commit the whole tree.
+sources/

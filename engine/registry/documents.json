@@ -1,6 +1,7 @@
 [
   {
     "id": "form-fda-1571-ind-cover",
+    "author_party": "physician",
     "title": "Form FDA 1571 - Investigational New Drug Application (cover)",
     "category": "fda-forms",
     "lifecycle_phase": "startup",
@@ -12,6 +13,7 @@
   },
   {
     "id": "form-fda-1572-statement-of-investigator",
+    "author_party": "physician",
     "title": "Form FDA 1572 - Statement of Investigator",
     "category": "fda-forms",
     "lifecycle_phase": "startup",
@@ -23,6 +25,7 @@
   },
   {
     "id": "form-fda-3454-financial-disclosure-certification",
+    "author_party": "physician",
     "title": "Form FDA 3454 - Certification: Financial Interests of Clinical Investigators",
     "category": "fda-forms",
     "lifecycle_phase": "startup",
@@ -34,6 +37,7 @@
   },
   {
     "id": "form-fda-3455-financial-disclosure",
+    "author_party": "physician",
     "title": "Form FDA 3455 - Disclosure: Financial Interests of Clinical Investigators",
     "category": "fda-forms",
     "lifecycle_phase": "startup",
@@ -45,6 +49,7 @@
   },
   {
     "id": "form-fda-3674-clinicaltrials-gov-certification",
+    "author_party": "physician",
     "title": "Form FDA 3674 - Certification of Compliance with ClinicalTrials.gov Requirements",
     "category": "fda-forms",
     "lifecycle_phase": "startup",
@@ -56,6 +61,7 @@
   },
   {
     "id": "ind-application-cover-and-toc",
+    "author_party": "physician",
     "title": "IND Application - Cover Letter and Table of Contents",
     "category": "ind-application",
     "lifecycle_phase": "startup",
@@ -67,6 +73,7 @@
   },
   {
     "id": "ind-introductory-statement",
+    "author_party": "physician",
     "title": "IND - Introductory Statement",
     "category": "ind-application",
     "lifecycle_phase": "startup",
@@ -78,6 +85,7 @@
   },
   {
     "id": "ind-general-investigational-plan",
+    "author_party": "physician",
     "title": "IND - General Investigational Plan",
     "category": "ind-application",
     "lifecycle_phase": "startup",
@@ -89,6 +97,7 @@
   },
   {
     "id": "investigators-brochure",
+    "author_party": "manufacturer",
     "title": "Investigator's Brochure",
     "category": "ind-application",
     "lifecycle_phase": "startup",
@@ -100,6 +109,7 @@
   },
   {
     "id": "clinical-protocol-ich-m11-ceshharp",
+    "author_party": "physician",
     "title": "Clinical Protocol (ICH M11 CeSHarP structure)",
     "category": "protocol",
     "lifecycle_phase": "startup",
@@ -111,6 +121,7 @@
   },
   {
     "id": "protocol-synopsis",
+    "author_party": "physician",
     "title": "Protocol Synopsis",
     "category": "protocol",
     "lifecycle_phase": "startup",
@@ -122,6 +133,7 @@
   },
   {
     "id": "protocol-amendment-change-in-protocol",
+    "author_party": "physician",
     "title": "Protocol Amendment - Change in Protocol",
     "category": "protocol",
     "lifecycle_phase": "conduct",
@@ -133,6 +145,7 @@
   },
   {
     "id": "information-amendment",
+    "author_party": "physician",
     "title": "Information Amendment",
     "category": "ind-application",
     "lifecycle_phase": "conduct",
@@ -144,6 +157,7 @@
   },
   {
     "id": "informed-consent-form-part50",
+    "author_party": "physician",
     "title": "Informed Consent Form (21 CFR Part 50)",
     "category": "consent",
     "lifecycle_phase": "startup",
@@ -154,7 +168,21 @@
     "gate": "informed-consent"
   },
   {
+    "id": "informed-consent-form-part50-ea",
+    "author_party": "physician",
+    "title": "Informed Consent Form - Individual-Patient Expanded Access (21 CFR Part 50)",
+    "category": "consent",
+    "lifecycle_phase": "startup",
+    "governing_citations": ["21 CFR 50.25", "21 CFR 50.27", "21 CFR 312.305(c)", "21 CFR 312.60"],
+    "owner": "investigator",
+    "receiver": "subject",
+    "required_fields": ["investigator_name", "site_name", "drug_name", "manufacturer_name", "purpose", "consent_duration", "procedures", "risks", "benefits", "alternatives", "confidentiality_statement", "injury_compensation_statement", "cost_statement", "injury_contact_name", "injury_contact_phone", "research_contact", "irb_name", "irb_phone"],
+    "description": "P6 (HITL): the EA-profiled consent draft, framed as TREATMENT USE per FDA's individual-patient expanded-access guidance. Heading-completeness (rule R-ICF-50.25-EA) is NOT adequacy: whether the filled language actually informs THIS patient is the deferred concept rule R-ICF-50.25-ADEQ-EA plus a qualified, IRB-experienced human review — that human review is the release precondition for real-patient use, and the draft carries a PENDING-HUMAN-VERIFICATION banner until it happens. The generic informed-consent-form-part50 remains registered for non-EA routes.",
+    "gate": "informed-consent"
+  },
+  {
     "id": "hipaa-authorization",
+    "author_party": "physician",
     "title": "HIPAA Authorization for Research",
     "category": "consent",
     "lifecycle_phase": "startup",
@@ -166,6 +194,7 @@
   },
   {
     "id": "irb-submission-cover-and-checklist",
+    "author_party": "physician",
     "title": "IRB Submission Cover and Checklist",
     "category": "irb",
     "lifecycle_phase": "startup",
@@ -177,6 +206,7 @@
   },
   {
     "id": "irb-initial-approval-letter",
+    "author_party": "irb",
     "title": "IRB Initial Approval Letter",
     "category": "irb",
     "lifecycle_phase": "startup",
@@ -188,6 +218,7 @@
   },
   {
     "id": "irb-continuing-review-progress-report",
+    "author_party": "physician",
     "title": "IRB Continuing Review Progress Report",
     "category": "irb",
     "lifecycle_phase": "conduct",
@@ -199,6 +230,7 @@
   },
   {
     "id": "single-irb-reliance-authorization-agreement",
+    "author_party": "irb",
     "title": "Single IRB Reliance / Authorization Agreement",
     "category": "irb",
     "lifecycle_phase": "startup",
@@ -210,6 +242,7 @@
   },
   {
     "id": "dsmb-charter-single-site-low-risk",
+    "author_party": "irb",
     "title": "DSMB/DMC Charter (single-site, lower-risk)",
     "category": "dsmb",
     "lifecycle_phase": "startup",
@@ -221,6 +254,7 @@
   },
   {
     "id": "dsmb-meeting-minutes-and-recommendation",
+    "author_party": "irb",
     "title": "DSMB Meeting Minutes and Recommendation",
     "category": "dsmb",
     "lifecycle_phase": "conduct",
@@ -232,6 +266,7 @@
   },
   {
     "id": "data-safety-monitoring-plan",
+    "author_party": "physician",
     "title": "Data and Safety Monitoring Plan",
     "category": "safety",
     "lifecycle_phase": "startup",
@@ -243,6 +278,7 @@
   },
   {
     "id": "risk-based-monitoring-plan",
+    "author_party": "physician",
     "title": "Risk-Based Monitoring Plan",
     "category": "monitoring",
     "lifecycle_phase": "startup",
@@ -254,6 +290,7 @@
   },
   {
     "id": "safety-management-pharmacovigilance-plan",
+    "author_party": "physician",
     "title": "Safety Management / Pharmacovigilance Plan",
     "category": "safety",
     "lifecycle_phase": "startup",
@@ -265,6 +302,7 @@
   },
   {
     "id": "delegation-of-authority-log",
+    "author_party": "physician",
     "title": "Delegation of Authority / Site Responsibility Log",
     "category": "site-management",
     "lifecycle_phase": "startup",
@@ -276,6 +314,7 @@
   },
   {
     "id": "site-signature-initial-log",
+    "author_party": "physician",
     "title": "Site Signature and Initials Log",
     "category": "site-management",
     "lifecycle_phase": "startup",
@@ -287,6 +326,7 @@
   },
   {
     "id": "investigator-cv-and-qualifications",
+    "author_party": "physician",
     "title": "Investigator CV, Medical License, and GCP Training",
     "category": "site-management",
     "lifecycle_phase": "startup",
@@ -298,6 +338,7 @@
   },
   {
     "id": "laboratory-certification-and-normal-ranges",
+    "author_party": "physician",
     "title": "Laboratory Certification (CLIA/CAP) and Normal Ranges",
     "category": "site-management",
     "lifecycle_phase": "startup",
@@ -309,6 +350,7 @@
   },
   {
     "id": "clinical-trial-agreement",
+    "author_party": "manufacturer",
     "title": "Clinical Trial Agreement",
     "category": "contracts",
     "lifecycle_phase": "startup",
@@ -320,6 +362,7 @@
   },
   {
     "id": "study-budget-fmv",
+    "author_party": "physician",
     "title": "Study Budget with Fair-Market-Value Basis",
     "category": "contracts",
     "lifecycle_phase": "startup",
@@ -331,6 +374,7 @@
   },
   {
     "id": "transfer-of-regulatory-obligations-toro",
+    "author_party": "manufacturer",
     "title": "Transfer of Regulatory Obligations (TORO)",
     "category": "contracts",
     "lifecycle_phase": "startup",
@@ -342,6 +386,7 @@
   },
   {
     "id": "site-feasibility-questionnaire",
+    "author_party": "physician",
     "title": "Site Feasibility / Qualification Questionnaire",
     "category": "site-management",
     "lifecycle_phase": "startup",
@@ -353,6 +398,7 @@
   },
   {
     "id": "site-initiation-visit-report",
+    "author_party": "manufacturer",
     "title": "Site Initiation Visit Report",
     "category": "monitoring",
     "lifecycle_phase": "startup",
@@ -364,6 +410,7 @@
   },
   {
     "id": "regulatory-binder-isf-index",
+    "author_party": "physician",
     "title": "Regulatory Binder / Investigator Site File Index",
     "category": "tmf",
     "lifecycle_phase": "startup",
@@ -375,6 +422,7 @@
   },
   {
     "id": "trial-master-file-index",
+    "author_party": "physician",
     "title": "Trial Master File Index",
     "category": "tmf",
     "lifecycle_phase": "startup",
@@ -386,6 +434,7 @@
   },
   {
     "id": "clinicaltrials-gov-registration-record",
+    "author_party": "physician",
     "title": "ClinicalTrials.gov Registration Record",
     "category": "registration",
     "lifecycle_phase": "startup",
@@ -397,6 +446,7 @@
   },
   {
     "id": "blank-crf-ecrf",
+    "author_party": "physician",
     "title": "Blank Case Report Form / eCRF",
     "category": "data",
     "lifecycle_phase": "conduct",
@@ -408,6 +458,7 @@
   },
   {
     "id": "source-document-worksheet-templates",
+    "author_party": "physician",
     "title": "Source Document Worksheet Templates",
     "category": "data",
     "lifecycle_phase": "conduct",
@@ -419,17 +470,20 @@
   },
   {
     "id": "drug-accountability-log",
+    "author_party": "physician",
     "title": "Investigational Product Accountability Log",
     "category": "drug-accountability",
     "lifecycle_phase": "conduct",
     "governing_citations": ["21 CFR 312.62(a)", "21 CFR 312.61"],
     "owner": "investigator",
     "receiver": "site-file",
-    "required_fields": ["drug_name", "lot_numbers", "dispensing_entries"],
+    "required_fields": ["drug_name"],
+    "description": "M7 decision (Overhaul P2): this log is a SHELL to be filled at dispensing. Lot numbers and dispensing entries are recorded at the bedside once the manufacturer ships the drug — they are honestly absent at submission time, so the drafted shell renders them as explicit MISSING markers and the ledger goes green on the drug name alone. Post-supply intake fields are deliberately NOT added: filling the log is post-enrollment record-keeping, outside this drafting product's scope.",
     "gate": null
   },
   {
     "id": "drug-shipment-receipt-temperature-log",
+    "author_party": "physician",
     "title": "Drug Shipment Receipt and Temperature Log",
     "category": "drug-accountability",
     "lifecycle_phase": "conduct",
@@ -441,6 +495,7 @@
   },
   {
     "id": "ip-label-caution-statement",
+    "author_party": "physician",
     "title": "Investigational Product Label - Caution Statement",
     "category": "drug-accountability",
     "lifecycle_phase": "conduct",
@@ -452,6 +507,7 @@
   },
   {
     "id": "statistical-analysis-plan-ich-e9",
+    "author_party": "physician",
     "title": "Statistical Analysis Plan (ICH E9)",
     "category": "statistics",
     "lifecycle_phase": "conduct",
@@ -463,6 +519,7 @@
   },
   {
     "id": "sae-report-investigator-to-sponsor",
+    "author_party": "physician",
     "title": "SAE Report - Investigator to Sponsor",
     "category": "safety",
     "lifecycle_phase": "conduct",
@@ -474,6 +531,7 @@
   },
   {
     "id": "ind-safety-report-7-15-day",
+    "author_party": "physician",
     "title": "IND Safety Report (7-day / 15-day)",
     "category": "safety",
     "lifecycle_phase": "conduct",
@@ -485,6 +543,7 @@
   },
   {
     "id": "form-fda-3500a-medwatch-safety-report",
+    "author_party": "physician",
     "title": "Form FDA 3500A - MedWatch Mandatory Safety Report",
     "category": "safety",
     "lifecycle_phase": "conduct",
@@ -496,6 +555,7 @@
   },
   {
     "id": "unanticipated-problem-report-to-irb",
+    "author_party": "physician",
     "title": "Unanticipated Problem Report to IRB",
     "category": "safety",
     "lifecycle_phase": "conduct",
@@ -507,6 +567,7 @@
   },
   {
     "id": "protocol-deviation-log",
+    "author_party": "physician",
     "title": "Protocol Deviation Log",
     "category": "site-management",
     "lifecycle_phase": "conduct",
@@ -518,6 +579,7 @@
   },
   {
     "id": "screening-enrollment-withdrawal-log",
+    "author_party": "physician",
     "title": "Screening / Enrollment / Withdrawal Log",
     "category": "site-management",
     "lifecycle_phase": "conduct",
@@ -529,6 +591,7 @@
   },
   {
     "id": "subject-identification-code-list",
+    "author_party": "physician",
     "title": "Subject Identification Code List (confidential)",
     "category": "site-management",
     "lifecycle_phase": "conduct",
@@ -540,6 +603,7 @@
   },
   {
     "id": "interim-monitoring-visit-report",
+    "author_party": "manufacturer",
     "title": "Interim Monitoring Visit Report",
     "category": "monitoring",
     "lifecycle_phase": "conduct",
@@ -551,6 +615,7 @@
   },
   {
     "id": "ind-annual-report-312-33",
+    "author_party": "physician",
     "title": "IND Annual Report",
     "category": "ind-application",
     "lifecycle_phase": "conduct",
@@ -562,6 +627,7 @@
   },
   {
     "id": "close-out-visit-report",
+    "author_party": "manufacturer",
     "title": "Close-Out Visit Report",
     "category": "monitoring",
     "lifecycle_phase": "closeout",
@@ -573,6 +639,7 @@
   },
   {
     "id": "clinical-study-report-ich-e3",
+    "author_party": "physician",
     "title": "Clinical Study Report (ICH E3)",
     "category": "statistics",
     "lifecycle_phase": "closeout",
@@ -584,6 +651,7 @@
   },
   {
     "id": "ip-final-reconciliation-destruction",
+    "author_party": "physician",
     "title": "IP Final Reconciliation and Destruction Record",
     "category": "drug-accountability",
     "lifecycle_phase": "closeout",
@@ -595,6 +663,7 @@
   },
   {
     "id": "fda-study-completion-ind-withdrawal-notice",
+    "author_party": "physician",
     "title": "FDA Study Completion / IND Withdrawal Notice",
     "category": "closeout",
     "lifecycle_phase": "closeout",
@@ -606,6 +675,7 @@
   },
   {
     "id": "final-irb-notification-of-completion",
+    "author_party": "physician",
     "title": "Final IRB Notification of Study Completion",
     "category": "irb",
     "lifecycle_phase": "closeout",
@@ -617,6 +687,7 @@
   },
   {
     "id": "record-retention-and-archival-statement",
+    "author_party": "physician",
     "title": "Record Retention and Archival Statement",
     "category": "closeout",
     "lifecycle_phase": "closeout",
@@ -628,6 +699,7 @@
   },
   {
     "id": "form-fda-3926-individual-patient-expanded-access",
+    "author_party": "physician",
     "title": "Form FDA 3926 - Individual Patient Expanded Access Application",
     "category": "expanded-access",
     "lifecycle_phase": "startup",
@@ -639,6 +711,7 @@
   },
   {
     "id": "manufacturer-letter-of-authorization",
+    "author_party": "manufacturer",
     "title": "Manufacturer Letter of Authorization (LOA)",
     "category": "expanded-access",
     "lifecycle_phase": "startup",
@@ -650,6 +723,7 @@
   },
   {
     "id": "expanded-access-treatment-plan",
+    "author_party": "physician",
     "title": "Expanded Access Treatment Plan",
     "category": "expanded-access",
     "lifecycle_phase": "startup",
@@ -661,6 +735,7 @@
   },
   {
     "id": "expanded-access-cover-letter",
+    "author_party": "physician",
     "title": "Expanded Access Cover Letter (Form FDA 3926 submission)",
     "category": "expanded-access",
     "lifecycle_phase": "startup",
@@ -672,6 +747,7 @@
   },
   {
     "id": "manufacturer-loa-request",
+    "author_party": "physician",
     "title": "Manufacturer Letter-of-Authorization Request (physician to manufacturer)",
     "category": "expanded-access",
     "lifecycle_phase": "startup",
@@ -683,6 +759,7 @@
   },
   {
     "id": "irb-concurrence-request",
+    "author_party": "physician",
     "title": "IRB Concurrence Request (21 CFR 56.105 chair pathway)",
     "category": "expanded-access",
     "lifecycle_phase": "startup",

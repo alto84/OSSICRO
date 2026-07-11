@@ -7,6 +7,11 @@ The ledger is the operating definition of COMPLETE documentation
           and any gate has a recorded human sign-off
   amber - present and complete, but a non-delegable gate is awaiting a
           qualified human (the engine can never clear this itself)
+  awaiting-external-party - the drafted content is complete, but the
+          real-world instrument is authored/signed by an EXTERNAL party
+          (registry ``author_party`` != physician, Overhaul P4 / M2) and
+          its receipt has not been recorded as a fact. Intake
+          completeness alone can never turn such a document green.
   red   - missing document, missing required field, failed validation
           rule, or cross-document inconsistency -- each with the exact
           resolving question a human can answer
@@ -23,6 +28,33 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from .models import Document, LedgerItem, Study
+
+# Overhaul P4 (M2): the fourth ledger state. A document whose real-world
+# instrument an external party authors/signs can be drafted and internally
+# complete, yet it is never DONE until the received, signed instrument is
+# recorded as a fact.
+AWAITING_EXTERNAL_PARTY = "awaiting-external-party"
+
+# Overhaul P4 (M2): the external-party receipt-fact contract. For each
+# external-authored document that has a recorded-receipt intake contract,
+# the dotted study-record paths of the receipt facts. The LOA is the first
+# (and currently only) such contract: the P2 fields
+# manufacturer.loa_received_date / loa_signatory / loa_document_sha256.
+# The presence of BOTH the date and the signatory turns the row green; the
+# document hash is optional corroboration carried into the note.
+EXTERNAL_RECEIPT_FACTS: Dict[str, Dict[str, str]] = {
+    "manufacturer-letter-of-authorization": {
+        "date": "manufacturer.loa_received_date",
+        "signatory": "manufacturer.loa_signatory",
+        "document_sha256": "manufacturer.loa_document_sha256",
+        "party": "manufacturer",
+        "question": (
+            "Record the received, signed LOA (date + signatory) when the "
+            "manufacturer issues it — the letter shown here is OSSICRO's "
+            "draft for their review."
+        ),
+    },
+}
 
 # field name (as it appears in Document.fields) -> dotted study-record path
 CONSISTENCY_KEYS: Dict[str, str] = {
@@ -191,6 +223,55 @@ def build_ledger(
             )
             continue
 
+        completeness_note = ("present; %d/%d required fields filled; validated"
+                             % (len(entry.get("required_fields", [])),
+                                len(entry.get("required_fields", []))))
+
+        # AWAITING-EXTERNAL-PARTY (Overhaul P4 / M2): a document whose
+        # real-world instrument an external party authors/signs can never be
+        # green on intake completeness alone. It turns green only on a
+        # RECORDED receipt fact (for the LOA: received date + signatory) or,
+        # for gated external documents, the recorded human sign-off already
+        # checked above.
+        author_party = entry.get("author_party", "physician")
+        if author_party != "physician" and not (gate_id and doc.has_signoff(gate_id)):
+            facts = EXTERNAL_RECEIPT_FACTS.get(doc_id)
+            received_date = study.resolve(facts["date"]) if facts else None
+            signatory = study.resolve(facts["signatory"]) if facts else None
+            if facts and received_date and signatory:
+                receipt_note = (
+                    "received, signed instrument recorded: %s, %s"
+                    % (signatory, received_date))
+                doc_hash = study.resolve(facts["document_sha256"])
+                if doc_hash:
+                    receipt_note += "; document sha256 %s" % doc_hash
+                ledger.append(
+                    LedgerItem(
+                        doc_id=doc_id, title=title, status="green",
+                        gate_id=gate_id,
+                        notes=[completeness_note, receipt_note],
+                    )
+                )
+            else:
+                if facts:
+                    question = facts["question"]
+                else:
+                    question = (
+                        "'%s' is authored/signed by the %s, not the physician "
+                        "— intake completeness alone cannot finish it. Record "
+                        "the received instrument when the %s issues it."
+                        % (title, author_party, author_party))
+                ledger.append(
+                    LedgerItem(
+                        doc_id=doc_id, title=title,
+                        status=AWAITING_EXTERNAL_PARTY,
+                        gate_id=gate_id,
+                        questions=[question],
+                        notes=[completeness_note],
+                    )
+                )
+            continue
+
         # GREEN
         ledger.append(
             LedgerItem(
@@ -198,9 +279,7 @@ def build_ledger(
                 title=title,
                 status="green",
                 gate_id=gate_id,
-                notes=["present; %d/%d required fields filled; validated"
-                       % (len(entry.get("required_fields", [])),
-                          len(entry.get("required_fields", [])))],
+                notes=[completeness_note],
             )
         )
     return ledger
@@ -216,7 +295,10 @@ def _field_citation_lookup(doc_id: str) -> Dict[str, str]:
 
 
 def ledger_totals(ledger: List[LedgerItem]) -> Dict[str, int]:
-    totals = {"green": 0, "amber": 0, "red": 0}
+    # Four buckets from Overhaul P4 on: awaiting-external-party is a distinct
+    # state, never folded into amber (a pending EXTERNAL act is not a pending
+    # physician gate) and never hidden in green.
+    totals = {"green": 0, "amber": 0, AWAITING_EXTERNAL_PARTY: 0, "red": 0}
     for item in ledger:
         totals[item.status] = totals.get(item.status, 0) + 1
     return totals

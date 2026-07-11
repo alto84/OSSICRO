@@ -12,6 +12,9 @@ updated: 2026-07-09
 
 # Manufacturer Letter of Authorization (LOA) — TEMPLATE (DRAFT for qualified human review)
 
+> [!warning] Legacy paths (Overhaul P4, m5)
+> The `## Fields` table below uses this template's ORIGINAL study-record vocabulary, which predates the canonical intake schema. The canonical dotted field ids live in `engine/registry/routes.json`, and the shipped generator is `ea_generators.gen_loa`. Key renames: `physician.*` → `investigator.*`; `drug.manufacturer` / `drug.manufacturer_address` → `manufacturer.name` / `manufacturer.address`; `loa.referenced_file_numbers` → `manufacturer.ind_dmf_reference`; `fda.review_division` → `submission.fda_division`; `loa.signatory.*` → `manufacturer.loa_signatory` (a RECEIVED-LOA fact — recorded, never drafted); `loa.date` → the physician-entered as-of anchor (`submission.date` et al.). Terms only the manufacturer can supply (sections excluded, effective/expiration) have NO intake field by design and render as explicit MISSING markers in the draft.
+
 > [!authority] Governing authority
 > [21 CFR 312.23(b)](https://www.law.cornell.edu/cfr/text/21/312.23) (reference to information submitted by another person requires a written statement authorizing the reference); FD&C Act § 561A, [21 U.S.C. § 360bbb-0](https://www.law.cornell.edu/uscode/text/21/360bbb-0) (manufacturer expanded access policy context); see also [FDA expanded access resources](https://www.fda.gov/news-events/public-health-focus/expanded-access). This is a DRAFT template; OSSICRO fills it, a qualified human reviews and signs.
 

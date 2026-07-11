@@ -50,6 +50,8 @@ OSSICRO makes the coordination labor cheap and the paperwork correct, so a clini
 
 OSSICRO produces **DRAFT** documentation for review, editing, and approval by qualified humans and the appropriate oversight entities. It does not, and must not be configured to, perform **non-delegable regulated functions**: informed consent of a patient, IRB/IEC review, safety/causality determination, or the legal obligations of a sponsor or investigator. These are surfaced and gated, never automated. Not medical, legal, or regulatory advice.
 
+**Deployment boundary.** The app is a **single-user loopback pilot over synthetic cases** and program-enforces that: it refuses to start on a non-loopback host (no authentication backend exists — INV-7). The wall that must stand before any non-synthetic pilot — covered-entity boundary, PHI-at-rest expectations, BAA inventory, retention, and the two hard preconditions (persona auth; keyed profile hashes) — is stated in [`docs/deployment/DEPLOYMENT-COMPLIANCE.md`](docs/deployment/DEPLOYMENT-COMPLIANCE.md); the live-AI-review preconditions are in [`docs/deployment/AI-REVIEW-PRECONDITIONS.md`](docs/deployment/AI-REVIEW-PRECONDITIONS.md).
+
 ## License
 
 MIT (see `LICENSE`), with the non-delegable-function notice appended.

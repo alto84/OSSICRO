@@ -9,7 +9,7 @@ governing_authority:
   - "ICH E6(R3) (data governance; computerized systems)"
 tags: [ossicro/part11, ossicro/ai-credibility, ossicro/engine, cfr/11, ich/e6r3, status/confirmed, status/interpretive]
 aliases: ["Part 11", "AI Credibility", "Part 11 and AI"]
-updated: 2026-07-09
+updated: 2026-07-11
 ---
 
 # 21 CFR Part 11 Compliance and the FDA AI-Credibility Framework
@@ -27,25 +27,29 @@ Part 11 applies to "records in electronic form that are created, modified, maint
 
 ### Subpart B — Electronic records (§11.10 controls for closed systems)
 
-OSSICRO operates as a closed system (access controlled by the persons responsible for the records' content), so [§11.10](https://www.law.cornell.edu/cfr/text/21/11.10) is the operative control set:
+OSSICRO operates as a closed system (access controlled by the persons responsible for the records' content), so [§11.10](https://www.law.cornell.edu/cfr/text/21/11.10) is the operative control set. The **Status** column (added in the Overhaul P3 truth pass, M12) states what exists in the code today — BUILT (implemented and tested), PARTIAL (a real subset exists), NOT-YET-BUILT (design target only). The "implementation" column describes the design target; the Status column is the honest gap map, and nothing in it is a compliance certification:
 
-| Clause | Requirement | OSSICRO implementation |
-|---|---|---|
-| 11.10(a) | System validation for accuracy, reliability, consistent intended performance, and the ability to discern invalid/altered records | Versioned validation suite for the engine; the eligibility-matching subsystem additionally carries the public-benchmark harness of [[matching-evaluation-and-benchmarks]] |
-| 11.10(b) | Accurate and complete copies in human-readable and electronic form for FDA inspection | Every document state exportable with its full provenance manifest ([[draft-provenance-model]]) |
-| 11.10(c) | Record protection for accurate, ready retrieval through the retention period | Retention aligned to 21 CFR 312.57(c)/312.62(c) and E6(R3) ([[record-retention-and-archival]]) |
-| 11.10(d) | Access limited to authorized individuals | Role-scoped access mirroring the four personas ([[four-entry-points]]) and the oversight bodies ([[communication-hub]]) |
-| 11.10(e) | Secure, computer-generated, time-stamped audit trails that independently record operator entries and actions; record changes must not obscure prior entries | The append-only audit spine; ALCOA++ per E6(R3); rendered as the provenance UX and hash-chained into the [[verifiable-site-qualification-dossier]] |
-| 11.10(f)-(g) | Operational and authority checks enforcing permitted sequencing and authorized use | The gate machinery itself ([[non-delegable-functions-and-gates]]) — sequencing checks are how enrollment is blocked pending IRB approval |
-| 11.10(k) | Controls over systems documentation | Versioned SOPs and system documentation under the same document-control scheme as study artifacts |
+| Clause | Requirement | OSSICRO implementation | Status |
+|---|---|---|---|
+| 11.10(a) | System validation for accuracy, reliability, consistent intended performance, and the ability to discern invalid/altered records | Versioned validation suite for the engine; the eligibility-matching subsystem additionally carries the public-benchmark harness of [[matching-evaluation-and-benchmarks]] | **PARTIAL** — the engine/app pytest suite runs versioned in-repo; the matching public-benchmark harness is NOT-YET-BUILT |
+| 11.10(b) | Accurate and complete copies in human-readable and electronic form for FDA inspection | Every document state exportable with its full provenance manifest ([[draft-provenance-model]]) | **PARTIAL** — the package view exports rendered documents with a SHA-256 hash manifest and per-span provenance; a full-state inspection export is NOT-YET-BUILT |
+| 11.10(c) | Record protection for accurate, ready retrieval through the retention period | Retention aligned to 21 CFR 312.57(c)/312.62(c) and E6(R3) ([[record-retention-and-archival]]) | **NOT-YET-BUILT** — no retention/archival machinery exists yet (single-machine JSON case store) |
+| 11.10(d) | Access limited to authorized individuals | Role-scoped access mirroring the four personas ([[four-entry-points]]) and the oversight bodies ([[communication-hub]]) | **NOT-YET-BUILT** — persona authentication is explicitly deferred (INV-7); the pilot is single-user, loopback-only |
+| 11.10(e) | Secure, computer-generated, time-stamped audit trails that independently record operator entries and actions; record changes must not obscure prior entries | The append-only audit spine; ALCOA++ per E6(R3); rendered as the provenance UX and hash-chained into the [[verifiable-site-qualification-dossier]] | **BUILT** — append-only, hash-chained trail (`ossicro.audit`) with tamper-evidence verification; `ai_review` / `ai_review_disposition` logging BUILT as of Overhaul P3 |
+| 11.10(f)-(g) | Operational and authority checks enforcing permitted sequencing and authorized use | The gate machinery itself ([[non-delegable-functions-and-gates]]) — sequencing checks are how enrollment is blocked pending IRB approval | **PARTIAL** — sequencing checks are enforced fail-closed in the engine (`GateViolation`; `finalize()` is the only path to final); authority checks await the INV-7 auth layer |
+| 11.10(k) | Controls over systems documentation | Versioned SOPs and system documentation under the same document-control scheme as study artifacts | **NOT-YET-BUILT** — repo docs are versioned in git, but no controlled SOP scheme exists |
 
 ### Subpart C — Electronic signatures (§11.50-11.300)
 
 [§11.50](https://www.law.cornell.edu/cfr/text/21/11.50) requires each signed record to show the printed name of the signer, the date/time, and the **meaning** of the signature (review, approval, responsibility, authorship) — OSSICRO records the meaning explicitly at each gate (e.g., "sponsor attestation, Form FDA 1571"). [§11.70](https://www.law.cornell.edu/cfr/text/21/11.70) binds signatures to their records so they cannot be excised or transferred. §11.100-11.300 govern signature uniqueness, identity verification, the certification to FDA that e-signatures are the legally binding equivalent of handwritten signatures (§11.100(c)), and ID/password controls. Every gate signature in the [[non-delegable-functions-and-gates|master gating matrix]] runs on this machinery; eConsent signatures additionally follow the [2016 FDA/OHRP eConsent guidance](https://www.fda.gov/regulatory-information/search-fda-guidance-documents/use-electronic-informed-consent-clinical-investigations-questions-and-answers).
 
+**Status: NOT-YET-BUILT** (Overhaul P3 truth pass, M12). What exists today is a *record of a human act performed outside OSSICRO* — the sign-off endpoint stores signer name, role, date, and the committed-profile hash, and the audit trail chains it. The Part 11 **e-signature ceremony itself** — signature uniqueness and identity verification (§11.100(a)-(b)), the §11.100(c) certification letter to FDA, ID/password controls (§11.300), and §11.50/§11.70 display-and-binding on rendered records — is not yet built. Until it is, no sign-off recorded in OSSICRO is represented as a 21 CFR Part 11 electronic signature.
+
 ### AI authorship in the audit trail
 
 AI-drafted content is treated as a distinct record event, not disguised as human work. For every AI-generated span the audit trail records: attribution (which agent), model and version, input hash, template and template version, generation timestamp, and — before the record can advance — the identity and signature of the qualified human reviewer ([[single-pass-review-ux]], [[claude-sdk-ai-in-the-loop]]). This is an OSSICRO design rule that exceeds the Part 11 text; it exists so that an FDA inspector (BIMO; see [[fda-as-counterparty]]) can reconstruct exactly what the machine drafted and what the human reviewed and signed.
+
+**Status: PARTIAL — `ai_review` logging BUILT as of Overhaul P3.** Every LIVE concept review (document text sent to an external model, permitted only under the opt-in flag and the preconditions in `docs/deployment/AI-REVIEW-PRECONDITIONS.md`) now writes one `ai_review` audit record: `actor="system:concept-reviewer"`, model id and version, the committed-profile input hash, the reviewed document ids, the finding count, and the destination (`anthropic-api`) — never document text or finding spans (INV-8). The human reviewer's judgment on each finding is captured as an `ai_review_disposition` record (accepted/dismissed, under a named human), and the check screen discloses which reviewer ran — never silent either way. The offline stub reviewer writes no `ai_review` record because no egress happened. Per-span generation attribution (template + template version on each span) exists in the provenance stamps; the *pre-advance signature requirement* is the gate machinery above and inherits its e-signature status (NOT-YET-BUILT as a Part 11 signature; BUILT as a recorded human act).
 
 ## The FDA 2025 AI-credibility draft guidance
 

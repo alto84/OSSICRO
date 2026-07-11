@@ -1,6 +1,6 @@
 # Route-3926 Submission Spec — Single-Patient Expanded Access
 
-**Version 1.0 — 2026-07-09.** Governing spec for the OSSICRO MVP. This document defines *what the FDA reviewer receives* and *what the manufacturer acts on* for a single-patient, individual-patient expanded-access request under 21 CFR 312.310, submitted via **Form FDA 3926**. It governs both the backend (engine intake → generate → check → gates → assembly) and the frontend (physician intake, package review, gate routing).
+**Version 1.1 — 2026-07-11** (Overhaul P8: 3926 item-number references reconciled to the single item map `FORM_3926_ITEMS` in `engine/ossicro/pdf_3926.py`; numbering PENDING-HUMAN-VERIFICATION — see §1.1). Originally version 1.0 — 2026-07-09. Governing spec for the OSSICRO MVP. This document defines *what the FDA reviewer receives* and *what the manufacturer acts on* for a single-patient, individual-patient expanded-access request under 21 CFR 312.310, submitted via **Form FDA 3926**. It governs both the backend (engine intake → generate → check → gates → assembly) and the frontend (physician intake, package review, gate routing).
 
 Status labels follow the Constitution (CP4): **Confirmed** = black-letter regulation or published FDA form/guidance; **Interpretive** = OSSICRO's structural design choice not directly dictated by a citation. Every field, document, and clock below carries its citation. Nothing here authorizes OSSICRO to perform a reserved act — the eight code-enforced gates (`engine/registry/gates.json`) and the four external-party decisions (physician treatment call, manufacturer supply, FDA authorization, IRB concurrence) are named at each node and fail closed via `GateViolation`.
 
@@ -39,14 +39,28 @@ The complete Route-3926 submission the FDA reviewer receives, in **assembly orde
 |---|---|---|---|---|---|
 | 1 | **Cover letter** | `ind-application-cover-and-toc` (EA-profiled) | sponsor-investigator | `submission-to-fda` | 21 CFR 312.23(a)(1) |
 | 2 | **Form FDA 3926** (the application; substitutes for Form 1571) | `form-fda-3926-individual-patient-expanded-access` | investigator | `submission-to-fda` | 21 CFR 312.310; Form 3926 (OMB 0910-0814) |
-| 3 | **Clinical history + rationale** (narrative that the §312.305(a) / §312.310(a) criteria are met) | (part of 3926 Field 9 / attachment) | investigator | — | 21 CFR 312.305(a), 312.310(a) |
+| 3 | **Clinical history + rationale** (narrative that the §312.305(a) / §312.310(a) criteria are met) | (part of 3926 Item 3 / attachment) | investigator | — | 21 CFR 312.305(a), 312.310(a) |
 | 4 | **Expanded-access treatment plan** (dose, route, planned duration, treatment + monitoring plan) | `expanded-access-treatment-plan` | investigator | — | 21 CFR 312.305(b) |
 | 5 | **Manufacturer Letter of Authorization (LOA)** — cross-references manufacturer IND/DMF | `manufacturer-letter-of-authorization` | sponsor (manufacturer) | — (external-party act) | 21 CFR 312.305(b)(1), 312.23(b); FDCA §561A |
-| 6 | **Physician qualification statement** (§312.310(a) determination + credentials) | (3926 Field 6 / attachment) | investigator | — | 21 CFR 312.310(a) |
+| 6 | **Physician qualification statement** (§312.310(a) determination + credentials) | (3926 Item 6 / attachment) | investigator | — | 21 CFR 312.310(a) |
 | 7 | **IRB of record** identification + concurrence evidence (or §56.105 chair-concurrence request) | `irb-submission-cover-and-checklist` (EA-profiled) | investigator/IRB | `irb-approval` (external) | 21 CFR 56.104(c), 56.105 |
 | 8 | **Informed consent form** (drafted; the consent *event* is non-delegable) | `informed-consent-form-part50` | investigator | `informed-consent` | 21 CFR 50.25, 50.27 |
 
 **Interpretive** as to bundling order; **Confirmed** as to which artifacts are required. Items 3 and 6 are captured *inside* Form 3926 or as short attachments to it — the 3926 is deliberately a single streamlined instrument (`form-fda-3926-expanded-access.md`).
+
+> **PENDING-HUMAN-VERIFICATION — Form 3926 item numbering (Overhaul P8).** Every 3926
+> item-number reference in this spec follows the single item map `FORM_3926_ITEMS` in
+> `engine/ossicro/pdf_3926.py` — the one source the text template, the PDF layout, and the
+> FDF field map all derive from. Best-known reconciled map: 1 date of submission; 2 nature of
+> submission; 3 patient's clinical information (diagnosis, history, prior therapies, and the
+> rationale — this spec previously said Field 9); 4 treatment information; 5 LOA;
+> 6 physician qualification statement; 7 physician (requestor) information; 8 IRB;
+> 9 **UNRESOLVED** (not enumerated by the local instructions/guidance PDF); 10 waivers
+> 10.a/10.b (numbering + semantics confirmed against the local guidance PDF); 11 physician
+> signature and date. The numbering is final only when a qualified human opens the official
+> fillable form (OMB 0910-0814), verifies the map and the ~28 AcroForm names, and initials
+> `FORM_3926_MAP_VERIFIED_BY` in `pdf_3926.py`; until then every rendered 3926 surface
+> carries the pending marker.
 
 ### 1.2 New individual-patient IND vs. existing IND
 

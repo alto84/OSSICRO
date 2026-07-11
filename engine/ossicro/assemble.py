@@ -142,6 +142,29 @@ def assemble_submission(
             "questions": [q],
             "message": "Manufacturer cross-reference — " + q,
         })
+    # Overhaul P4 (M2): on the LOA branch the cross-reference is not enough —
+    # the signed LOA must have been RECEIVED and recorded as a fact before the
+    # package is submission-ready. OSSICRO never assumes the manufacturer's
+    # decision; the no-IND division-contact branch is the alternative.
+    # QA F1: require the SAME facts the ledger requires to turn the LOA row
+    # green — the received date AND the signatory — so submission_ready and the
+    # ledger never disagree on whether the manufacturer actually issued the LOA.
+    loa_received = (study.resolve("manufacturer.loa_received_date") is not None
+                    and study.resolve("manufacturer.loa_signatory") is not None)
+    if has_loa_ref and not loa_received:
+        q = ("Manufacturer LOA not yet received (recorded fact required; the "
+             "no-IND division-contact branch is the alternative). Record "
+             "'manufacturer.loa_received_date' (and the signatory) when the "
+             "signed LOA arrives — the decision to issue it is the "
+             "manufacturer's alone (FDCA 561A).")
+        blocking.append({
+            "doc_id": "manufacturer-letter-of-authorization",
+            "title": "Manufacturer LOA receipt",
+            "questions": [q],
+            "message": "Manufacturer LOA not yet received (recorded fact "
+                       "required; the no-IND division-contact branch is the "
+                       "alternative).",
+        })
 
     if as_of is None:
         as_of = derive_as_of(study)
@@ -150,6 +173,30 @@ def assemble_submission(
     manufacturer_packet = _manufacturer_packet(study, documents)
 
     totals = ledger_totals(check.ledger)
+
+    # Overhaul P4 (ethics 9): the readiness signal is never a bare boolean.
+    # ``human_acts_outstanding`` enumerates every human act still pending —
+    # the unsigned non-delegable gates AND every awaiting-external-party
+    # document — so "ready" always reads as "documentation ready; N human
+    # acts outstanding". OSSICRO computes the list; it performs none of them.
+    human_acts_outstanding: List[Dict[str, Any]] = []
+    for pg in check.gate_packet:
+        human_acts_outstanding.append({
+            "kind": "gate",
+            "id": pg.gate_id,
+            "label": pg.name,
+            "who": pg.responsible_role,
+            "doc_ids": list(pg.doc_ids),
+        })
+    for item in check.ledger:
+        if item.status == "awaiting-external-party":
+            human_acts_outstanding.append({
+                "kind": "external-party",
+                "id": item.doc_id,
+                "label": item.title,
+                "who": doc_registry.get(item.doc_id, {}).get("author_party", ""),
+                "doc_ids": [item.doc_id],
+            })
 
     return {
         "route_id": route.get("route_id"),
@@ -166,6 +213,7 @@ def assemble_submission(
         "totals": totals,
         "submission_ready": len(blocking) == 0,
         "blocking": blocking,
+        "human_acts_outstanding": human_acts_outstanding,
     }
 
 

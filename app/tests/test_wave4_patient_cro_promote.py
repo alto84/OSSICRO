@@ -146,9 +146,18 @@ class Wave4TestBase(unittest.TestCase):
         assert status == 200, body
         return case
 
+    # Overhaul P5 (M4): promote now refuses the NON-EMERGENCY route while the
+    # informed-consent / irb-approval sign-offs are missing, unless the actor
+    # types the acknowledgment in their own words. These Wave-4 tests exercise
+    # promote mechanics (the sweep has its own P5 suite), so the helper
+    # carries a genuine typed acknowledgment.
+    ACK = ("I am recording this enrollment before the consent and IRB "
+           "sign-offs are recorded; both acts remain mine to perform.")
+
     def _promote_ok(self, case_id, legal_basis="authorization-164.508"):
         status, body = _http("POST", "/api/case/%s/promote" % case_id,
-                             {"actor": ENROLLER, "legal_basis": legal_basis})
+                             {"actor": ENROLLER, "legal_basis": legal_basis,
+                              "acknowledge_unsigned_gates": self.ACK})
         self.assertEqual(status, 200, body)
         return body
 
@@ -376,7 +385,8 @@ class TestPromote(Wave4TestBase):
         self.assertEqual(status, 200)
         self.assertEqual(got["enrollment"], enr)
         self.assertEqual(got["mode"], "ENROLLMENT")
-        self.assertEqual(len(got["obligations"]), 5)   # incl. 56.104(c) IRB notice
+        # P7: 6 rows — incl. 56.104(c) IRB notice + 312.310(c)(2) summary.
+        self.assertEqual(len(got["obligations"]), 6)
 
     def test_obligations_checklist_citations_and_hc3_honesty(self):
         # Sample fixture: non-emergency, fda_receipt_date = 2026-06-15.
@@ -386,7 +396,8 @@ class TestPromote(Wave4TestBase):
         by_citation = {o["citation"]: o for o in checklist}
         self.assertEqual(sorted(by_citation), sorted([
             "21 CFR 312.32(c)(1)", "21 CFR 312.32(c)(2)",
-            "21 CFR 312.310(d)(2)", "21 CFR 56.104(c)", "21 CFR 312.33"]))
+            "21 CFR 312.310(d)(2)", "21 CFR 56.104(c)", "21 CFR 312.33",
+            "21 CFR 312.310(c)(2)"]))   # P7 (M10): end-of-treatment summary
         for o in checklist:
             self.assertEqual(o["owner"], "physician-sponsor")
             self.assertTrue(o["obligation"])
@@ -468,7 +479,9 @@ class TestPromote(Wave4TestBase):
                              {"actor": "Someone Else, MD",
                               "legal_basis": LEGAL_BASES[2]})
         self.assertEqual(status, 409)
-        self.assertIn("already enrolled", body["error"])
+        # P7 (m2): physician-facing vocabulary is "treatment start".
+        self.assertIn("already recorded", body["error"])
+        self.assertIn("treatment-start record stands", body["error"])
         self.assertEqual(body["enrollment"], first)      # the record stands
         self.assertEqual(case["enrollment"], first)      # nothing rewritten
         self.assertEqual(
@@ -517,7 +530,11 @@ class TestCroBoard(Wave4TestBase):
         self.assertFalse(draft["released"])
         self.assertFalse(draft["enrolled"])
         self.assertFalse(draft["patient_link_minted"])
-        self.assertEqual(draft["obligations"], {"total": 0, "armed": 0})
+        # P7 (M11): the checklist is decoupled from promote — the sample
+        # fixture records submission.fda_receipt_date (an anchoring fact),
+        # so even the pre-promote draft case shows the 6 tracked duties,
+        # with the annual report armed from the receipt date.
+        self.assertEqual(draft["obligations"], {"total": 6, "armed": 1})
         self.assertEqual(draft["patient_coded_id"], "PT-3926-014")
         self.assertEqual(draft["route_id"], "route-3926")
         self.assertEqual(draft["gates"]["required"], 4)
@@ -534,7 +551,8 @@ class TestCroBoard(Wave4TestBase):
         self.assertTrue(full["released"])
         self.assertTrue(full["enrolled"])
         self.assertTrue(full["patient_link_minted"])
-        self.assertEqual(full["obligations"]["total"], 5)   # incl. 56.104(c)
+        # P7: 6 rows — incl. 56.104(c) + the 312.310(c)(2) summary.
+        self.assertEqual(full["obligations"]["total"], 6)
         self.assertEqual(full["obligations"]["armed"], 1)      # annual only
 
     def test_board_never_mutates_cases(self):

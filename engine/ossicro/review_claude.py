@@ -17,6 +17,14 @@ Design for testability and safety:
 - Temperature 0 and a pinned model id, for reproducibility.
 - A malformed model response fails LOUDLY (ConceptReviewError) — a reviewer
   that cannot be parsed must not pass silently.
+
+Selecting this reviewer is EGRESS (B1): rendered document text leaves the
+machine for the Anthropic API. The app selects it only when
+OSSICRO_LIVE_CONCEPT_REVIEW is affirmatively set — a deployment decision with
+documented preconditions (BAA / zero retention / a named human on the log);
+see docs/deployment/AI-REVIEW-PRECONDITIONS.md. Every live review writes one
+``ai_review`` audit record (HC5) via the app, attributed with
+``model_id``/``model_version`` below.
 """
 
 from __future__ import annotations
@@ -70,9 +78,18 @@ class ClaudeConceptReviewer(ConceptReviewer):
     the model's text (the Anthropic SDK shape). Inject a fake in tests.
     """
 
-    def __init__(self, client, model: str = DEFAULT_MODEL, max_tokens: int = _MAX_TOKENS):
+    def __init__(self, client, model: str = DEFAULT_MODEL, max_tokens: int = _MAX_TOKENS,
+                 model_version: str = ""):
         self._client = client
         self.model = model
+        # B1 full remediation (Overhaul P3 / HC5): the per-review ai_review
+        # audit record names exactly which model saw the document text.
+        # ``model_id`` is the pinned API model identifier; ``model_version``
+        # defaults to that same pin (Anthropic model ids are themselves the
+        # version pin) unless the deployment knows a finer-grained snapshot.
+        # Never blank — the audit record always carries both.
+        self.model_id = model
+        self.model_version = model_version or model
         self._max_tokens = max_tokens
 
     @classmethod

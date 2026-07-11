@@ -72,6 +72,7 @@ class UnarmedClockTests(unittest.TestCase):
         route = routes.get_route("route-3926")
         fields = _sample_fields()
         del fields["submission.fda_receipt_date"]  # no trigger anywhere
+        del fields["submission.date"]              # (P2: also backstops the clock)
         study = build_study(fields, route)
         (clock,) = compute_clocks(study, route)
         self.assertFalse(clock["armed"])
@@ -120,7 +121,9 @@ class UnarmedClockTests(unittest.TestCase):
 class AsOfThreadingTests(unittest.TestCase):
     def test_dated_spans_anchor_on_physician_entered_date(self):
         study, documents, _route = _build_case(_sample_fields())
-        # anchor derives from submission.fda_receipt_date = 2026-06-15
+        # anchor derives from submission.date = 2026-06-15 (P2: the primary
+        # _AS_OF_FIELDS anchor, now a live intake field; same value as the
+        # fixture's fda_receipt_date)
         self.assertEqual(derive_as_of(study), D(2026, 6, 15))
         cover = documents["expanded-access-cover-letter"]
         self.assertEqual(cover.fields.get("cover_date"), "2026-06-15")
@@ -130,6 +133,7 @@ class AsOfThreadingTests(unittest.TestCase):
     def test_no_anchor_renders_missing_marker_not_a_date(self):
         fields = _sample_fields()
         del fields["submission.fda_receipt_date"]
+        del fields["submission.date"]   # P2: remove the primary anchor too
         study, documents, _route = _build_case(fields)
         self.assertIsNone(derive_as_of(study))
         cover = documents["expanded-access-cover-letter"]
@@ -321,9 +325,13 @@ class ConceptIntegrityTests(unittest.TestCase):
         pkg = assemble_submission(self.study, self.documents, self.route,
                                   self.docreg, self.gatereg, check=check)
         self.assertEqual(pkg["reviewer_model"], "clean-reviewer-v1")
-        self.assertEqual(pkg["totals"], {"green": sum(1 for i in check.ledger if i.status == "green"),
-                                         "amber": sum(1 for i in check.ledger if i.status == "amber"),
-                                         "red": sum(1 for i in check.ledger if i.status == "red")})
+        # P4 re-baseline: totals carry the fourth awaiting-external-party bucket.
+        self.assertEqual(pkg["totals"], {
+            "green": sum(1 for i in check.ledger if i.status == "green"),
+            "amber": sum(1 for i in check.ledger if i.status == "amber"),
+            "awaiting-external-party": sum(
+                1 for i in check.ledger if i.status == "awaiting-external-party"),
+            "red": sum(1 for i in check.ledger if i.status == "red")})
 
     def test_reviewer_failure_never_clears_a_gate(self):
         result = run_check(self.study, self.documents, self.docreg, self.gatereg,
