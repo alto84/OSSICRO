@@ -582,8 +582,8 @@
         extracted.
       </p>
       <div class="privacynote"><b>Local, preparatory review only.</b>
-        Your chart data is parsed locally and never leaves this machine; nothing here becomes part of
-        the submission until you confirm it — field by field, below.</div>
+        Your chart data is parsed on your local OSSICRO server on this machine and is not sent anywhere else;
+        nothing here becomes part of the submission until you confirm it, field by field, below.</div>
       <div class="importgrid">
         <div class="dropzone" id="dropZone" tabindex="0" role="button"
              aria-label="Drop or choose a FHIR Bundle JSON file">
@@ -636,7 +636,7 @@
         It is <b>not a signature</b> and performs no regulatory act: consent, IRB concurrence,
         causality, and submission to FDA remain acts only their named humans can perform.
         The commit stores your name, the time, and a SHA-256 fingerprint of each confirmed value.
-        The values themselves are never stored.
+        The commit record itself stores no values — the intake values remain in the case file as usual.
       </p>
       <div id="commitBody"><p class="muted small" style="margin:6px 0 0">
         The profile state loads with the case. Save the intake or run a check.</p></div>
@@ -655,7 +655,7 @@
         <h3>Statutory clocks</h3>
         <p class="muted small" style="margin-top:-4px">
           Each deadline is computed from a <b>physician-entered trigger date</b>, counted in working
-          days or calendar days (weekends and observed federal holidays included). If no trigger
+          days (weekends and observed federal holidays excluded) or calendar days (included). If no trigger
           date has been entered, no deadline is shown, because OSSICRO never assumes
           today&rsquo;s date.
         </p>
@@ -904,6 +904,7 @@
     OSSICRO — Open Source Sponsor-Investigator CRO · Route-3926 MVP ·
     Governed by the OSSICRO Constitution: complete documentation drafted for qualified human review;
     non-delegable acts (consent, IRB approval, causality, signatures, submission) are never performed by software.
+    Not medical, legal, or regulatory advice.
   </footer>
 </div>
 
@@ -1010,7 +1011,7 @@ const STRINGS = {
     title: "Manufacturer view — released requests",
     intro: "A case appears here only after a named clinician explicitly released it from the " +
       "physician workspace; every release is recorded in the audit trail. " +
-      "Synthetic cases only through the pilot. No patient identifiers appear in this view.",
+      "Synthetic cases only through the pilot. No direct patient identifiers appear in this view — the patient is shown by coded ID only.",
     decisionLead: "No decision happens here.",
     decisionNote: "The decision to supply the drug and the LOA signature belong to the " +
       "manufacturer (FDCA §561A). OSSICRO drafts; it does not decide or send. There is " +
@@ -1091,8 +1092,8 @@ const STRINGS = {
       "package": "The request package is being put together",
       "packaged": "The request package is being put together",
       "released": "The request was shared with the medicine's maker",
-      "enrollment": "The formal treatment process has begun",
-      "enrolled": "The formal treatment process has begun"
+      "enrollment": "Your enrollment has been recorded",
+      "enrolled": "Your enrollment has been recorded"
     },
     stageUnknown: "Your physician's office is working on the request",
     invalidTitle: "This link is not valid.",
@@ -2428,7 +2429,8 @@ function renderPackage(){
   if (p.submission_ready){
     $("#readyBanner").innerHTML = `<div class="ready yes">
       <b>Package assembly complete.</b> Every draft is validated and internally consistent.
-      What remains: the physician's review, the required signatures, and the physician's
+      What remains: the physician's review and signatures, the third-party acts tracked in the
+      ledger (manufacturer LOA, IRB concurrence, informed consent), and the physician's
       own act of submission to FDA. OSSICRO does not file.</div>`;
   } else {
     $("#readyBanner").innerHTML = `<div class="ready no">
@@ -2572,8 +2574,9 @@ function renderMatch(){
       <span class="spacer"></span>
       <span class="muted small mono">as of ${esc(asText(m.as_of) || "—")}</span>
     </div>
-    <p class="muted small" style="margin:8px 0 0"><b>De-identified search terms sent.</b> Everything
-      that left the case is shown below; it contains no names, dates, geography, or identifiers:</p>
+    <p class="muted small" style="margin:8px 0 0"><b>De-identified search terms used.</b> The full set
+      is shown below — only the condition codes and drug token are sent to registries; age band, sex,
+      and route are compared locally and never sent. None of it contains names, dates, geography, or identifiers:</p>
     <div class="predchips">${predChips(m.predicates_used) ||
       '<span class="muted small">(none reported)</span>'}</div>`;
   const cands = m.candidates || [];

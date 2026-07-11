@@ -28,7 +28,7 @@
     "treatment.benefit_risk": "In a first-in-human study of 41 patients, Cytoravir produced partial responses in biliary-tract tumors with a safety profile limited mainly to grade 1-2 nausea and reversible transaminase elevation. For a patient with no remaining approved options and a life expectancy of months, this evidence supports a reasonable expectation that the potential benefit justifies the potential risk.",
     "treatment.non_interference": "Providing the drug for one patient will not interfere with the sponsor's ongoing phase 2 program, which continues to enroll at target and has adequate drug supply.",
     "treatment.plan_id": "TP-CYTO-3926-014",
-    "treatment.plan_version": "v1.0",
+    "treatment.plan_version": "1.0",
 
     "request.clinical_rationale": "This 58-year-old patient has refractory metastatic cholangiocarcinoma that has progressed through all standard systemic therapy and carries no actionable molecular target. The condition is serious and life-threatening, no comparable or satisfactory alternative therapy remains, and early-phase data for Cytoravir show antitumor activity with acceptable toxicity, so the potential benefit justifies the potential risk under 21 CFR 312.305(a).",
 

@@ -120,7 +120,8 @@ Principal Investigator: {{investigator_name}}, {{site_name}}
 
 1. RESEARCH STATEMENT, PURPOSE, DURATION, PROCEDURES - 50.25(a)(1)
    You are being asked to take part in a research study. Purpose:
-   {{purpose}} Expected duration of participation: {{duration}}
+   {{purpose}}
+   Expected duration of participation: {{duration}}
    Procedures (experimental procedures identified): {{procedures}}
 
 2. REASONABLY FORESEEABLE RISKS OR DISCOMFORTS - 50.25(a)(2)

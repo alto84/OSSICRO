@@ -424,14 +424,14 @@ def gen_cover_letter(study: Study, doc_registry: Dict[str, dict],
             clock_statement = (
                 "This written submission is filed within 15 WORKING DAYS of the FDA "
                 "telephone authorization dated %s; that deadline is %s (21 CFR "
-                "312.310(d))." % (auth, written.due.isoformat())
+                "312.310(d)(2))." % (auth, written.due.isoformat())
             )
         else:
             clock_statement = (
                 "EMERGENCY: enter the FDA telephone-authorization date so OSSICRO can "
-                "compute the 15-working-day written-3926 deadline (21 CFR 312.310(d))."
+                "compute the 15-working-day written-3926 deadline (21 CFR 312.310(d)(2))."
             )
-        clock_cite = "21 CFR 312.310(d)"
+        clock_cite = "21 CFR 312.310(d)(2)"
     else:
         receipt = study.resolve("submission.fda_receipt_date")
         receipt_date = parse_trigger_date(receipt, "submission.fda_receipt_date")
@@ -752,7 +752,7 @@ Re: Single-patient expanded access request — {{drug_name}}
 
 5. FDA authorization of expanded access does NOT obligate supply. The supply
    decision, the LOA signature, and any fair-market-value / anti-kickback
-   judgment are the manufacturer's alone (FDCA 561A).
+   judgment (42 U.S.C. 1320a-7b) are the manufacturer's alone (FDCA 561A).
 
 Respectfully,
 {{investigator_name}}{{degrees_suffix}}

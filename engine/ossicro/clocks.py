@@ -12,8 +12,8 @@ following Monday. Monday-anchored holidays never fall on a weekend.
 The clocks implemented (each cited where used):
 - 15 WORKING DAYS — written submission of an individual-patient expanded-access
   request after emergency authorization (21 CFR 312.310(d)(2)).
-- 5 WORKING DAYS — IRB notification after emergency/single-patient use where the
-  expedited/less-than-quorum path is used (21 CFR 56.104(c) / 56.108).
+- 5 WORKING DAYS — IRB notification after emergency use of the test article
+  (21 CFR 56.104(c)); the clock runs from the emergency use (first treatment).
 The 30-DAY IND wait (312.40(b)(1)) is a CALENDAR-day clock, also provided.
 """
 
@@ -150,6 +150,8 @@ def expanded_access_emergency_deadlines(authorization_date: datetime.date) -> Li
 
 def ind_30_day_deadline(fda_receipt_date: datetime.date) -> Deadline:
     """21 CFR 312.40(b)(1): the IND goes into effect 30 calendar days after FDA
-    receipt (absent hold or earlier notification). Day 31 is the earliest dose day."""
+    receipt (absent hold or earlier notification). The returned date is the
+    IND-effective date (30 calendar days after receipt) and the earliest day
+    treatment may begin absent earlier FDA notification."""
     return Deadline("IND effective (30-day wait ends)", "21 CFR 312.40(b)(1)",
                     "calendar-day", 30, fda_receipt_date, fda_receipt_date + datetime.timedelta(days=30))

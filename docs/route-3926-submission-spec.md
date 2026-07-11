@@ -154,7 +154,7 @@ OSSICRO drafts (physician sends — never auto-sent, Constitution HC1) a request
 2. The specific investigational product, and the request to **supply the drug** for single-patient treatment use.
 3. The request to **issue an LOA cross-referencing the manufacturer's IND/DMF** to FDA.
 4. The treatment plan summary (dose, route, duration) so the manufacturer can assess supply quantity.
-5. A statement that FDA authorization of expanded access does **not** obligate supply, and that the decision, LOA signature, and any FMV/anti-kickback judgment are the manufacturer's (FDCA §561A) — set expectations honestly (CP4).
+5. A statement that FDA authorization of expanded access does **not** obligate supply, and that the decision, LOA signature, and any FMV/anti-kickback judgment (42 U.S.C. §1320a-7b) are the manufacturer's (FDCA §561A) — set expectations honestly (CP4).
 
 ### 4.3 Drug-supply commitment
 

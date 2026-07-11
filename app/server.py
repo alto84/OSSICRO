@@ -121,6 +121,7 @@ from ossicro import audit as audit_mod                       # noqa: E402
 from ossicro import routes as routes_mod                     # noqa: E402
 from ossicro.assemble import assemble_submission             # noqa: E402
 from ossicro.clocks import (                                     # noqa: E402
+    add_working_days,
     expanded_access_emergency_deadlines,
     ind_30_day_deadline,
     working_days_between,
@@ -335,9 +336,10 @@ STRINGS = {
         "review under the emergency provision, the IRB must be notified within "
         "5 working days of the treatment."),
     "obligation_irb_notify_q": (
-        "Applies on the emergency path (21 CFR 56.104(c)). Enter the FDA "
-        "telephone-authorization date (submission.emergency_auth_datetime) to "
-        "arm the 5-working-day IRB-notification deadline; OSSICRO assumes no date."),
+        "Applies on the emergency path (21 CFR 56.104(c)). The 5-working-day "
+        "IRB-notification clock runs from the emergency use — enter the "
+        "first-treatment date (submission.first_treatment_date) to arm it; "
+        "OSSICRO assumes no date."),
     "obligation_annual": (
         "IND annual report: due within 60 days of each anniversary of the "
         "date the IND went into effect."),
@@ -559,15 +561,27 @@ def _sample_payload() -> dict:
     return {"fields": fields}
 
 
-def _select_reviewer():
-    """Pick the concept reviewer per the shared contract.
+# B1 (persona review): sending rendered case documents to an external model is
+# EGRESS — and for an n-of-1 rare-disease case the rendered text is realistically
+# identifiable. Like the INV-4 gateway, it must be a DELIBERATE, named opt-in,
+# never automatic on an API key that may be present for unrelated reasons. The
+# live concept reviewer fires only when OSSICRO_LIVE_CONCEPT_REVIEW is set to an
+# affirmative value — a deployment decision that this environment has a BAA and
+# accepts that documents leave the machine. The shipped default is the offline
+# stub, so chart data stays local unless a human turns this on. (Full B1
+# remediation — a per-review audit record and a UI disclosure — is tracked in
+# docs/review/INVENTORY.md.)
+_LIVE_CONCEPT_REVIEW = os.environ.get(
+    "OSSICRO_LIVE_CONCEPT_REVIEW", "").strip().lower() in ("1", "true", "yes", "on")
 
-    Live Claude reviewer when ANTHROPIC_API_KEY is set; otherwise (or if the
-    SDK is missing) the offline deterministic stub. The escalate-only coupling
-    that keeps a concept finding from ever clearing a gate lives in the
-    pipeline, not here — either reviewer is safe.
-    """
-    if os.environ.get("ANTHROPIC_API_KEY"):
+
+def _select_reviewer():
+    """The offline deterministic stub by default. The live Claude reviewer only
+    when it is explicitly enabled AND a key is present (B1). The escalate-only
+    coupling that keeps a concept finding from ever clearing a gate lives in the
+    pipeline, so either reviewer is safe for correctness; the difference here is
+    whether documents leave the machine."""
+    if _LIVE_CONCEPT_REVIEW and os.environ.get("ANTHROPIC_API_KEY"):
         try:
             from ossicro.review_claude import ClaudeConceptReviewer
             return ClaudeConceptReviewer.from_anthropic()
@@ -1227,9 +1241,10 @@ def _enrollment_obligations(case: dict) -> list:
       unexpected suspected adverse reaction, from initial receipt of the
       information. Same per-event honesty.
     - 15 working days, 21 CFR 312.310(d)(2): the written expanded-access
-      submission after FDA's emergency telephone authorization — armed from
-      the recorded authorization date via
-      clocks.expanded_access_emergency_deadlines.
+      submission — armed from the recorded FDA emergency-authorization date.
+    - 5 working days, 21 CFR 56.104(c): IRB notification of the emergency use —
+      armed from the recorded FIRST-TREATMENT date (the use), not the
+      authorization date; unarmed until first treatment is recorded.
     - within 60 days of the IND-effective anniversary, 21 CFR 312.33: the
       annual report — effective date = FDA receipt + 30 calendar days
       (21 CFR 312.40(b)(1), via clocks.ind_30_day_deadline), first window
@@ -1246,32 +1261,32 @@ def _enrollment_obligations(case: dict) -> list:
                     "calendar-day", 7, False, None, None,
                     STRINGS["obligation_safety_7_q"]),
     ]
-    # BOTH clocks an emergency phone authorization arms: the 15-working-day
-    # written 3926 (312.310(d)(2)) AND the 5-working-day IRB notification
-    # (56.104(c)) — the shortest deadline of all. MAJOR-1: the checklist must
-    # not drop the IRB notice just because the canonical function returns it
-    # second. Both come from expanded_access_emergency_deadlines().
+    # The emergency path arms TWO working-day clocks, each on its OWN statutory
+    # trigger — they are different events (M1, persona review):
+    #  - 312.310(d)(2): the written 3926, 15 working days from the FDA telephone
+    #    AUTHORIZATION date.
+    #  - 56.104(c): IRB notification, 5 working days from the emergency USE, i.e.
+    #    FIRST TREATMENT — NOT the authorization date (the route clocks and the
+    #    IRB request already anchor it there). Unarmed (HC3) until first
+    #    treatment is recorded.
     auth_field = "submission.emergency_auth_datetime"
+    treat_field = "submission.first_treatment_date"
     auth_date, auth_present = _parse_intake_date(intake.get(auth_field))
-    _emergency_labels = {
-        "21 CFR 312.310(d)(2)": STRINGS["obligation_followup"],
-        "21 CFR 56.104(c)": STRINGS["obligation_irb_notify"],
-    }
-    if auth_date is not None:
-        for dl in expanded_access_emergency_deadlines(auth_date):
+    treat_date, treat_present = _parse_intake_date(intake.get(treat_field))
+    for citation, n, label, adate, apresent, afield, qkey in (
+            ("21 CFR 312.310(d)(2)", 15, STRINGS["obligation_followup"],
+             auth_date, auth_present, auth_field, "obligation_followup_q"),
+            ("21 CFR 56.104(c)", 5, STRINGS["obligation_irb_notify"],
+             treat_date, treat_present, treat_field, "obligation_irb_notify_q")):
+        if adate is not None:
             items.append(_obligation(
-                _emergency_labels.get(dl.citation, dl.name), dl.citation,
-                dl.basis, dl.n, True, dl.due, auth_field, None))
-    else:
-        for citation, n, label, qkey in (
-                ("21 CFR 312.310(d)(2)", 15, STRINGS["obligation_followup"],
-                 "obligation_followup_q"),
-                ("21 CFR 56.104(c)", 5, STRINGS["obligation_irb_notify"],
-                 "obligation_irb_notify_q")):
-            q = (STRINGS["obligation_date_unreadable"] % auth_field
-                 if auth_present else STRINGS[qkey])
+                label, citation, "working-day", n, True,
+                add_working_days(adate, n), afield, None))
+        else:
+            q = (STRINGS["obligation_date_unreadable"] % afield
+                 if apresent else STRINGS[qkey])
             items.append(_obligation(
-                label, citation, "working-day", n, False, None, auth_field, q))
+                label, citation, "working-day", n, False, None, afield, q))
     # 312.33 — annual report, anchored on the IND-effective anniversary.
     receipt_field = "submission.fda_receipt_date"
     receipt, receipt_present = _parse_intake_date(intake.get(receipt_field))

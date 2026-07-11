@@ -892,7 +892,7 @@ def _derived_proposals(bundle, drug_name: Optional[str]) -> List[Dict[str, Any]]
     out.append(_proposal("treatment.plan_id", plan_id, "(none)",
                          "generated locally (local treatment-plan identifier)",
                          None, "low"))
-    out.append(_proposal("treatment.plan_version", "v1.0", "(none)",
+    out.append(_proposal("treatment.plan_version", "1.0", "(none)",
                          "generated locally (first-authorship default)",
                          None, "low"))
     return out

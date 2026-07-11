@@ -413,27 +413,42 @@ class TestPromote(Wave4TestBase):
         self.assertEqual(annual["due"], "2027-09-13")
         self.assertEqual(annual["trigger_field"], "submission.fda_receipt_date")
 
-    def test_emergency_followup_arms_from_recorded_authorization(self):
+    def test_emergency_clocks_use_their_own_triggers(self):
+        # M1: the two emergency clocks anchor on DIFFERENT events — the written
+        # 3926 on the FDA authorization date, the IRB notice on first treatment.
         case = self._committed_case("w4proemerg", extra={
             "submission.emergency": "true",
-            # Fri 2026-06-26 + 15 working days (Jul 3 observed holiday
-            # skipped) -> Mon 2026-07-20.
+            # Fri 2026-06-26 + 15 working days (Jul 3 observed holiday) -> 2026-07-20.
             "submission.emergency_auth_datetime": "2026-06-26",
+            # First treatment a few days later; 5 working days -> 2026-07-13.
+            "submission.first_treatment_date": "2026-07-06",
         })
         body = self._promote_ok("w4proemerg", "treatment-disclosure")
         by = {o["citation"]: o for o in body["obligations_checklist"]}
         followup = by["21 CFR 312.310(d)(2)"]
         self.assertTrue(followup["armed"])
-        self.assertEqual(followup["basis"], "working-day")
-        self.assertEqual(followup["days"], 15)
-        self.assertEqual(followup["due"], "2026-07-20")
-        # MAJOR-1: the 5-working-day IRB notification (56.104(c)) — the shortest
-        # deadline the emergency authorization arms — must be present and armed.
+        self.assertEqual(followup["due"], "2026-07-20")   # from the AUTH date
+        self.assertEqual(followup["trigger_field"], "submission.emergency_auth_datetime")
         irb = by["21 CFR 56.104(c)"]
         self.assertTrue(irb["armed"])
-        self.assertEqual(irb["basis"], "working-day")
         self.assertEqual(irb["days"], 5)
-        self.assertEqual(irb["due"], "2026-07-06")   # 6/26 +5wd, Jul-3 holiday skipped
+        self.assertEqual(irb["due"], "2026-07-13")        # from FIRST TREATMENT, not auth
+        self.assertEqual(irb["trigger_field"], "submission.first_treatment_date")
+
+    def test_irb_notice_unarmed_without_first_treatment(self):
+        # Auth recorded but no first-treatment date: the written 3926 arms, the
+        # IRB notice stays honestly unarmed (HC3) with a fix-it question.
+        case = self._committed_case("w4proemerg2", extra={
+            "submission.emergency": "true",
+            "submission.emergency_auth_datetime": "2026-06-26",
+        })
+        body = self._promote_ok("w4proemerg2", "treatment-disclosure")
+        by = {o["citation"]: o for o in body["obligations_checklist"]}
+        self.assertTrue(by["21 CFR 312.310(d)(2)"]["armed"])
+        irb = by["21 CFR 56.104(c)"]
+        self.assertFalse(irb["armed"])
+        self.assertIsNone(irb["due"])
+        self.assertIn("first-treatment", irb["resolving_question"])
 
     def test_unreadable_anchor_is_unarmed_never_guessed(self):
         case = self._committed_case("w4probaddate", extra={

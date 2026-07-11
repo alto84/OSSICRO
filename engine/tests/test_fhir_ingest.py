@@ -167,7 +167,7 @@ class TestSampleBundleProposals(unittest.TestCase):
         self.assertRegex(coded, r"^PT-3926-[0-9A-F]{8}$")
         self.assertEqual(by["treatment.plan_id"]["value"],
                          "TP-CYTORAVIR-%s" % coded)
-        self.assertEqual(by["treatment.plan_version"]["value"], "v1.0")
+        self.assertEqual(by["treatment.plan_version"]["value"], "1.0")
         for field_id in ("patient.coded_id", "treatment.plan_id",
                          "treatment.plan_version"):
             self.assertEqual(by[field_id]["confidence"], "low")
