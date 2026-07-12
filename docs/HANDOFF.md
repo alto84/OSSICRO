@@ -154,14 +154,15 @@ This is deliberately honest. None of these lets the software perform a gated act
   correcting one regulatory number to another without primary-source
   confirmation would risk substituting a second wrong value (the no-fabrication
   rule, HC2).
-- **Needs human verification (do not take the current wiki text as correct):**
-  the transfer-of-obligations page (`wiki/03-documents/transfer-of-regulatory-
-  obligations-toro.md`, and echoes in the legal-thesis and micro-cro pages)
-  states the CRO transfer disclosure is "Field 16" of Form FDA 1571. A
-  regulatory review indicates it is **Field 14** (with the monitoring and safety
-  personnel fields at 15 and 16, not 17 and 18), and that the cited "03/23
-  edition" of the form may not exist. Confirm against the current Form 1571 image
-  before editing; the fix is then a small find-and-replace.
+- **Form FDA 1571 field numbers — verified correct against the primary source
+  (2026-07-11).** A review had flagged the transfer-of-obligations page for
+  saying the CRO disclosure is "Field 16." Checking the actual FDA Form 1571
+  Instructions (03/23 edition, `sources/fda-form/FDA_Form-1571-Instructions.pdf`)
+  confirms the wiki is right: Field 16 is Contract Research Organizations (with
+  the obligations listing, 312.23(a)(1)(viii)), Field 17 is monitoring, Field 18
+  is safety review, and the 03/23 edition is current. The review's "Field 14"
+  suggestion was itself wrong (Field 14 is the Expanded Access justification
+  statement). No change made; this is a closed item.
 - The remaining ~11 open findings are structural design judgments (for example,
   therapeutic-misconception framing and pharma-side acceptance economics), not
   small edits.

@@ -3,11 +3,12 @@
 6 reviews · 56 findings — high=18 medium=23 low=15
 
 > **Re-triaged 2026-07-11.** Most of these were already remediated in the
-> overhaul: of the 41 high/medium findings, about 28 are fixed. Two concrete
-> citation corrections remained — the registry site-initiation citation is now
-> fixed (`312.53(b)` → `312.56(a)`); the Form FDA 1571 field numbers are flagged
-> for human verification. The rest are structural design judgments. See the
-> current-state summary and the human-verify list in `docs/HANDOFF.md` §7.
+> overhaul: of the 41 high/medium findings, about 28 are fixed. The registry
+> site-initiation citation is now fixed (`312.53(b)` → `312.56(a)`). The Form FDA
+> 1571 field-number finding turned out to be a FALSE finding: checked against the
+> primary source (`sources/fda-form/FDA_Form-1571-Instructions.pdf`, 03/23
+> edition), the wiki is correct — CRO disclosure is Field 16, monitoring 17,
+> safety 18. The rest are structural design judgments. See `docs/HANDOFF.md` §7.
 
 | Sev | Persona | File | Issue |
 |---|---|---|---|
