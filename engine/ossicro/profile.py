@@ -84,7 +84,7 @@ HASH_SCHEME_KEYED = "hmac-sha256-v1"    # the m14 deployment posture
 
 def hash_scheme(key: Optional[bytes] = None) -> str:
     """The scheme tag the given key produces (None -> unkeyed v1)."""
-    return HASH_SCHEME_KEYED if key else HASH_SCHEME_UNKEYED
+    return HASH_SCHEME_KEYED if key is not None else HASH_SCHEME_UNKEYED
 
 
 def _digest(preimage: str, key: Optional[bytes]) -> str:
@@ -92,10 +92,14 @@ def _digest(preimage: str, key: Optional[bytes]) -> str:
     plain SHA-256 when unkeyed. The prefixes differ so the two schemes can
     never silently compare equal."""
     data = preimage.encode("utf-8")
-    if key:
+    if key is not None:
         if not isinstance(key, (bytes, bytearray)):
             raise TypeError("hash key must be bytes (the server-side secret), "
                             "got %s" % type(key).__name__)
+        if len(key) == 0:
+            raise ValueError("hash key must be non-empty — a zero-length key is "
+                             "neither a real key nor 'unkeyed' and would silently "
+                             "select the wrong scheme.")
         return "hmac-sha256:" + hmac.new(bytes(key), data, hashlib.sha256).hexdigest()
     return "sha256:" + hashlib.sha256(data).hexdigest()
 

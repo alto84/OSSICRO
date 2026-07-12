@@ -225,12 +225,14 @@ def compute_clocks(study: Study, route: Dict[str, object],
     for clock in route.get("clocks", []):
         trigger_field = clock["trigger_field"]
         trigger_value = study.resolve(trigger_field)
+        effective_field = trigger_field
         # The 30-day IND clock defaults its trigger to the submission date —
         # a recorded fact, never the wall clock.
         if trigger_value is None and clock["id"] == "ind-effective-30-day":
             trigger_value = study.resolve("submission.date")
+            effective_field = "submission.date"
         deadline = compute_deadline(trigger_value, clock["days"], clock["calendar"],
-                                    field_id=trigger_field)
+                                    field_id=effective_field)
         armed = deadline is not None
         resolving_question = None if armed else (
             "Enter the trigger date (intake field '%s') to arm the '%s' clock (%s)."

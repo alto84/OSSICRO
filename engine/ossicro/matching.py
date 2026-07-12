@@ -233,9 +233,10 @@ def match(predicates: DeidentifiedPredicates, adapter, *,
             if kind not in _V1_KINDS:        # v1 scope, structurally enforced
                 continue
             rec_id = str(rec.get("id", ""))
-            if rec_id in seen_ids:
+            if rec_id and rec_id in seen_ids:
                 continue
-            seen_ids.add(rec_id)
+            if rec_id:
+                seen_ids.add(rec_id)
             m, u, v = _criteria(predicates, rec.get("eligibility") or {})
             candidates.append({
                 "kind": kind,

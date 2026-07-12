@@ -251,13 +251,20 @@ def validate_report(report: ReviewReport, doc) -> ReviewReport:
         span = f.span or ""
         if not span:
             continue
-        idx = rendered.find(span)
-        if idx == -1:
-            continue  # quotes text not present in the document
-        end = idx + len(span)
-        inside_locked = any(idx < lo_hi[1] and end > lo_hi[0] for lo_hi in locked)
-        if inside_locked:
-            continue  # locked span: reviewer may flag but never edit it
-        kept.append(f)
+        # Check EVERY occurrence: keep the finding if any match lies outside all
+        # locked ranges (the first hit may fall inside a locked span while a real
+        # occurrence sits elsewhere in the document).
+        start, keep = 0, False
+        while True:
+            idx = rendered.find(span, start)
+            if idx == -1:
+                break
+            end = idx + len(span)
+            if not any(idx < lo_hi[1] and end > lo_hi[0] for lo_hi in locked):
+                keep = True
+                break
+            start = idx + 1
+        if keep:
+            kept.append(f)
     return ReviewReport(findings=kept, model=report.model,
                         reviewed_at=report.reviewed_at, error=report.error)

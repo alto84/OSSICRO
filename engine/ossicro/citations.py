@@ -199,6 +199,10 @@ def cite_range(key_from: str, key_to: str) -> str:
     '21 CFR 312.305(b)(2)(vi)-(vii)'."""
     first = cite(key_from)
     last = cite(key_to)
+    if "(" not in last:
+        raise ValueError(
+            "cite_range needs a parenthesized sub-element in the 'to' pinpoint "
+            "%r (key %r)." % (last, key_to))
     return "%s-(%s" % (first, last.rsplit("(", 1)[1])
 
 

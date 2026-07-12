@@ -1,4 +1,11 @@
-# OSSICRO Frontend
+# OSSICRO Frontend — marketing landing page (NOT the working app)
+
+> **This is a static marketing page, not the product.** The working OSSICRO
+> dashboard is `app/static/index.html`, served by the backend at
+> `http://127.0.0.1:8765/` (run `python app/server.py`). Two reviewers once
+> mistook this page for the app and concluded there was no clinician flow — there
+> is; see `docs/HANDOFF.md`. Keep this for marketing or remove it, but don't
+> mistake it for the dashboard.
 
 Self-contained pharma-corporate landing page. No build step, no dependencies — open `index.html` in a browser (theme-aware light/dark).
 

@@ -469,6 +469,11 @@ def egress_query(predicates: "DeidentifiedPredicates", destination: str, *,
 
     outbound, local_filters = decompose_query(predicates)
 
+    # A missing adapter means the query cannot run — refuse BEFORE writing the
+    # audit record, so the trail never logs a query that never happened.
+    if adapter is None:
+        raise ValueError("egress_query requires a registry adapter when live=False")
+
     audit_mod.append(
         trail, actor=actor, action="egress_query", target=destination,
         detail={
@@ -491,8 +496,6 @@ def egress_query(predicates: "DeidentifiedPredicates", destination: str, *,
             "live egress is greenlit but no live registry client is "
             "implemented yet — build it at the GREENLIGHT MARKER")
 
-    if adapter is None:
-        raise ValueError("egress_query requires a registry adapter when live=False")
     return adapter.search(destination,
                           condition_codes=list(outbound["condition_codes"]),
                           drug_name=outbound["drug_name"],

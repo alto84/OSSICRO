@@ -119,6 +119,7 @@ class ClaudeConceptReviewer(ConceptReviewer):
             model=self.model, max_tokens=self._max_tokens, temperature=0,
             system=_SYSTEM,
             messages=[{"role": "user", "content": self._build_user_message(text, principles)}],
+            timeout=60.0,  # a network hang must not tie up the synchronous review thread indefinitely
         )
         # Anthropic Messages shape: resp.content is a list of blocks with .text
         try:
@@ -141,6 +142,8 @@ class ClaudeConceptReviewer(ConceptReviewer):
             raise ConceptReviewError("Malformed JSON in model response: %s" % exc) from exc
         if not isinstance(data, list):
             raise ConceptReviewError("Model response was not a JSON array")
+        if any(not isinstance(x, dict) for x in data):
+            raise ConceptReviewError("Model response array contained a non-object element")
         return data
 
     def review(self, text: str, doc, principles: List[Principle]) -> ReviewReport:

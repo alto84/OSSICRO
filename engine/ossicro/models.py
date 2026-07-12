@@ -326,6 +326,8 @@ class Study:
                 return None
         if node is None:
             return None
+        if isinstance(node, (dict, list)):
+            return None  # a path landing on a container is not a scalar value
         text = str(node).strip()
         return text if text else None
 

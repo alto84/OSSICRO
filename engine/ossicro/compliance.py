@@ -56,6 +56,10 @@ def build_compliance_map(
     for doc_id in study.required_documents:
         entry = doc_registry.get(doc_id, {})
         gate_id = entry.get("gate")
+        if gate_id and gate_id not in gate_registry:
+            raise KeyError(
+                "document %r references gate %r not in the gate registry "
+                "(typo or stale entry)." % (doc_id, gate_id))
         gate = gate_registry.get(gate_id) if gate_id else None
         entries.append(
             ComplianceEntry(

@@ -412,6 +412,13 @@ def render_3926_pdf(study_or_intake) -> bytes:
         lines.append(("head", "%s. %s" % (item.number, item.label)))
         for label, field_id, _fdf in item.fields:
             value = _resolve(study_or_intake, field_id)
+            # Fields 10.a/10.b are physician-attested booleans; render them with
+            # the same words as the text draft (ea_generators._bool_label) so the
+            # two 3926 surfaces never disagree on an attested checkbox.
+            if field_id in ("waiver_10a", "waiver_10b") and value is not None:
+                value = ("CHECKED (physician-attested)"
+                         if str(value).strip().lower() in ("true", "1", "yes")
+                         else "not checked")
             value_lines = _wrap_value(value)
             # Short values inline with the label; long/multi-line below it.
             if len(value_lines) == 1 and len(label) + len(value_lines[0]) <= _WRAP_COLS:

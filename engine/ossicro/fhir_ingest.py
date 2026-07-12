@@ -58,6 +58,19 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from . import routes as routes_mod
 
+
+def _as_list(v: Any) -> list:
+    """Coerce a FHIR element that should be a list into one: a list passes
+    through, a lone dict is wrapped, anything else yields []. A malformed bundle
+    supplying a dict (or scalar) where FHIR expects an array then cannot crash
+    the ``[0]`` indexing at the call sites."""
+    if isinstance(v, list):
+        return v
+    if isinstance(v, dict):
+        return [v]
+    return []
+
+
 # --- coding systems ----------------------------------------------------------
 SNOMED = "http://snomed.info/sct"
 LOINC = "http://loinc.org"
@@ -575,7 +588,7 @@ def _extract_practitioner(bundle, proposals, never_extracted):
             "number and never fills a license field)")
 
     # investigator.name — a practitioner's own name is not patient PHI; not tainted.
-    name = _render_human_name((pr.get("name") or [None])[0])
+    name = _render_human_name((_as_list(pr.get("name")) or [None])[0])
     if name:
         proposals.append(_proposal(
             "investigator.name", name, "Practitioner",
@@ -590,7 +603,7 @@ def _extract_practitioner(bundle, proposals, never_extracted):
             degrees.append(coded["code"])
             degrees_coded = True
     if not degrees:
-        suffix = ((pr.get("name") or [{}])[0].get("suffix") or [])
+        suffix = ((_as_list(pr.get("name")) or [{}])[0].get("suffix") or [])
         degrees = [s for s in suffix if s]
     if degrees:
         proposals.append(_proposal(
@@ -610,10 +623,10 @@ def _extract_practitioner(bundle, proposals, never_extracted):
     # investigator.address — PractitionerRole.organization address; the
     # provenance stamp names the resource the value was actually read from (M6).
     org = _resolve(bundle, (role or {}).get("organization"))
-    address = _render_address(((org or {}).get("address") or [None])[0])
+    address = _render_address((_as_list((org or {}).get("address")) or [None])[0])
     addr_resource, addr_path = "Organization", "PractitionerRole.organization -> Organization.address"
     if address is None:
-        address = _render_address((pr.get("address") or [None])[0])
+        address = _render_address((_as_list(pr.get("address")) or [None])[0])
         addr_resource, addr_path = "Practitioner", "Practitioner.address (fallback)"
     if address:
         proposals.append(_proposal(
@@ -752,7 +765,7 @@ def _extract_drug(bundle, proposals) -> Tuple[Optional[str], Optional[str]]:
         return None, None
     drug_code = rx.get("code") if rx else None
 
-    di = (mr.get("dosageInstruction") or [{}])[0]
+    di = (_as_list(mr.get("dosageInstruction")) or [{}])[0]
 
     # drug.dose — structured doseQuantity (clean), else dosage TEXT (tainted).
     dose_value, dose_tainted = None, False
