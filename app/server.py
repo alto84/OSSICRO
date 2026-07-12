@@ -216,6 +216,7 @@ from ossicro.profile import (                                # noqa: E402
 from ossicro.pdf_3926 import fdf_3926, render_3926_pdf       # noqa: E402
 from ossicro.registry import load_claims, load_documents, load_gates  # noqa: E402
 from ossicro.review_port import DeterministicStubReviewer    # noqa: E402
+from ossicro import toro as toro_mod                          # noqa: E402
 
 STATIC_DIR = os.path.join(APP_DIR, "static")
 FIXTURES_DIR = os.path.join(ENGINE_DIR, "fixtures")
@@ -2609,6 +2610,11 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 return self._send_json({"error": type(exc).__name__, "detail": str(exc)}, 500)
 
+        # Micro-CRO obligations menu (the 21 CFR 312.52 transferable +
+        # non-delegable Subpart D set). Stateless reference data.
+        if path == "/api/toro/obligations":
+            return self._send_json(toro_mod.load_sponsor_obligations())
+
         m = _CASE_CHECK.match(path)
         if m:
             case_id = m.group(1)
@@ -2799,6 +2805,27 @@ class Handler(BaseHTTPRequestHandler):
                 CASES[case_id] = _new_case()
                 _persist(case_id)
             return self._send_json({"case_id": case_id})
+
+        # Micro-CRO: build a DRAFT Transfer of Regulatory Obligations from an
+        # obligation election. Stateless (no case, no PHI); the generator refuses
+        # to transfer a non-delegable obligation (TransferError -> 400).
+        if path == "/api/toro":
+            payload = self._read_json()
+            if not isinstance(payload, dict):
+                payload = {}
+            try:
+                result = toro_mod.build_toro(
+                    scope=str(payload.get("scope", "enumerated")),
+                    transferred_ids=payload.get("transferred_ids") or [],
+                    parties=payload.get("parties") or {},
+                    protocol=payload.get("protocol") or {},
+                    effective_date=payload.get("effective_date"),
+                    services_agreement_reference=str(
+                        payload.get("services_agreement_reference", "")),
+                )
+            except toro_mod.TransferError as exc:
+                return self._send_json({"error": str(exc)}, 400)
+            return self._send_json(result)
 
         m = _CASE_INTAKE.match(path)
         if m:

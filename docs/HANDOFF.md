@@ -97,7 +97,7 @@ Verified against the code, not just the persona docs.
 | IRB | Generated concurrence-request document + an `irb-approval` gate to record the board's determination | Doc in route set; gate via `POST /signoff` | Partial — outbound artifact + gate only; no interactive IRB view |
 | Coordinating physician | Read-only board: per-case stage, mode, profile state, gate counts, ledger rollup, clocks | `GET /api/cro/board` | Full (read-only by design) |
 | Pharma partner | Same surface as the manufacturer inbox | Manufacturer inbox | Full |
-| Micro-CRO legal entity (312.52 TORO holder) | — | — | **Gap** — described in the wiki persona but has no functional surface: no TORO generator, no obligation-transfer endpoint, no entity onboarding |
+| Micro-CRO legal entity (312.52 TORO holder) | Obligation menu + a draft Transfer of Regulatory Obligations with an obligation-to-owner map | `GET /api/toro/obligations`, `POST /api/toro` | Covered — the generator enumerates the transferable Subpart D obligations and **refuses** to transfer any non-delegable one (HC1). Standing up a real named entity with SOPs is still out of scope for a prototype. |
 
 ## 6. Governance — enforced in code
 
@@ -135,8 +135,12 @@ This is deliberately honest. None of these lets the software perform a gated act
   `docs/deployment/DEPLOYMENT-COMPLIANCE.md`.
 - **Drafts only.** The gated acts are human acts; the system stops and waits.
 
-**Coverage gaps (documented in the wiki, no functional surface yet):**
-- **Micro-CRO legal entity** — no TORO generator or obligation-transfer surface.
+**Coverage gaps:**
+- **Micro-CRO legal entity** — now has a functional surface: the TORO generator
+  (`engine/ossicro/toro.py`, `POST /api/toro`, `GET /api/toro/obligations`) drafts
+  the 21 CFR 312.52 obligation transfer, applies the deemed-not-transferred
+  default, and refuses to move any non-delegable obligation. Standing up a real
+  named entity with SOPs and staff remains out of scope for a prototype.
 - **IRB** — served by an outbound artifact and a gate, not an interactive view.
 
 **Pending human verification (carry visible markers in the code/docs):**

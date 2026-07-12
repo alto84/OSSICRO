@@ -148,6 +148,19 @@ def main():
                  "evidence": {"type": "irb-letter", "reference": "Advarra concurrence"}})
     step("POST role-checked gate sign-off", s == 200, f"http {s}")
 
+    # Micro-CRO: obligations menu, a draft TORO, and the non-delegable refusal
+    s, menu = call("GET", "/api/toro/obligations")
+    step("GET TORO obligations menu", s == 200 and isinstance(menu, dict)
+         and len(menu.get("transferable", [])) == 12, f"http {s}")
+    s, tor = call("POST", "/api/toro",
+                  {"scope": "enumerated",
+                   "transferred_ids": ["select-monitors", "annual-reports"]})
+    step("POST build draft TORO", s == 200 and isinstance(tor, dict)
+         and bool(tor.get("rendered")), f"http {s}")
+    s, _ = call("POST", "/api/toro",
+                {"scope": "enumerated", "transferred_ids": ["informed-consent"]})
+    step("POST TORO refuses non-delegable -> 400", s == 400, f"http {s}")
+
     _finish()
 
 
