@@ -2602,6 +2602,8 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         if path == "/" or path == "/index.html":
             return self._serve_static("index.html")
+        if path == "/microcro":
+            return self._serve_static("microcro.html")
         if path == "/api/route/3926/schema":
             return self._send_json(_schema_payload())
         if path == "/api/route/3926/sample":

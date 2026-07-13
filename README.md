@@ -1,64 +1,72 @@
 # OSSICRO — Open Source Sponsor-Investigator CRO
 
-> Open-source coordination software + an exhaustively-researched regulatory knowledge base that lets an enrolling clinician assemble, check, validate, and route **every document** required to match a patient to an early-phase trial, activate a site, and reach enrollment — across sponsor, CRO, investigator / sponsor-investigator, IRB/ethics, DSMB/safety, pharmacovigilance, and pharma partner.
+**A compliant, low-cost path for a physician who has the right patient but no way to run the trial.**
 
-**Status:** reviewable prototype, built autonomously. Repository: **https://github.com/alto84/OSSICRO**. The `wiki/` folder is an **Obsidian vault** (`[[wikilinks]]`, frontmatter, tags — see `wiki/_conventions.md`); local originals of cited public/open documents are kept under `sources/`.
+OSSICRO is open-source software that assembles, checks, and coordinates the FDA-grade regulatory documentation a clinician needs to get an investigational drug to a single patient — the expanded-access pathway (21 CFR 312.310, Form FDA 3926) — and, more broadly, to run an investigator-initiated study. It drafts every required document from the patient's intake, checks each one against the exact regulation that governs it, and **refuses, in code, to perform the acts only a human may perform** (consent, IRB judgment, causality, signing, submitting).
 
-**Governed by [`docs/OSSICRO-CONSTITUTION.md`](docs/OSSICRO-CONSTITUTION.md)** — the mission, the value ordering, the small enumerated set of hard constraints (HC1–HC5: no non-delegable act, no fabrication, computed statutory clocks, provenance/verbatim integrity, Part-11 attribution), and the concept-based principles that govern everything else. Where any other artifact conflicts on values or the rules-vs-judgment boundary, the Constitution wins. The build path is [`docs/EXECUTION-PLAN.md`](docs/EXECUTION-PLAN.md).
+> Built for **Built with Claude: Life Sciences** (Anthropic × Gladstone Institutes), **Builder Track**. Built entirely with **Claude Code**, July 2026. MIT-licensed. Repo: **https://github.com/alto84/OSSICRO**.
 
-### Current state (2026-07-09)
+## See it in 60 seconds
+
+No dependencies — pure Python standard library.
+
+```bash
+python app/server.py            # serves the dashboard at http://127.0.0.1:8765
+python tools/smoke_e2e.py       # in a second terminal: drives all 22 endpoints green
+```
+
+Open `http://127.0.0.1:8765/`, start a case, load the sample patient, and click through: **generate the 8 expanded-access documents → read the completeness ledger (green/amber/red, each item mapped to its CFR citation) → open the filled Form 3926 PDF.** Then open the **micro-CRO obligations panel at [`/microcro`](http://127.0.0.1:8765/microcro)** and try to transfer *"informed consent"* to a CRO — OSSICRO refuses it, in code, with the citation.
+
+**▶ Demo video: _[link on submission]_**
+
+## The user, and the wall
+
+A neurologist has a patient with refractory epilepsy who could benefit from an investigational drug — but there is no open trial. To treat that one patient legally, she must become an FDA sponsor-investigator and produce grade-A regulatory documentation. Standing up a compliant path is a median **~9.4 months and $30–200K** of coordination labor; commercial CROs broker that friction and monetize it. Most physicians simply give up.
+
+OSSICRO makes the coordination labor cheap and the paperwork correct, so a clinician can operate as a **sponsor-investigator** (21 CFR 312.3) without a commercial intermediary — while a thin **micro-CRO** layer supplies *only* the legally-accountable functions that must sit with a real entity.
+
+## What's in the box (current state)
 
 | Area | State |
-|------|-------|
-| **Regulatory wiki** | 129 Obsidian pages across overview, roles, lifecycle, documents, coordination, system, personas, references — regulatory register, cited to 21 CFR / ICH / FDA, non-delegable gates surfaced. Authored by 30 Fable agents. |
-| **Engine** (`engine/`) | Runnable pure-stdlib prototype: 60-document registry + 8 gates; provenance-emitting generation; completeness ledger (green/amber/red); cross-document consistency; rule engine; **code-enforced** gate hard line. `python -m ossicro.cli demo`; **9/9 tests pass**. |
-| **Source library** (`sources/`) | **1,015-document manifest**; **588 originals downloaded** (~342 MB, local + gitignored) — CFR, ICH, FDA guidances/forms, ethics texts, institutional templates, data standards. From a 24-agent Sonnet 5 scrape. |
-| **Frontend** (`frontend/`) | Self-contained, theme-aware pharma-corporate landing page. |
-| **Plan & strategy** | `docs/detailed-plan.md` + `docs/strategy-review-fable-2026-07-09.md` (7 adopted improvements). |
-| **Remaining** | Full 78-doc markdown template library; six-persona QA (legal/regulatory/ethical/physician/patient/pharma) + revise loop. |
+|---|---|
+| **Dashboard** (`app/static/index.html`) | A working single-page clinician app served at `/`. Physician, FDA-reviewer, manufacturer, patient, and coordinator views. The full flow runs end to end. |
+| **Engine** (`engine/ossicro/`) | 25 pure-stdlib modules — generation with per-field provenance, the green/amber/red completeness ledger, cross-document consistency, the federal working-day clock engine, the de-identified egress gateway, the FHIR intake mapper, the Form-3926 PDF, and the micro-CRO TORO generator. **593 tests pass.** |
+| **Governance** | Enforced in code, not just documented: non-delegable gates (HC1), no fabrication (HC2), computed statutory clocks (HC3), provenance + a SHA-256 manifest (HC4), Part-11 AI attribution (HC5), an append-only hash-chained audit log, the commit-profile hard gate (INV-3), and no-PHI-egress (INV-8). See [`docs/OSSICRO-CONSTITUTION.md`](docs/OSSICRO-CONSTITUTION.md). |
+| **Regulatory wiki** (`wiki/`) | 131 cross-linked, cited pages — roles, lifecycle, the essential-document set, coordination, and the micro-CRO model. Cited to 21 CFR / ICH E6(R3) / FDA guidance and verified against primary sources. |
+| **Templates** (`templates/`) | 61 regulatory document templates across 17 categories (IND, IRB, safety, monitoring, consent, contracts, expanded access, …). |
+| **Verification** | `tools/smoke_e2e.py` drives all 22 API endpoints; `docs/HANDOFF.md` is the reviewer's guide. |
 
-**Honesty note.** This is a **prototype for review**, not a production system or validated regulatory tool. The engine is a working demonstration of the design, not the full document set. Regulatory content is researched and cited but **must be independently verified** before any real use. Nothing here performs a non-delegable regulated function.
+## The one hard rule
 
----
+OSSICRO produces **DRAFTS** for qualified human review. It never performs a **non-delegable** act: obtaining informed consent (21 CFR Part 50), IRB/IEC judgment (Part 56), safety/causality determination (312.32), or signing/submitting to FDA. Each is a **gate**: a step owned by a named human where the software stops and waits. This is enforced in code — the micro-CRO's TORO generator, for example, will refuse to draft a transfer of informed consent to a CRO, because that obligation is non-delegable under Part 50.
 
-## Why
+## How it was built with Claude Code
 
-The next wave of early-phase drugs will bottleneck on patient enrollment and site activation, not on molecules. Standing up a compliant trial site takes a median ~9.4 months and $30–200K; ~11% of activated sites enroll zero patients. Commercial CROs broker this coordination labor and monetize the friction. A physician with the right patient for an early-phase therapy has no low-cost, compliant path to become a site or run their own study.
+OSSICRO is a demonstration of what a domain expert plus Claude Code can build in a week:
 
-OSSICRO makes the coordination labor cheap and the paperwork correct, so a clinician can operate as a site — or as a **sponsor-investigator** (21 CFR 312.3) — without a commercial intermediary, while a thin "micro-CRO" layer supplies only the legally-accountable functions that must sit with a real entity.
-
-## Two supported modes
-
-1. **Physician-as-site** — enroll your patients into a pharma sponsor's early-phase trial; OSSICRO generates and coordinates the site-activation and conduct paperwork.
-2. **Sponsor-investigator** — run your own investigator-initiated study; OSSICRO absorbs the sponsor-side burden (IND assembly, safety reporting scaffolding, essential-document/TMF management) that normally makes this impractical for a working clinician.
+- **Multi-agent authoring** — a 24-agent scrape assembled the cited source library; **30 agents authored the regulatory wiki** against a shared style constitution.
+- **Adversarial self-review loops** — most subsystems were *built → reviewed by an independent adversarial agent → revised → re-reviewed* before landing, and a full overhaul closed 15 major findings with a written root-cause analysis (`docs/overhaul/`).
+- **Governance as code** — a small enumerated set of hard constraints, each justified and enforced at a concrete point in the engine, not left as prose.
+- **Citations verified against primary sources** — when a review flagged a Form-1571 field number, it was checked against the actual FDA instructions PDF (the original was right) rather than "corrected" on a guess.
 
 ## Repository layout
 
 | Path | Contents |
-|------|----------|
-| `PROGRAM.md` | Program frame, success criteria, and phase log (audit trail) |
-| `wiki/` | The regulatory knowledge base (markdown, cross-referenced, cited) |
-| `templates/` | Document templates (ICF, FDA 1572 guide, DOA log, monitoring & safety plans, DSMB charter, IRB package, regulatory-binder index, CTA/budget, feasibility questionnaire, protocol synopsis, …) |
-| `engine/` | Prototype generate/check/validate engine (document schemas + validation rules mapped to citations) |
-| `frontend/` | Pharma-corporate-style demo frontend (clinician flow end-to-end) |
-| `docs/` | Detailed plan, system architecture, frontend strategy, model-fallback log, exploration provenance |
-| `qa/` | Adversarial QA memos (enrolling-physician / CRO / pharma personas + second opinions) |
-| `references/` | Bibliography + academic/CRO/gov institutional resources |
-| `sources/` | Local **originals** of cited public/open documents (CFR, ICH, FDA guidances & forms, openly-licensed templates), license-tracked |
+|---|---|
+| `app/` | The backend (`server.py`, pure stdlib) and the dashboard (`static/index.html`) |
+| `engine/ossicro/` | The generate / check / validate / govern engine (25 modules) |
+| `engine/registry/` | Document, gate, route, claim, and sponsor-obligation registries (JSON) |
+| `engine/tests`, `app/tests` | 593 tests |
+| `wiki/` | The regulatory knowledge base (Obsidian vault; cited, cross-linked) |
+| `templates/` | 61 regulatory document templates |
+| `docs/` | The Constitution, submission spec, deployment-compliance, `HANDOFF.md`, and the build/QA history |
+| `tools/` | `smoke_e2e.py` (end-to-end check), `prose_lint.py`, the attestation worksheet |
+| `sources/` | Local originals of cited public documents (CFR / ICH / FDA), gitignored |
 
-## Hard line — not a substitute for qualified humans or oversight bodies
+## Boundaries and honesty
 
-OSSICRO produces **DRAFT** documentation for review, editing, and approval by qualified humans and the appropriate oversight entities. It does not, and must not be configured to, perform **non-delegable regulated functions**: informed consent of a patient, IRB/IEC review, safety/causality determination, or the legal obligations of a sponsor or investigator. These are surfaced and gated, never automated. Not medical, legal, or regulatory advice.
-
-**Deployment boundary.** The app is a **single-user loopback pilot over synthetic cases** and program-enforces that: it refuses to start on a non-loopback host (no authentication backend exists — INV-7). The wall that must stand before any non-synthetic pilot — covered-entity boundary, PHI-at-rest expectations, BAA inventory, retention, and the two hard preconditions (persona auth; keyed profile hashes) — is stated in [`docs/deployment/DEPLOYMENT-COMPLIANCE.md`](docs/deployment/DEPLOYMENT-COMPLIANCE.md); the live-AI-review preconditions are in [`docs/deployment/AI-REVIEW-PRECONDITIONS.md`](docs/deployment/AI-REVIEW-PRECONDITIONS.md).
+This is a **prototype over synthetic cases**, not a production or validated regulatory tool. The server is a **single-user loopback pilot** and program-enforces it — it refuses to bind a non-loopback host because no authentication backend exists yet (INV-7). Everything a real deployment must satisfy first — covered-entity boundary, encryption at rest, BAA inventory, retention, keyed profile hashes — is in [`docs/deployment/DEPLOYMENT-COMPLIANCE.md`](docs/deployment/DEPLOYMENT-COMPLIANCE.md). Regulatory content is researched and cited but **must be independently verified** before any real use. Not medical, legal, or regulatory advice.
 
 ## License
 
 MIT (see `LICENSE`), with the non-delegable-function notice appended.
-
-## QA and the open revise loop
-
-A six-persona Fable review (legal, regulatory, ethical, physician, patient, pharma) has run; memos are in `qa/` with a consolidated **`qa/PUNCH-LIST.md`** (18 high / 23 medium / 15 low). Fixed now: the confirmed Form 1571 CRO-disclosure field (Field 16 -> **Field 14**). Open revise loop (tracked in the punch list), grouped:
-- **Verify-and-correct citations** (do not guess): 312.40(c) clinical-hold attribution on the IND page, the phantom E6(R3) Annex numbering in the document catalog, the SAE follow-up-report deadline, and a wiki-wide FDA-form-field verification pass.
-- **Reconcile contradictions / soften overclaims**: consent "comprehension checks" vs the consent-event bright line; the engine "pre-checking 21 CFR 56.111" (a substantive ethical judgment, not a completeness check).
-- **Add missing substance**: Micro-CRO civil (tort/contract) liability + insurance/indemnity; therapeutic-misconception safeguards for the treating-physician-as-sponsor-investigator; the retrieve-stage matching filters that can exclude before adjudication; n-of-1 re-identifiability; IIS/pharma acceptance realism; and honest framing of the frontend as a landing-page demo, not the end-to-end clinician app.
