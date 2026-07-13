@@ -15,7 +15,13 @@ python app/server.py            # serves the dashboard at http://127.0.0.1:8765
 python tools/smoke_e2e.py       # in a second terminal: drives all 22 endpoints green
 ```
 
-Open `http://127.0.0.1:8765/`, start a case, load the sample patient, and click through: **generate the 8 expanded-access documents → read the completeness ledger (green/amber/red, each item mapped to its CFR citation) → open the filled Form 3926 PDF.** Then open the **micro-CRO obligations panel at [`/microcro`](http://127.0.0.1:8765/microcro)** and try to transfer *"informed consent"* to a CRO — OSSICRO refuses it, in code, with the citation.
+Open `http://127.0.0.1:8765/` and walk the physician flow, one button at a time:
+
+1. **Start a case** → **Load example case** (the synthetic epilepsy patient).
+2. **Save & continue**, then type your name and **Commit profile** — a named human commits the input of record (the INV-3 gate; nothing is drafted from unconfirmed data).
+3. **Generate documents** — the 8 expanded-access drafts appear with the green/amber/red **completeness ledger**, each item mapped to its CFR citation.
+4. **Assemble package**, then open the filled **Form 3926 PDF**.
+5. Click **Micro-CRO** in the header, then **Try to transfer to CRO** on *informed consent* — OSSICRO refuses it, in code, with the citation.
 
 **▶ Demo video: _[link on submission]_**
 

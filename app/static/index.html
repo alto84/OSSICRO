@@ -421,6 +421,11 @@ window.OSSICRO_CLAIMS = null;
 
   /* ---------- fix-loop ---------- */
   .fixlink{font-weight:700;font-size:.82rem;white-space:nowrap;margin-left:8px;cursor:pointer;text-decoration:underline}
+  /* sign-off form: the Role is fixed by the gate (read-only) — make it LOOK non-editable;
+     the own-words attestation textarea was unstyled — give it real field styling. */
+  input.so-role[readonly]{background:var(--surface2);color:var(--muted);cursor:not-allowed;border-style:dashed}
+  .so-statement{display:block;width:100%;min-height:72px;margin-top:8px;padding:9px 11px;border:1px solid var(--line);
+    border-radius:8px;font:inherit;font-size:.9rem;line-height:1.5;resize:vertical;background:var(--surface);color:var(--ink)}
   .missbadge{font-size:.72rem;font-weight:800;letter-spacing:.04em;color:var(--red);
     background:var(--red-soft);border:1px solid color-mix(in srgb,var(--red) 30%,transparent);
     padding:2px 9px;border-radius:999px}
@@ -942,7 +947,7 @@ window.OSSICRO_CLAIMS = null;
 
   <footer>
     OSSICRO — Open Source Sponsor-Investigator CRO · Route-3926 MVP ·
-    Governed by the OSSICRO Constitution: complete documentation drafted for qualified human review;
+    Governed by the <a href="https://github.com/alto84/OSSICRO/blob/main/docs/OSSICRO-CONSTITUTION.md" target="_blank" rel="noopener">OSSICRO Constitution</a>: complete documentation drafted for qualified human review;
     non-delegable acts (consent, IRB approval, causality, signatures, submission) are never performed by software.
     Not medical, legal, or regulatory advice.
     <br>Single-user local pilot — do not expose this server or share case URLs.
