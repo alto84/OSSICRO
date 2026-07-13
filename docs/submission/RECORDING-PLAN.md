@@ -22,8 +22,8 @@ show. Target: 2:50–3:00, "genuinely cool to watch."
 **2 · What it is — 0:18–0:38** · *Tab A, dashboard at localhost:8765.*
 > "OSSICRO is open-source software that assembles, checks, and coordinates that entire burden — for single-patient expanded access, FDA Form 3926. I built it this week with Claude Code. Here's the real thing, running."
 
-**3 · The working flow — 0:38–1:20** · *Load patient → click Generate → 8 docs → the ledger → open the 3926 PDF.*
-> "From the patient's intake, OSSICRO generates the eight documents the FDA needs — every field stamped back to its source. This is the completeness ledger: green, amber, red — and each item is mapped to the exact regulation that governs it. Here's the filled Form 3926, as a real PDF."
+**3 · The working flow — 0:38–1:20** · *Exact clicks, in order:* **Start a case → Load example case → Save & continue →** type your name + **Commit profile → Generate documents.** The 8 drafts and the ledger appear (the button now reads *Regenerate documents*); open the **Form 3926 PDF.** *(The commit is a nice governance beat — a named human commits the input of record before anything is drafted.)*
+> "From the patient's intake, OSSICRO generates the eight documents the FDA needs — every field stamped back to its source. A named clinician commits the confirmed data first; nothing is drafted from an unconfirmed input. This is the completeness ledger: green, amber, red — each item mapped to the exact regulation that governs it. And here's the filled Form 3926, as a real PDF."
 
 **4 · The wow beat — governance in code — 1:20–2:15** · *Switch to Tab B (`/microcro`).*
 > "But generating documents isn't the hard part. This is. A solo physician can't hold every regulatory obligation, so some can transfer to a small accountable entity — a micro-CRO. OSSICRO knows which obligations can move…"

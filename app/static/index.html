@@ -632,7 +632,7 @@ window.OSSICRO_CLAIMS = null;
       <div class="card tight savecard">
         <div class="btnrow">
           <button type="submit" class="btn primary" id="saveIntakeBtn">Save intake</button>
-          <button type="button" class="btn accent" id="saveGenBtn">Save &amp; generate documents</button>
+          <button type="button" class="btn accent" id="saveGenBtn">Save &amp; continue</button>
           <span class="pill red" id="reqCounter" style="display:none"></span>
           <span class="muted small" id="intakeStatus"></span>
         </div>
@@ -2682,6 +2682,8 @@ function renderLedger(){
 function renderDocs(){
   const docs = S.documents || [];
   $("#docsCard").style.display = docs.length ? "block" : "none";
+  // Once drafts exist, the generate button regenerates them — say so.
+  const gb = $("#genBtn"); if (gb) gb.textContent = docs.length ? "Regenerate documents" : "Generate documents";
   $("#docsList").innerHTML = docs.map(d => `
     <details class="doc">
       <summary><span class="chev">▶</span>${esc(d.title || d.doc_id)}
