@@ -468,7 +468,7 @@ window.OSSICRO_CLAIMS = null;
 
   /* ---------- patient view (Wave 4 — plain language, read-only, opaque token) ---------- */
   body.patient-mode{font-size:16px}
-  body.patient-mode .stepper,body.patient-mode #personaBtn,body.patient-mode #croBtn,
+  body.patient-mode .stepper,body.patient-mode #personaBtn,body.patient-mode #croBtn,body.patient-mode #microcroBtn,
   body.patient-mode .routechip,body.patient-mode #caseChip,body.patient-mode footer,
   /* MAJOR-2: hide the standing draft bar in patient mode — the patient card's
      own notice is stage-conditional and server-driven, so it is always correct;
@@ -522,6 +522,7 @@ window.OSSICRO_CLAIMS = null;
     <span class="spacer"></span>
     <button class="iconbtn" id="personaBtn"></button>
     <button class="iconbtn" id="croBtn"></button>
+    <a class="iconbtn" id="microcroBtn" href="/microcro" title="Micro-CRO — transfer of regulatory obligations (21 CFR 312.52)" style="text-decoration:none">Micro-CRO</a>
     <button class="iconbtn" id="themeBtn" title="Toggle light/dark">Theme</button>
   </div>
 </header>
